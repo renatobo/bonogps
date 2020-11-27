@@ -92,7 +92,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE 
-#define BONOGPS_FIRMWARE_VER "v0.1"
+#define BONOGPS_FIRMWARE_VER "v0.1.1"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
 #define BONOGPS_MDNS "bonogps"
@@ -129,7 +129,7 @@
 
 // GPS port on UART2
 #define gpsPort Serial2
-#define GPS_STANDARD_BAUD_RATE 57600
+#define GPS_STANDARD_BAUD_RATE 115200
 // Min size of a NMEA message
 #define MIN_NMEA_MESSAGE_SIZE 6
 
