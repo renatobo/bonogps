@@ -75,15 +75,15 @@
 #include <Arduino.h>
 
 // Enable or disable compiling features
-#define WIFIMANAGER     // library to manage credentials and connectivity to an existing WiFi
-#define UPTIME          // add library to display for how long the device has been running
-#define BTSPPENABLED    // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
-#define BLEENABLED      // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
-#define ENABLE_OTA      // add code for OTA - decent memory save
-#define MDNS_ENABLE     // Enable or disable mDNS - currently not working in all conditions. Small memory save to be worth removing
-#define TASK_SCHEDULER  // enable adv task scheduler. Small memory save to be worth removing
-#define BUTTON          // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
-#define SHORT_API       // URLs for commands such as enable/disable/change rate respond with a short json answer instead of a full web page
+#define WIFIMANAGER    // library to manage credentials and connectivity to an existing WiFi
+#define UPTIME         // add library to display for how long the device has been running
+#define BTSPPENABLED   // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
+#define BLEENABLED     // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
+#define ENABLE_OTA     // add code for OTA - decent memory save
+#define MDNS_ENABLE    // Enable or disable mDNS - currently not working in all conditions. Small memory save to be worth removing
+#define TASK_SCHEDULER // enable adv task scheduler. Small memory save to be worth removing
+#define BUTTON         // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
+#define SHORT_API      // URLs for commands such as enable/disable/change rate respond with a short json answer instead of a full web page
 
 // Configure names and PIN's used for interfacing with external world
 #define DEVICE_MANUFACTURER "https://github.com/renatobo"
@@ -93,7 +93,7 @@
 #ifdef GIT_REV
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
-// the following define is needed to display version when building this with the Arduino IDE 
+// the following define is needed to display version when building this with the Arduino IDE
 #define BONOGPS_FIRMWARE_VER "v0.2"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
@@ -105,7 +105,7 @@
 #define MAX_AP_NAME_SIZE 20
 
 // How large should the RX buffer for the GPS port - more than 512 creates issues
-#define UART_BUFFER_SIZE_RX  256
+#define UART_BUFFER_SIZE_RX 256
 // Size of the intermediate buffer where we are storing the current sentence
 #define MAX_UART_BUFFER_SIZE 256
 
@@ -124,8 +124,8 @@
 #define WIFI_MODE_BUTTON 0
 
 // Define configuration of Bluetooth Low Energy
-#define BLE_DEVICE_ID           "BonoGPS"
-#define BLE_SERVICE_UUID        (uint16_t)0x1819 // SERVICE_LOCATION_AND_NAVIGATION_UUID  
+#define BLE_DEVICE_ID "BonoGPS"
+#define BLE_SERVICE_UUID (uint16_t)0x1819        // SERVICE_LOCATION_AND_NAVIGATION_UUID
 #define BLE_CHARACTERISTIC_UUID (uint16_t)0x2A67 // CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID
 #define BLE_MTU 185
 
@@ -147,7 +147,7 @@
  * 
 ********************************/
 
-#if !( defined(ESP32) )
+#if !(defined(ESP32))
 #error This code is designed to run only on the ESP32 board
 #endif
 
@@ -157,7 +157,8 @@ Preferences prefs;
 // data to be stored
 #include "esp_wifi.h"
 #include <WiFi.h>
-typedef struct {
+typedef struct
+{
   unsigned long gps_baud_rate = GPS_STANDARD_BAUD_RATE; // initial or current baud rate
   uint8_t gps_rate = 5;
   WiFiMode_t wifi_mode = WIFI_AP;
@@ -167,7 +168,7 @@ typedef struct {
   bool ble_active = true;
   bool btspp_active = false;
   bool trackaddict = false;
-  uint8_t nmeaGSAGSVpolling = 0; 
+  uint8_t nmeaGSAGSVpolling = 0;
 } stored_preference_t;
 
 stored_preference_t stored_preferences;
@@ -201,16 +202,16 @@ bool gps_powersave = false;
 #undef NEOGPS_PACKED_DATA
 #include <GPSfix_cfg.h>
 #include <NMEAGPS.h>
-#if !defined( GPS_FIX_TIME )
+#if !defined(GPS_FIX_TIME)
 #error You must define GPS_FIX_TIME in GPSfix_cfg.h!
 #endif
-#if !defined( GPS_FIX_LOCATION )
+#if !defined(GPS_FIX_LOCATION)
 #error You must uncomment GPS_FIX_LOCATION in GPSfix_cfg.h!
 #endif
-#if !defined( GPS_FIX_SPEED )
+#if !defined(GPS_FIX_SPEED)
 #error You must uncomment GPS_FIX_SPEED in GPSfix_cfg.h!
 #endif
-#if !defined( GPS_FIX_ALTITUDE )
+#if !defined(GPS_FIX_ALTITUDE)
 #error You must uncomment GPS_FIX_ALTITUDE in GPSfix_cfg.h!
 #endif
 NMEAGPS gps;
@@ -293,7 +294,7 @@ void OTA_start();
 
  * ******************************/
 #ifdef BUILD_ENV_NAME
-  #define BONO_GPS_VERSION BONOGPS_FIRMWARE_VER " [" BUILD_ENV_NAME "]"
+#define BONO_GPS_VERSION BONOGPS_FIRMWARE_VER " [" BUILD_ENV_NAME "]"
 #else
 #define BONO_GPS_VERSION BONOGPS_FIRMWARE_VER " [Arduino]"
 #endif
@@ -304,87 +305,99 @@ void OTA_start();
 
  * ******************************/
 // set rate of GPS to 5hz
-const char UBLOX_INIT_5HZ[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A };
+const char UBLOX_INIT_5HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8, 0x00, 0x01, 0x00, 0x01, 0x00, 0xDE, 0x6A};
 // set rate of GPS to 10Hz
-const char UBLOX_INIT_10HZ[] PROGMEM = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12 };
+const char UBLOX_INIT_10HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12};
 // set rate of GPS to 1Hz
-const char UBLOX_INIT_1HZ[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39 };
+const char UBLOX_INIT_1HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
 // set rate of GPS to 1Hz
-const char UBLOX_INIT_16HZ[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39 };
+const char UBLOX_INIT_16HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
 
 // Enable GxGSA (GNSS DOP and Active Satellites)
-const char UBLOX_GxGSA_ON[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x05, 0x41};
+const char UBLOX_GxGSA_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x05, 0x41};
 // Disable GxGSA
-const char UBLOX_GxGSA_OFF[] PROGMEM = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31};
+const char UBLOX_GxGSA_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31};
 // Enable GxGSV (Sat View)
-const char UBLOX_GxGSV_ON[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x06, 0x48};
+const char UBLOX_GxGSV_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x06, 0x48};
 // Disable GxGSV
-const char UBLOX_GxGSV_OFF[] PROGMEM = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x38};
+const char UBLOX_GxGSV_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x38};
 // set Max SVs per Talker id to 8
-const char UBLOX_INIT_CHANNEL_8[] PROGMEM = {  0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7D, 0xE7 };
+const char UBLOX_INIT_CHANNEL_8[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7D, 0xE7};
 // standard max SVs and extended digits for unsupported SVs
-const char UBLOX_INIT_CHANNEL_ALL[] PROGMEM =   {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x63 };
+const char UBLOX_INIT_CHANNEL_ALL[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x63};
 // use GP as Main talker and GSV Talker ID - this is needed for some apps like TrackAddict
-const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78 };
+const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
 // set gps port BAUD rate
-const char UBLOX_BAUD_57600[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDA, 0xA9  };
-const char UBLOX_BAUD_38400[]  PROGMEM = { 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8F, 0x70  };
-const char UBLOX_BAUD_115200[] PROGMEM = { 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBC, 0x5E  };
+const char UBLOX_BAUD_57600[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDA, 0xA9};
+const char UBLOX_BAUD_38400[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8F, 0x70};
+const char UBLOX_BAUD_115200[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBC, 0x5E};
 // power saving
 // enable power saving mode for 1800 or 3600 seconds
-// UBX - RXM - PMREQ request 
-const char UBLOX_PWR_SAVE_30MIN[] PROGMEM = { 0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x77, 0x1B, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x0F, 0xF6 };
-const char UBLOX_PWR_SAVE_1HR[] PROGMEM =   { 0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xEE, 0x36, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0xE1, 0x21 };
+// UBX - RXM - PMREQ request
+const char UBLOX_PWR_SAVE_30MIN[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x77, 0x1B, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x0F, 0xF6};
+const char UBLOX_PWR_SAVE_1HR[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xEE, 0x36, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0xE1, 0x21};
 //, 0xrestart UBX-CFG-RST with controlled GNSS only software, hotstart (<4 hrs) so that ephemeris still valid
-const char UBLOX_WARMSTART[] PROGMEM =    { 0xB5, 0x62, 0x06, 0x04, 0x04, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x68 };
+const char UBLOX_WARMSTART[] PROGMEM = {0xB5, 0x62, 0x06, 0x04, 0x04, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x68};
 // Display precision in some apps
-const char UBLOX_GxGBS_ON[] PROGMEM =    {  0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x0C, 0x72};
-const char UBLOX_GxGBS_OFF[] PROGMEM =    { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x62};
+const char UBLOX_GxGBS_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x0C, 0x72};
+const char UBLOX_GxGBS_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x62};
 // Poll GSA
 const char UBLOX_GNGSA_POLL[] PROGMEM = "$EIGNQ,GSA*2D\r\n";
 // Poll GSV
 const char UBLOX_GNGSV_POLL[] PROGMEM = "$EIGNQ,GSV*3A\r\n";
 bool gsaorgsv_turn = true;
 
-void push_gps_message(const char message[], int message_size = 0) {
-  if (gps_powersave) {
+void push_gps_message(const char message[], int message_size = 0)
+{
+  if (gps_powersave)
+  {
     log_d("Disable powermode");
     gpsPort.end();
     delay(1000);
     // assumes stored_preferences global
-    gps_powersave=false;
+    gps_powersave = false;
     gps_initialize_settings();
   }
-  for (int i = 0; i < message_size; i++) {
+  for (int i = 0; i < message_size; i++)
+  {
     gpsPort.write(message[i]);
   }
 }
 
 #ifdef TASK_SCHEDULER
-void poll_GSA_GSV_info() {
-  if (gsaorgsv_turn) {
+void poll_GSA_GSV_info()
+{
+  if (gsaorgsv_turn)
+  {
     gpsPort.write(UBLOX_GNGSA_POLL);
-  } else {
+  }
+  else
+  {
     gpsPort.write(UBLOX_GNGSV_POLL);
   }
-  gsaorgsv_turn=!gsaorgsv_turn;
+  gsaorgsv_turn = !gsaorgsv_turn;
 }
 
-Task tpoll_GSA_GSV_info ( 0, TASK_FOREVER , poll_GSA_GSV_info, &ts, false );
-void control_poll_GSA_GSV(int frequency){
-  if (frequency > 0) {
+Task tpoll_GSA_GSV_info(0, TASK_FOREVER, poll_GSA_GSV_info, &ts, false);
+void control_poll_GSA_GSV(int frequency)
+{
+  if (frequency > 0)
+  {
     push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
     push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
-    tpoll_GSA_GSV_info.setInterval( frequency * 500 );
+    tpoll_GSA_GSV_info.setInterval(frequency * 500);
     tpoll_GSA_GSV_info.enable();
-  } else {
+  }
+  else
+  {
     tpoll_GSA_GSV_info.disable();
   }
 }
 
 // handle restart when config is lost
-Task trestart_after_sleep (0, 1, restart_after_sleep, &ts, false);
-void restart_after_sleep(){
+Task trestart_after_sleep(0, 1, restart_after_sleep, &ts, false);
+void restart_after_sleep()
+{
   gps_powersave = false;
   push_gps_message(UBLOX_WARMSTART, sizeof(UBLOX_WARMSTART));
   delay(1000);
@@ -396,22 +409,24 @@ void restart_after_sleep(){
 }
 #endif
 
-void switch_baudrate(uint32_t newbaudrate) {
+void switch_baudrate(uint32_t newbaudrate)
+{
   // stored_preferences assumed global
   log_d("Send UBX-CFG for rate %d", newbaudrate);
-  switch (newbaudrate) {
-    case 38400:
-      push_gps_message(UBLOX_BAUD_38400, sizeof(UBLOX_BAUD_38400));
-      break;
-    case 57600:
-      push_gps_message(UBLOX_BAUD_57600, sizeof(UBLOX_BAUD_57600));
-      break;
-    case 115200:
-      push_gps_message(UBLOX_BAUD_115200, sizeof(UBLOX_BAUD_115200));
-      break;
-    default:
-      push_gps_message(UBLOX_BAUD_38400, sizeof(UBLOX_BAUD_38400));
-      break;
+  switch (newbaudrate)
+  {
+  case 38400:
+    push_gps_message(UBLOX_BAUD_38400, sizeof(UBLOX_BAUD_38400));
+    break;
+  case 57600:
+    push_gps_message(UBLOX_BAUD_57600, sizeof(UBLOX_BAUD_57600));
+    break;
+  case 115200:
+    push_gps_message(UBLOX_BAUD_115200, sizeof(UBLOX_BAUD_115200));
+    break;
+  default:
+    push_gps_message(UBLOX_BAUD_38400, sizeof(UBLOX_BAUD_38400));
+    break;
   }
   log_d("Flush UART");
   gpsPort.flush();
@@ -425,21 +440,23 @@ void switch_baudrate(uint32_t newbaudrate) {
 }
 
 // read from NVM via preferences library
-void ReadNVMPreferences() {
+void ReadNVMPreferences()
+{
   // prefs assumed global
   // stored_preferences assumed global
   String string_wifi_mode;
 
-  switch (stored_preferences.wifi_mode) {
-    case WIFI_AP:
-      string_wifi_mode = "WIFI_AP";
-      break;
-    case WIFI_STA:
-      string_wifi_mode = "WIFI_STA";
-      break;
-    default:
-      string_wifi_mode = "WIFI_STA";
-      break;
+  switch (stored_preferences.wifi_mode)
+  {
+  case WIFI_AP:
+    string_wifi_mode = "WIFI_AP";
+    break;
+  case WIFI_STA:
+    string_wifi_mode = "WIFI_STA";
+    break;
+  default:
+    string_wifi_mode = "WIFI_STA";
+    break;
   }
 
   stored_preferences.gps_baud_rate = prefs.getULong("gpsbaudrate", stored_preferences.gps_baud_rate);
@@ -447,9 +464,12 @@ void ReadNVMPreferences() {
   stored_preferences.nmeaGSAGSVpolling = prefs.getUChar("gsagsvpoll", stored_preferences.nmeaGSAGSVpolling);
   // wifi mode TODO
   string_wifi_mode = prefs.getString("wifi", string_wifi_mode);
-  if (string_wifi_mode == "WIFI_AP") {
+  if (string_wifi_mode == "WIFI_AP")
+  {
     stored_preferences.wifi_mode = WIFI_AP;
-  } else {
+  }
+  else
+  {
     stored_preferences.wifi_mode = WIFI_STA;
   }
 
@@ -460,7 +480,8 @@ void ReadNVMPreferences() {
   stored_preferences.btspp_active = prefs.getBool("btspp", stored_preferences.btspp_active);
   stored_preferences.trackaddict = prefs.getBool("trackaddict", stored_preferences.trackaddict);
 
-  if (stored_preferences.ble_active && stored_preferences.btspp_active) {
+  if (stored_preferences.ble_active && stored_preferences.btspp_active)
+  {
     // prevents both settings to be ON
 #ifdef BLEENABLED
     stored_preferences.btspp_active = false;
@@ -471,27 +492,33 @@ void ReadNVMPreferences() {
 }
 
 // write to preferences
-void StoreNVMPreferences(bool savewifi = false) {
+void StoreNVMPreferences(bool savewifi = false)
+{
   // prefs assumed global
   // stored_preferences assumed global
   String string_wifi_mode;
   size_t size_t_written;
 
-  if (savewifi) {
-    switch (stored_preferences.wifi_mode) {
-      case WIFI_AP:
-        string_wifi_mode = "WIFI_AP";
-        break;
-      case WIFI_STA:
-        string_wifi_mode = "WIFI_STA";
-        break;
-      default:
-        string_wifi_mode = "WIFI_STA";
-        break;
+  if (savewifi)
+  {
+    switch (stored_preferences.wifi_mode)
+    {
+    case WIFI_AP:
+      string_wifi_mode = "WIFI_AP";
+      break;
+    case WIFI_STA:
+      string_wifi_mode = "WIFI_STA";
+      break;
+    default:
+      string_wifi_mode = "WIFI_STA";
+      break;
     }
-    if (stored_preferences.wifi_mode == WIFI_AP) {
+    if (stored_preferences.wifi_mode == WIFI_AP)
+    {
       string_wifi_mode == "WIFI_AP";
-    } else {
+    }
+    else
+    {
       string_wifi_mode = "WIFI_STA";
     }
     size_t_written = prefs.putString("wifi", string_wifi_mode);
@@ -505,40 +532,48 @@ void StoreNVMPreferences(bool savewifi = false) {
   size_t_written = prefs.putBool("ble", stored_preferences.ble_active);
   size_t_written = prefs.putBool("btspp", stored_preferences.btspp_active);
   size_t_written = prefs.putBool("trackaddict", stored_preferences.trackaddict);
-  if (size_t_written >0) {
+  if (size_t_written > 0)
+  {
     log_i("Preferences written");
-  } else {
+  }
+  else
+  {
     log_e("Preferences NOT written");
   }
 }
 
-void StoreNVMPreferencesWiFi(String string_wifi_mode) {
+void StoreNVMPreferencesWiFi(String string_wifi_mode)
+{
   // prefs assumed global
   size_t size_t_written;
   size_t_written = prefs.putString("wifi", string_wifi_mode);
-  if (size_t_written >0) {
+  if (size_t_written > 0)
+  {
     log_i("Preferences written");
-  } else {
+  }
+  else
+  {
     log_e("Preferences NOT written");
   }
 }
 
-void gps_enable_trackaddict() {
+void gps_enable_trackaddict()
+{
   log_d("Setting GPS to specific Track Addict needs");
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
-  stored_preferences.nmeaGSA=false;
+  stored_preferences.nmeaGSA = false;
   push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSA_OFF));
-  stored_preferences.nmeaGSV=false;
+  stored_preferences.nmeaGSV = false;
   push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
-  stored_preferences.nmeaGBS=false;
+  stored_preferences.nmeaGBS = false;
   push_gps_message(UBLOX_INIT_MAINTALKER_GP, sizeof(UBLOX_INIT_MAINTALKER_GP));
-  stored_preferences.trackaddict=true;
+  stored_preferences.trackaddict = true;
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
-#endif  
-  stored_preferences.nmeaGSAGSVpolling=0;
+#endif
+  stored_preferences.nmeaGSAGSVpolling = 0;
 }
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
@@ -551,13 +586,14 @@ const uint NMEAServerPort = NMEA_TCP_PORT;
 WiFiServer NMEAServer(NMEAServerPort);
 WiFiClient NMEARemoteClient;
 
-void led_blink() {
+void led_blink()
+{
   //toggle state
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));     // set pin to the opposite state
+  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // set pin to the opposite state
 }
 
 #ifdef TASK_SCHEDULER
-Task tLedBlink ( 0, TASK_FOREVER , &led_blink, &ts, true );
+Task tLedBlink(0, TASK_FOREVER, &led_blink, &ts, true);
 #endif
 
 /********************************
@@ -574,7 +610,8 @@ IPAddress MyIP;
 
 #ifdef WIFIMANAGER
 //gets called when WiFiManager enters configuration mode
-void configModeCallback (WiFiManager *myWiFiManager) {
+void configModeCallback(WiFiManager *myWiFiManager)
+{
   log_i("Entered config mode, connect to %s", ap_ssid);
   log_i("IP: %s", WiFi.softAPIP().toString());
   //if you used auto generated SSID, print it
@@ -587,7 +624,8 @@ void configModeCallback (WiFiManager *myWiFiManager) {
 }
 #endif
 
-void NMEACheckForConnections() {
+void NMEACheckForConnections()
+{
   if (NMEAServer.hasClient())
   {
     // If we are already connected to another computer, then reject the new connection. Otherwise accept the connection.
@@ -595,14 +633,17 @@ void NMEACheckForConnections() {
     {
       log_w("NMEA TCP Connection rejected");
       NMEAServer.available().stop();
-    } else {
+    }
+    else
+    {
       NMEARemoteClient = NMEAServer.available();
       // TODO not printing strings correctly
       log_d("NMEA TCP Connection accepted from client: %s", NMEARemoteClient.remoteIP().toString());
     }
   }
 }
-void start_NMEA_server() {
+void start_NMEA_server()
+{
   log_i("Start GNSS TCP/IP Service");
   NMEAServer.begin();
   NMEAServer.setNoDelay(true);
@@ -610,7 +651,8 @@ void start_NMEA_server() {
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
 unsigned long nbptimer = 0;
-void NBPCheckForConnections() {
+void NBPCheckForConnections()
+{
   if (NBPServer.hasClient())
   {
     // If we are already connected to another computer, then reject the new connection. Otherwise accept the connection.
@@ -618,13 +660,16 @@ void NBPCheckForConnections() {
     {
       log_w("NBP TCP Connection rejected");
       NBPServer.available().stop();
-    } else {
+    }
+    else
+    {
       NBPRemoteClient = NBPServer.available();
       log_i("NBP TCP Connection accepted from client: %s", NBPRemoteClient.remoteIP().toString());
     }
   }
 }
-void start_NBP_server() {
+void start_NBP_server()
+{
   log_i("Start NBP TCP/IP Service");
   NBPServer.begin();
   NBPServer.setNoDelay(true);
@@ -632,7 +677,8 @@ void start_NBP_server() {
 #endif
 
 // Start STATION mode to connect to a well-known Access Point
-void wifi_STA() {
+void wifi_STA()
+{
   // WiFi Access
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
   //set led pin as output
@@ -660,12 +706,15 @@ void wifi_STA() {
   wm.setAPStaticIPConfig(IPAddress(10, 0, 0, 1), IPAddress(10, 0, 0, 1), IPAddress(255, 255, 255, 0));
   //fetches ssid and pass and tries to connect
   //if it does not connect it starts an access point named 'ap_ssid' with password 'ap_password' and goes into a blocking loop awaiting configuration
-  if (!wm.autoConnect(ap_ssid, ap_password)) {
+  if (!wm.autoConnect(ap_ssid, ap_password))
+  {
     log_e("failed to connect and hit timeout");
     // ESP.restart();
     // delay(1000);
     wifi_connected = false;
-  } else {
+  }
+  else
+  {
     wifi_connected = true;
     //if you get here you have connected to the WiFi
     log_i("connected to wifi...yeey:)");
@@ -677,9 +726,12 @@ void wifi_STA() {
     digitalWrite(LED_BUILTIN, LOW);
 
 #ifdef MDNS_ENABLE
-    if (!MDNS.begin(BONOGPS_MDNS)) {
+    if (!MDNS.begin(BONOGPS_MDNS))
+    {
       log_e("Error setting up MDNS responder!");
-    } else {
+    }
+    else
+    {
       log_i("mDNS responder started");
     }
 #endif
@@ -696,7 +748,6 @@ void wifi_STA() {
     // WLAN Server for GNSS data
     start_NBP_server();
 #endif
-
   }
 #endif // #ifdef WIFIMANAGER
   MyIP = WiFi.localIP();
@@ -705,19 +756,19 @@ void wifi_STA() {
   button.onPressed(wifi_AP);
 #endif
   stored_preferences.wifi_mode = WIFI_STA;
-
 }
 
-void wifi_AP() {
+void wifi_AP()
+{
   // WiFi Access
   WiFi.mode(WIFI_AP); // explicitly set mode, esp defaults to STA+AP
   // Set WiFi options
   wifi_country_t country = {
-    .cc = "US",
-    .schan = 1,
-    .nchan = 13,
-    .max_tx_power = 20,
-    .policy = WIFI_COUNTRY_POLICY_AUTO,
+      .cc = "US",
+      .schan = 1,
+      .nchan = 13,
+      .max_tx_power = 20,
+      .policy = WIFI_COUNTRY_POLICY_AUTO,
   };
   esp_wifi_set_country(&country);
   WiFi.softAP(ap_ssid, ap_password, 1, 0, 2);
@@ -736,9 +787,12 @@ void wifi_AP() {
   wifi_connected = true;
 
 #ifdef MDNS_ENABLE
-  if (!MDNS.begin(BONOGPS_MDNS)) {
+  if (!MDNS.begin(BONOGPS_MDNS))
+  {
     log_e("Error setting up MDNS responder!");
-  } else {
+  }
+  else
+  {
     log_i("mDNS responder started");
   }
 #endif
@@ -762,7 +816,6 @@ void wifi_AP() {
   button.onPressed(wifi_STA);
 #endif
   stored_preferences.wifi_mode = WIFI_AP;
-
 }
 
 /********************************
@@ -779,15 +832,16 @@ WebServer webserver(80);
 #endif
 
 // Helper to populate a page with style sheet
-String generate_html_body(String input, bool add_menu = true) {
+String generate_html_body(String input, bool add_menu = true)
+{
   // assumption: ap_ssid is populated
   String htmlbody((char *)0);
   htmlbody.reserve(5000);
   htmlbody += F("<!DOCTYPE html><html lang='en'><head><title>");
   htmlbody += ap_ssid;
   htmlbody += F("</title><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css'></head><body><script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script><header>");
-  htmlbody += (add_menu?"Back to <a href='/'>Main menu</a>":ap_ssid);
-  htmlbody += (gps_powersave?"<br><em>Powersave mode</em>":"");
+  htmlbody += (add_menu ? "Back to <a href='/'>Main menu</a>" : ap_ssid);
+  htmlbody += (gps_powersave ? "<br><em>Powersave mode</em>" : "");
   htmlbody += F("</header>\n");
   htmlbody += input;
 #ifdef GIT_REPO
@@ -795,17 +849,17 @@ String generate_html_body(String input, bool add_menu = true) {
   htmlbody += GIT_REPO;
   htmlbody += "'>";
   htmlbody += BONO_GPS_VERSION;
-  htmlbody +=F("</a></footer></body></html>");
+  htmlbody += F("</a></footer></body></html>");
 #else
   htmlbody += F("<footer>Version: ");
   htmlbody += BONO_GPS_VERSION;
-  htmlbody +=F("</footer></body></html>");
-#endif    
+  htmlbody += F("</footer></body></html>");
+#endif
   return htmlbody;
-
 }
 
-String input_onoff(String divlabel, String parameter, bool parameter_status) {
+String input_onoff(String divlabel, String parameter, bool parameter_status)
+{
   String message((char *)0);
   message.reserve(500);
   message += F("\n<article class='bg'>");
@@ -814,9 +868,12 @@ String input_onoff(String divlabel, String parameter, bool parameter_status) {
   message += parameter;
   message += F("/on'  onchange='Select(this.id)' name='");
   message += parameter;
-  if (parameter_status) {
+  if (parameter_status)
+  {
     message += "' checked>";
-  } else {
+  }
+  else
+  {
     message += "'>";
   }
   message += F("\n\t<label class='button' for='");
@@ -825,9 +882,12 @@ String input_onoff(String divlabel, String parameter, bool parameter_status) {
   message += parameter;
   message += F("/off'  onchange='Select(this.id)' name='");
   message += parameter;
-  if (parameter_status) {
+  if (parameter_status)
+  {
     message += "'>";
-  } else {
+  }
+  else
+  {
     message += "' checked>";
   }
   message += F("\n\t<label class='button' for='");
@@ -836,21 +896,26 @@ String input_onoff(String divlabel, String parameter, bool parameter_status) {
   return message;
 }
 
-String html_select(String divlabel,String parameters[], String parameters_names[], bool parameters_status[], String groupname, int numberparams) {
+String html_select(String divlabel, String parameters[], String parameters_names[], bool parameters_status[], String groupname, int numberparams)
+{
   String message((char *)0);
   message.reserve(500);
   message += F("\n<article class='bg'>");
   message += divlabel;
-  for (int i = 0; i < numberparams ; i++) {
+  for (int i = 0; i < numberparams; i++)
+  {
     message += F("\n\t<input type='radio' id='");
     message += groupname;
     message += "/";
     message += parameters[i];
     message += F("'  onchange='Select(this.id)' name='");
     message += groupname;
-    if (parameters_status[i]) {
+    if (parameters_status[i])
+    {
       message += "' checked>";
-    } else {
+    }
+    else
+    {
       message += "'>";
     }
     message += F("\n\t<label class='button' for='");
@@ -865,66 +930,68 @@ String html_select(String divlabel,String parameters[], String parameters_names[
   return message;
 }
 
-void handle_css() {
+void handle_css()
+{
   log_i("Handle CSS response");
   webserver.sendHeader("Cache-Control", "max-age=3600");
-  webserver.send(200, 
-    "text/css", 
-    F("*{box-sizing:border-box;text-align:center;width:100%;font-weight:300}body{font-family:Roboto,system-ui,Arial,Helvetica,sans-serif;font-size:5vw;margin:0}header{background-color:#666;padding:.5vw;text-align:center;color:#fff}article{float:left;padding:10px;width:100%;height:auto}details{display:table;clear:both}summary{font-size:larger;font-weight:400;padding:10px;background-color:#f1f1f1}footer{background-color:#777;padding:.2vw;text-align:center;color:#fff;clear:both;position:fixed;bottom:0;font-size:small}@media (min-width:800px){article{width:50%}*{font-size:2.5vw}}a,input{color:#fff;border-radius:8pt;background:red;text-decoration:none;padding:5pt}.bg input{display:none}label{border:solid;border-radius:8pt;padding:5px;margin:2px;border-color:#bdbdbd;border-width:2px;color:#9e9e9e}.bg input:checked+label,.bg input:checked+label:active{background:red;color:#fff;border-color:red}")
-    );
+  webserver.send(200,
+                 "text/css",
+                 F("*{box-sizing:border-box;text-align:center;width:100%;font-weight:300}body{font-family:Roboto,system-ui,Arial,Helvetica,sans-serif;font-size:5vw;margin:0}header{background-color:#666;padding:.5vw;text-align:center;color:#fff}article{float:left;padding:10px;width:100%;height:auto}details{display:table;clear:both}summary{font-size:larger;font-weight:400;padding:10px;background-color:#f1f1f1}footer{background-color:#777;padding:.2vw;text-align:center;color:#fff;clear:both;position:fixed;bottom:0;font-size:small}@media (min-width:800px){article{width:50%}*{font-size:2.5vw}}a,input{color:#fff;border-radius:8pt;background:red;text-decoration:none;padding:5pt}.bg input{display:none}label{border:solid;border-radius:8pt;padding:5px;margin:2px;border-color:#bdbdbd;border-width:2px;color:#9e9e9e}.bg input:checked+label,.bg input:checked+label:active{background:red;color:#fff;border-color:red}"));
 }
-void handle_menu() {
+void handle_menu()
+{
   // variables used to build html buttons
-  String sv_values[2] = {"8","all"};
-  String sv_names[2] = {"8","All"};
-  bool sv_status[2] = {false,true};
-  
-  String baud_values[3] = {"38400","57600","115200"};
-  String baud_names[3] = {"38k4","57k6","115k2"};
-  bool baud_status[3] = {(stored_preferences.gps_baud_rate == 38400 ),(stored_preferences.gps_baud_rate == 57600 ), (stored_preferences.gps_baud_rate == 115200 )};
+  String sv_values[2] = {"8", "all"};
+  String sv_names[2] = {"8", "All"};
+  bool sv_status[2] = {false, true};
 
-  String wifi_values[2] = {"sta","ap"};
-  String wifi_names[2] = {"Client","AP"};
-  bool wifi_status[2] = {(stored_preferences.wifi_mode == WIFI_STA ),(stored_preferences.wifi_mode == WIFI_AP )};
+  String baud_values[3] = {"38400", "57600", "115200"};
+  String baud_names[3] = {"38k4", "57k6", "115k2"};
+  bool baud_status[3] = {(stored_preferences.gps_baud_rate == 38400), (stored_preferences.gps_baud_rate == 57600), (stored_preferences.gps_baud_rate == 115200)};
+
+  String wifi_values[2] = {"sta", "ap"};
+  String wifi_names[2] = {"Client", "AP"};
+  bool wifi_status[2] = {(stored_preferences.wifi_mode == WIFI_STA), (stored_preferences.wifi_mode == WIFI_AP)};
 
 #ifdef TASK_SCHEDULER
-  String pollgsagsv_values[3] = {"0","1","5"};
-  String pollgsagsv_names[3] = {"Off","1 sec","5 sec"};
-  bool pollgsagsv_status[3] = {(stored_preferences.nmeaGSAGSVpolling == 0),(stored_preferences.nmeaGSAGSVpolling == 1),(stored_preferences.nmeaGSAGSVpolling == 5)};
+  String pollgsagsv_values[3] = {"0", "1", "5"};
+  String pollgsagsv_names[3] = {"Off", "1 sec", "5 sec"};
+  bool pollgsagsv_status[3] = {(stored_preferences.nmeaGSAGSVpolling == 0), (stored_preferences.nmeaGSAGSVpolling == 1), (stored_preferences.nmeaGSAGSVpolling == 5)};
 #endif
-  
+
   log_i("Handle webserver root response");
   String mainpage((char *)0);
   mainpage.reserve(4500);
   mainpage += F("\n<details open><summary>GPS runtime settings</summary>\n<article class='bg'>Update\n<input type='radio' id='rate/1hz' onchange='Select(this.id)' name='rate'");
-  mainpage += ((stored_preferences.gps_rate == 1 ) ? "checked" : " ");
+  mainpage += ((stored_preferences.gps_rate == 1) ? "checked" : " ");
   mainpage += F("><label class='button' for='rate/1hz'>1 Hz</label>\n<input type='radio' id='rate/5hz' onchange='Select(this.id)' name='rate' ");
-  mainpage += ((stored_preferences.gps_rate == 5 ) ? "checked" : " ");
+  mainpage += ((stored_preferences.gps_rate == 5) ? "checked" : " ");
   mainpage += F("><label class='button' for='rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' onchange='Select(this.id)' name='rate' ");
-  mainpage += ((stored_preferences.gps_rate == 10 ) ? "checked" : " ");
+  mainpage += ((stored_preferences.gps_rate == 10) ? "checked" : " ");
   mainpage += F("><label class='button' for='rate/10hz'>10 Hz</label></article>");
-  mainpage += input_onoff("Stream GxGBS","gbs",stored_preferences.nmeaGBS);
-  mainpage += input_onoff("Stream GxGSA","gsa",stored_preferences.nmeaGSA);
-  mainpage += input_onoff("Stream GxGSV","gsv",stored_preferences.nmeaGSV);
+  mainpage += input_onoff("Stream GxGBS", "gbs", stored_preferences.nmeaGBS);
+  mainpage += input_onoff("Stream GxGSA", "gsa", stored_preferences.nmeaGSA);
+  mainpage += input_onoff("Stream GxGSV", "gsv", stored_preferences.nmeaGSV);
 #ifdef TASK_SCHEDULER
-  mainpage += html_select("Poll GSA + GSV ",pollgsagsv_values,pollgsagsv_names,pollgsagsv_status,String("poll/gsagsv"),3);
+  mainpage += html_select("Poll GSA + GSV ", pollgsagsv_values, pollgsagsv_names, pollgsagsv_status, String("poll/gsagsv"), 3);
 #endif
-  mainpage += html_select("SVs per Talker Id",sv_values,sv_names,sv_status,String("sv"),2);
-  mainpage += html_select("Port BAUD",baud_values,baud_names,baud_status,String("baud"),3);
+  mainpage += html_select("SVs per Talker Id", sv_values, sv_names, sv_status, String("sv"), 2);
+  mainpage += html_select("Port BAUD", baud_values, baud_names, baud_status, String("baud"), 3);
   mainpage += F("</details>\n<details>\n<summary>Connections</summary><article>List connected <a href='/clients'>clients</a></article>");
-  mainpage += html_select("WiFi mode ",wifi_values,wifi_names,wifi_status,String("wifi"),2);
+  mainpage += html_select("WiFi mode ", wifi_values, wifi_names, wifi_status, String("wifi"), 2);
 #ifdef BLEENABLED
-  mainpage += input_onoff("Bluetooth LE","ble",stored_preferences.ble_active);
+  mainpage += input_onoff("Bluetooth LE", "ble", stored_preferences.ble_active);
 #endif
 #ifdef BTSPPENABLED
-  mainpage += input_onoff("Bluetooth SPP","btspp",stored_preferences.btspp_active);
+  mainpage += input_onoff("Bluetooth SPP", "btspp", stored_preferences.btspp_active);
 #endif
   mainpage += F("\n</details>\n<details><summary>Device</summary>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/restart'>Restart</a></article>\n<article><a href='/save_config'>Save config</a></article>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article></details>");
   log_i("sending webserver root response");
-  webserver.send(200, html_text, generate_html_body(mainpage,false));
+  webserver.send(200, html_text, generate_html_body(mainpage, false));
 }
 
-void handle_preset() {
+void handle_preset()
+{
   String mainpage((char *)0);
   mainpage.reserve(2000);
 #if defined(BTSPPENABLED) || defined(BLEENABLED)
@@ -933,10 +1000,10 @@ void handle_preset() {
   mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li><li>iOS: BT-LE Connection</li></ul></article><article>Load options for:<p><a href='/hlt/tcpip'>WiFi</a></p><a href='/hlt/ios'>iOS</a></p><p><a href='/hlt/android'>Android</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
 #else
 #ifdef BLEENABLED
-    mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>iOS: BT-LE Connection</li></ul></article><article>Load  options forn:<p><a href='/hlt/ios'>iOS</a></article></details>");
+  mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>iOS: BT-LE Connection</li></ul></article><article>Load  options forn:<p><a href='/hlt/ios'>iOS</a></article></details>");
 #endif
 #ifdef BTSPPENABLED
-   mainpage += F("<details open><summary>Harry Lap Timer <a href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li></ul></article><article><Load options for:<p><a href='/hlt/android'>Android</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</article></details>");
+  mainpage += F("<details open><summary>Harry Lap Timer <a href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li></ul></article><article><Load options for:<p><a href='/hlt/android'>Android</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</article></details>");
 #endif
 #endif // defined(BTSPPENABLED) && defined(BLEENABLED)
 
@@ -946,7 +1013,7 @@ void handle_preset() {
 
   // trackaddict main page
   mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
-  mainpage += input_onoff("Android","trackaddict",stored_preferences.trackaddict);
+  mainpage += input_onoff("Android", "trackaddict", stored_preferences.trackaddict);
   mainpage += F("<article><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
 
 #endif
@@ -959,7 +1026,8 @@ void handle_preset() {
 }
 
 #ifdef BLEENABLED
-void handle_ble_off() {
+void handle_ble_off()
+{
   log_i("Turning off BLE");
   stored_preferences.ble_active = false;
   ble_stop();
@@ -969,135 +1037,144 @@ void handle_ble_off() {
   webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE<br><a href='/save_config/withoutwifi'>Save settings</a>")));
 #endif
 }
-void handle_ble_on() {
+void handle_ble_on()
+{
   log_i("Turning on BLE");
   stored_preferences.ble_active = true;
 #ifdef BTSPPENABLED
   stored_preferences.btspp_active = false;
   bt_spp_stop();
-  #ifdef SHORT_API
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<p>This causes a restart of the device: to store permanently, disable BT-SPP, save config, enable BLE")));
-  #endif
 #else
-  #ifdef SHORT_API
+  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<p>This causes a restart of the device: to store permanently, disable BT-SPP, save config, enable BLE")));
+#endif
+#else
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE<br><a href='/save_config/withoutwifi'>Save settings</a>")));
-  #endif
+#endif
 #endif
   ble_start();
 }
 #endif
 #ifdef BTSPPENABLED
-void handle_btspp_off() {
+void handle_btspp_off()
+{
   log_i("Turning off BT-SPP");
   stored_preferences.btspp_active = false;
   bt_spp_stop();
-    #ifdef SHORT_API
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE")));
-  #endif
+#endif
 }
-void handle_btspp_on() {
+void handle_btspp_on()
+{
   log_i("Turning on BT-SPP");
   stored_preferences.btspp_active = true;
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
   ble_stop();
-  #ifdef SHORT_API
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<br><a href='/save_config/withoutwifi'>Save settings</a>")));
-  #endif
+#endif
 #else
 #ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BT-SPP")));
-  #endif
+#endif
 #endif
   bt_spp_start();
 }
 #endif
-void handle_powersave_1hr() {
+void handle_powersave_1hr()
+{
   log_i("enable power saving mode for 3600 seconds");
   // disable polling of GSA and GSV
-#ifdef TASKSCHEDULER  
+#ifdef TASKSCHEDULER
   control_poll_GSA_GSV(0);
-  trestart_after_sleep.setInterval( 3600000 );
+  trestart_after_sleep.setInterval(3600000);
   trestart_after_sleep.enableDelayed();
-#endif  
+#endif
   push_gps_message(UBLOX_PWR_SAVE_1HR, sizeof(UBLOX_PWR_SAVE_1HR));
-  gps_powersave=true;
-  #ifdef SHORT_API
+  gps_powersave = true;
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   webserver.send(200, html_text, generate_html_body(F("Enabled power saving mode for 3600 seconds")));
-  #endif
+#endif
 }
-void handle_powersave_30min() {
+void handle_powersave_30min()
+{
   log_i("enable power saving mode for 1800 seconds");
   // disable polling of GSA and GSV
-#ifdef TASKSCHEDULER  
+#ifdef TASKSCHEDULER
   control_poll_GSA_GSV(0);
-  trestart_after_sleep.setInterval( 1800000 );
+  trestart_after_sleep.setInterval(1800000);
   trestart_after_sleep.enableDelayed();
 #endif
   push_gps_message(UBLOX_PWR_SAVE_30MIN, sizeof(UBLOX_PWR_SAVE_30MIN));
-  gps_powersave=true;
-  #ifdef SHORT_API
+  gps_powersave = true;
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   webserver.send(200, html_text, generate_html_body(F("Enabled power saving mode for 1800 seconds")));
-  #endif
+#endif
 }
 static const char savecfg[] PROGMEM = "<br><a href='/save_config/withoutwifi'>Save settings</a>";
-void handle_rate_1hz() {
+void handle_rate_1hz()
+{
   log_i("Set GPS Rate to 1 Hz");
   push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
   stored_preferences.gps_rate = 1;
-  #ifdef SHORT_API
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   String message((char *)0);
   message.reserve(70);
   message += F("Rate set to <b>1 Hz</b>");
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
-  #endif
+#endif
 }
-void handle_rate_5hz() {
+void handle_rate_5hz()
+{
   log_i("Set GPS Rate to 5 Hz");
   push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
   stored_preferences.gps_rate = 5;
-  #ifdef SHORT_API
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   String message((char *)0);
   message.reserve(70);
   message += F("Rate set to <b>5 Hz</b>");
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
-  #endif
+#endif
 }
-void handle_rate_10hz() {
+void handle_rate_10hz()
+{
   log_i("Set GPS Rate to 10 Hz");
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
-  #ifdef SHORT_API
+#ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
-  #else
+#else
   String message((char *)0);
   message.reserve(70);
   message += F("Rate set to <b>10 Hz</b>");
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
-  #endif
+#endif
 }
-void handle_baudrate_38400() {
+void handle_baudrate_38400()
+{
   log_i("Set BAUD Rate to 38400");
   switch_baudrate(38400);
 #ifdef SHORT_API
@@ -1110,7 +1187,8 @@ void handle_baudrate_38400() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_baudrate_57600() {
+void handle_baudrate_57600()
+{
   log_i("Set BAUD Rate to 57600");
   switch_baudrate(57600);
 #ifdef SHORT_API
@@ -1123,7 +1201,8 @@ void handle_baudrate_57600() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_baudrate_115200() {
+void handle_baudrate_115200()
+{
   log_i("Set BAUD Rate to 115200");
   switch_baudrate(115200);
 #ifdef SHORT_API
@@ -1136,11 +1215,12 @@ void handle_baudrate_115200() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_gsv_on() {
+void handle_gsv_on()
+{
   log_i("Enable GxGSV messages");
-#ifdef TASKSCHEDULER    
+#ifdef TASKSCHEDULER
   control_poll_GSA_GSV(0);
-#endif 
+#endif
   push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
   stored_preferences.nmeaGSV = true;
   stored_preferences.nmeaGSAGSVpolling = 0;
@@ -1154,7 +1234,8 @@ void handle_gsv_on() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_gsv_off() {
+void handle_gsv_off()
+{
   log_i("Disable GxGSV messages");
   push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
   stored_preferences.nmeaGSV = false;
@@ -1168,9 +1249,10 @@ void handle_gsv_off() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_gsa_on() {
+void handle_gsa_on()
+{
   log_i("Enable GxGSA messages");
-#ifdef TASKSCHEDULER  
+#ifdef TASKSCHEDULER
   control_poll_GSA_GSV(0);
 #endif
   push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
@@ -1186,7 +1268,8 @@ void handle_gsa_on() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_gsa_off() {
+void handle_gsa_off()
+{
   log_i("Disable GxGSA messages");
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
   stored_preferences.nmeaGSA = false;
@@ -1201,7 +1284,8 @@ void handle_gsa_off() {
 #endif
 }
 #ifdef TASK_SCHEDULER
-void handle_pollgsagsv_on_1() {
+void handle_pollgsagsv_on_1()
+{
   log_i("Enable polling of GSA and GSV messages every 1 sec");
   control_poll_GSA_GSV(1);
 #ifdef SHORT_API
@@ -1214,11 +1298,12 @@ void handle_pollgsagsv_on_1() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 
-  webserver.send(200, html_text, generate_html_body(F("Enabled polling of alternate GSA and GSV messages every 1 second"))); 
+  webserver.send(200, html_text, generate_html_body(F("Enabled polling of alternate GSA and GSV messages every 1 second")));
 }
-void handle_pollgsagsv_on_5() {
+void handle_pollgsagsv_on_5()
+{
   log_i("Enable polling of GSA and GSV messages every 5 sec");
-  control_poll_GSA_GSV(5);  
+  control_poll_GSA_GSV(5);
 #ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
 #else
@@ -1229,9 +1314,10 @@ void handle_pollgsagsv_on_5() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 
-  webserver.send(200, html_text, generate_html_body(F("Enabled polling of alternate GSA and GSV messages every 5 seconds"))); 
+  webserver.send(200, html_text, generate_html_body(F("Enabled polling of alternate GSA and GSV messages every 5 seconds")));
 }
-void handle_pollgsagsv_off() {
+void handle_pollgsagsv_off()
+{
   log_i("Disable polling of GSA and GSV messages every");
   control_poll_GSA_GSV(0);
 #ifdef SHORT_API
@@ -1244,11 +1330,12 @@ void handle_pollgsagsv_off() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 
-  webserver.send(200, html_text, generate_html_body(F("Disabled polling of alternate GSA and GSV messages"))); 
+  webserver.send(200, html_text, generate_html_body(F("Disabled polling of alternate GSA and GSV messages")));
 }
 #endif
 
-void handle_gbs_on() {
+void handle_gbs_on()
+{
   log_i("Enable GxGBS messages");
   push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
   stored_preferences.nmeaGBS = true;
@@ -1264,7 +1351,8 @@ void handle_gbs_on() {
 
   webserver.send(200, html_text, generate_html_body(F("Enabled GxGBS messages<br><a href='/save_config/withoutwifi'>Save settings</a>")));
 }
-void handle_gbs_off() {
+void handle_gbs_off()
+{
   log_i("Disable GxGBS messages");
   push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
   stored_preferences.nmeaGBS = false;
@@ -1280,7 +1368,8 @@ void handle_gbs_off() {
 
   webserver.send(200, html_text, generate_html_body(F("Disabled GxGBS messages<br><a href='/save_config/withoutwifi'>Save settings</a>")));
 }
-void handle_svchannel_8() {
+void handle_svchannel_8()
+{
   log_i("Restric to 8 SVs per Talker Id");
   push_gps_message(UBLOX_INIT_CHANNEL_8, sizeof(UBLOX_INIT_CHANNEL_8));
 #ifdef SHORT_API
@@ -1293,7 +1382,8 @@ void handle_svchannel_8() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_svchannel_all() {
+void handle_svchannel_all()
+{
   log_i("All SVs per Talker Id");
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
 #ifdef SHORT_API
@@ -1308,7 +1398,8 @@ void handle_svchannel_all() {
 }
 
 #ifdef BTSPPENABLED
-void handle_trackaddict_on() {
+void handle_trackaddict_on()
+{
   // /trackaddict/on
   log_i("Set optimal configuration for Track Addict");
   gps_enable_trackaddict();
@@ -1328,16 +1419,20 @@ void handle_trackaddict_on() {
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_trackaddict_off() {
+void handle_trackaddict_off()
+{
   // /trackaddict/off
   log_i("Unset optimal configuration for Track Addict");
   stored_preferences.trackaddict = false;
-  if (stored_preferences.nmeaGSA) push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
-  if (stored_preferences.nmeaGSV) push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
-  if (stored_preferences.nmeaGBS) push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
-#ifdef TASK_SCHEDULER  
+  if (stored_preferences.nmeaGSA)
+    push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
+  if (stored_preferences.nmeaGSV)
+    push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
+  if (stored_preferences.nmeaGBS)
+    push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
+#ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
-#endif  
+#endif
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
 #ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
@@ -1352,7 +1447,8 @@ void handle_trackaddict_off() {
 #endif
 
 #ifdef BTSPPENABLED
-void handle_racechrono_android() {
+void handle_racechrono_android()
+{
   // /hlt/android
   log_i("Setting optimal configuration for RaceChrono on Android: 10Hz, GSA+GSV Off, GBS On, BT-SPP");
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
@@ -1360,7 +1456,7 @@ void handle_racechrono_android() {
   stored_preferences.nmeaGSA = false;
   stored_preferences.nmeaGSV = false;
 #ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling=0;
+  stored_preferences.nmeaGSAGSVpolling = 0;
   control_poll_GSA_GSV(0);
 #else
   // control_poll will disable GSA and GSV on its own
@@ -1383,9 +1479,9 @@ void handle_racechrono_android() {
   message += F("Set optimal configuration for RaceChrono on Android:");
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
-  
 }
-void handle_hlt_android() {
+void handle_hlt_android()
+{
   // /hlt/android
   log_i("Setting optimal configuration for Harry Lap Timer on Android: 10Hz, GSA+GSV Off, GSA+GSV polled on a 5 sec cycle, GBS On, BT-SPP");
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
@@ -1393,7 +1489,7 @@ void handle_hlt_android() {
   stored_preferences.nmeaGSA = false;
   stored_preferences.nmeaGSV = false;
 #ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling=5;
+  stored_preferences.nmeaGSAGSVpolling = 5;
   control_poll_GSA_GSV(5);
 #else
   // control_poll will disable GSA and GSV on its own
@@ -1418,7 +1514,8 @@ void handle_hlt_android() {
   webserver.send(200, html_text, generate_html_body(message));
 }
 #endif
-void handle_hlt_tcpip() {
+void handle_hlt_tcpip()
+{
   // /hlt/tcpip
   log_i("Setting optimal configuration for Harry Lap Timer on TCP-IP: 10Hz, GSA+GSV Polling, GBS On, BLE Off, BT-SPP Off");
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
@@ -1426,7 +1523,7 @@ void handle_hlt_tcpip() {
   stored_preferences.nmeaGSA = false;
   stored_preferences.nmeaGSV = false;
 #ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling=5;
+  stored_preferences.nmeaGSAGSVpolling = 5;
   control_poll_GSA_GSV(5);
 #else
   // control_poll will disable GSA and GSV on its own
@@ -1439,13 +1536,15 @@ void handle_hlt_tcpip() {
   stored_preferences.trackaddict = false;
   log_i("Set optimal configuration for Harry Lap Timer on tcpip");
 #ifdef BLEENABLED
-  if (stored_preferences.ble_active) {
+  if (stored_preferences.ble_active)
+  {
     ble_stop();
     stored_preferences.ble_active = false;
   }
 #endif
 #ifdef BTSPPENABLED
-  if (stored_preferences.btspp_active) {
+  if (stored_preferences.btspp_active)
+  {
     // Hack: since disabling spp and enabling BLE crashes the stack and restart ESP32, we store the current configuration for a restart
     // stored_preferences.btspp_active = false;
     // StoreNVMPreferences(true);
@@ -1464,7 +1563,8 @@ void handle_hlt_tcpip() {
   webserver.send(200, html_text, generate_html_body(message));
 }
 #ifdef BLEENABLED
-void handle_hlt_ios() {
+void handle_hlt_ios()
+{
   // /hlt/ios
   log_i("Setting optimal configuration for Harry Lap Timer on iOS devices: 10Hz, GSA+GSV Off, GBS On, BLE");
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
@@ -1472,7 +1572,7 @@ void handle_hlt_ios() {
   stored_preferences.nmeaGSA = false;
   stored_preferences.nmeaGSV = false;
 #ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling=5;
+  stored_preferences.nmeaGSAGSVpolling = 5;
   control_poll_GSA_GSV(5);
 #else
   // control_poll will disable GSA and GSV on its own
@@ -1485,74 +1585,82 @@ void handle_hlt_ios() {
   stored_preferences.trackaddict = false;
   log_i("Set optimal configuration for Harry Lap Timer on iOS");
 #ifdef BTSPPENABLED
-  if (stored_preferences.btspp_active) {
-      // Hack: since disabling spp and enabling BLE crashes the stack and restart ESP32, we store the current configuration for a restart
-      stored_preferences.btspp_active = false;
-      stored_preferences.ble_active = true;
-      StoreNVMPreferences(true);
-      webserver.send(200, html_text, generate_html_body(F("<b>RESTARTING</b> to set optimal configuration for Harry Lap Timer on iOS devices:</p><p>Settings have been already saved</p>")));
-      delay(1000);
-      ESP.restart();
-      // This is how it should be:
-      // stored_preferences.btspp_active = false;
-      // bt_spp_stop();
+  if (stored_preferences.btspp_active)
+  {
+    // Hack: since disabling spp and enabling BLE crashes the stack and restart ESP32, we store the current configuration for a restart
+    stored_preferences.btspp_active = false;
+    stored_preferences.ble_active = true;
+    StoreNVMPreferences(true);
+    webserver.send(200, html_text, generate_html_body(F("<b>RESTARTING</b> to set optimal configuration for Harry Lap Timer on iOS devices:</p><p>Settings have been already saved</p>")));
+    delay(1000);
+    ESP.restart();
+    // This is how it should be:
+    // stored_preferences.btspp_active = false;
+    // bt_spp_stop();
   }
 #endif
-  if (stored_preferences.ble_active == false) {
+  if (stored_preferences.ble_active == false)
+  {
     ble_start();
     stored_preferences.ble_active = true;
   }
-    String message((char *)0);
+  String message((char *)0);
   message.reserve(70);
   message += F("Set optimal configuration for Harry Lap Timer on iOS:");
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 }
 #endif
-void handle_wifi_sta() {
+void handle_wifi_sta()
+{
   log_i("Start WiFi in STA mode");
   webserver.send(200, html_text, generate_html_body(F("WiFi STATION mode started, trying to connect to a know Access Point. <br>Reconnect in a few seconds")));
   stored_preferences.wifi_mode = WIFI_STA;
   wifi_STA();
 }
-void handle_wifi_ap() {
+void handle_wifi_ap()
+{
   log_i("Start WiFi in AP mode");
   webserver.send(200, html_text, generate_html_body(String("WiFi Access Point mode started. <br>Reconnect in a few seconds to AP:" + String(ap_ssid))));
   stored_preferences.wifi_mode = WIFI_AP;
   wifi_AP();
 }
-void handle_restart() {
+void handle_restart()
+{
   webserver.send(200, html_text, generate_html_body(F("Please confirm <form action='/restart_execute' method='post'><input type='submit' value='Restart'></form>")));
 }
-void handle_restart_execute() {
+void handle_restart_execute()
+{
   log_i("Restarting");
   webserver.send(200, html_text, generate_html_body(F("Restarting device")));
   delay(1000);
   ESP.restart();
   delay(1000);
 }
-void handle_status() {
+void handle_status()
+{
   log_d("Logging status to web");
   String message((char *)0);
   message.reserve(1400);
   message += F("<h1>Device status</h1><p>WiFi Mode: ");
 
-
-  if (stored_preferences.wifi_mode == WIFI_AP) {
+  if (stored_preferences.wifi_mode == WIFI_AP)
+  {
     message += F("AP<br>Access point name: ");
     message += ap_ssid;
-  } else {
+  }
+  else
+  {
     message += F("STA<br>Connected to AP: ");
     message += WiFi.SSID();
-
   }
 
-  message += F("<br>IP: ") ;
+  message += F("<br>IP: ");
   message += MyIP.toString();
-  message += F("<br>TCP Port for NMEA repeater: ") ;
+  message += F("<br>TCP Port for NMEA repeater: ");
   message += String(NMEAServerPort);
-  message += F("<br>u-center URL: tcp://") ;
-  message += MyIP.toString() ;
+  message += F("<br>u-center URL: tcp://");
+  message += MyIP.toString();
   message += String(":");
   message += String(NMEAServerPort);
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
@@ -1561,93 +1669,98 @@ void handle_status() {
   message += F("<p>NBP n/a in this firmware ");
 #endif
 #ifdef BLEENABLED
-  message += ( stored_preferences.ble_active ? F("<p>BLE Enabled") : F("<p>BLE Not Enabled") );
-  message += F("<br>BLE Name: ") ;
+  message += (stored_preferences.ble_active ? F("<p>BLE Enabled") : F("<p>BLE Not Enabled"));
+  message += F("<br>BLE Name: ");
   message += ble_device_id;
-  message += F("<br>BLE Service: ") ;
+  message += F("<br>BLE Service: ");
   message += String(BLE_SERVICE_UUID, HEX);
-  message += F("<br>BLE Characteristic: ") ;
+  message += F("<br>BLE Characteristic: ");
   message += String(BLE_CHARACTERISTIC_UUID, HEX);
 #else
   message += F("<p>BLE n/a in this firmware ");
 #endif
 #ifdef BTSPPENABLED
-  message += ( stored_preferences.btspp_active ? F("<p>BT-SPP Enabled") : F("<p>BT-SPP Not Enabled") );
+  message += (stored_preferences.btspp_active ? F("<p>BT-SPP Enabled") : F("<p>BT-SPP Not Enabled"));
   message += F("<br>BT Name: ");
   message += ble_device_id;
 #else
   message += F("<p>BT-SPP n/a in this firmware ");
 #endif
-  message += F("<p>UART Baud: ") ;
+  message += F("<p>UART Baud: ");
   message += stored_preferences.gps_baud_rate;
-  message += F("<br>Refresh rate: ") ;
-  message += stored_preferences.gps_rate + String( "Hz");
-  message += F("<br>Main Talker ID: ") ;
-  message += ( stored_preferences.trackaddict ? F("GPS (TrackAddict)") : F("System Specific (default)") );
-  message += F("<br>NMEA GxGSV: ") ;
-  message += ( stored_preferences.nmeaGSV ? String("ON") : String("OFF") );
-  message += F("<br>NMEA GxGSA: ") ;
-  message += ( stored_preferences.nmeaGSA ? String("ON") : String("OFF") );
-  message += F("<br>NMEA GxGBS: ") ;
-  message += ( stored_preferences.nmeaGBS ? String("ON") : String("OFF") );
-  message += F("<br>GPS PowerSave: ") ;
-  message += ( gps_powersave ? String(" ON"):String("OFF"));
+  message += F("<br>Refresh rate: ");
+  message += stored_preferences.gps_rate + String("Hz");
+  message += F("<br>Main Talker ID: ");
+  message += (stored_preferences.trackaddict ? F("GPS (TrackAddict)") : F("System Specific (default)"));
+  message += F("<br>NMEA GxGSV: ");
+  message += (stored_preferences.nmeaGSV ? String("ON") : String("OFF"));
+  message += F("<br>NMEA GxGSA: ");
+  message += (stored_preferences.nmeaGSA ? String("ON") : String("OFF"));
+  message += F("<br>NMEA GxGBS: ");
+  message += (stored_preferences.nmeaGBS ? String("ON") : String("OFF"));
+  message += F("<br>GPS PowerSave: ");
+  message += (gps_powersave ? String(" ON") : String("OFF"));
 #ifdef UPTIME
   message += F("<br><br>Uptime: ");
   message += String(uptime_formatter::getUptime());
 #endif
-  message += F("<br>Version: ") ;
+  message += F("<br>Version: ");
   message += String(BONO_GPS_VERSION);
-  message += F("<br>Build date: ") ;
-  message += String(BONOGPS_BUILD_DATE) ;
+  message += F("<br>Build date: ");
+  message += String(BONOGPS_BUILD_DATE);
 #ifdef ENABLE_OTA
   message += F("<br>OTA Built-in");
 #else
   message += F("<br>OTA n/a in this firmware ");
 #endif
-  message += F("<p>Total heap: ") ;
+  message += F("<p>Total heap: ");
   message += String(ESP.getHeapSize());
-  message += F("<br>Free heap: ") ;
+  message += F("<br>Free heap: ");
   message += String(ESP.getFreeHeap());
-  message += F("<br>Total PSRAM: ") ;
+  message += F("<br>Total PSRAM: ");
   message += String(ESP.getPsramSize());
-  message += F("<br>Free PSRAM: ") ;
+  message += F("<br>Free PSRAM: ");
   message += String(ESP.getFreePsram());
 
   webserver.send(200, html_text, generate_html_body(message));
-                   
 }
-void handle_clients() {
+void handle_clients()
+{
   log_i("Logging clients status to web");
   String message((char *)0);
   message.reserve(1000);
   message += F("NMEA TCP/IP client");
-  if (!NMEARemoteClient.connected()) {
+  if (!NMEARemoteClient.connected())
+  {
     message += " not";
   }
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
   message += F(" connected<br>NBP TCP/IP client");
-  if (NBPRemoteClient.connected()) {
+  if (NBPRemoteClient.connected())
+  {
     message += " not";
   }
 #endif
 #ifdef BLEENABLED
   message += F(" connected<br>BLE device");
-  if (!ble_deviceConnected) {
+  if (!ble_deviceConnected)
+  {
     message += " not";
   }
 #endif
 #ifdef BTSPPENABLED
   message += F(" connected<br>BT-SPP device");
-  if (!bt_deviceConnected) {
+  if (!bt_deviceConnected)
+  {
     message += " not";
   }
 #endif
   message += F(" connected");
   webserver.send(200, html_text, generate_html_body(message));
 }
-void handle_resetapconfig() {
+void handle_resetapconfig()
+{
 #ifdef WIFIMANAGER
   log_i("Resetting AP Configuration for WiFiManager");
   webserver.send(200, html_text, generate_html_body(F("WiFi configuration reset - restarting device")));
@@ -1662,44 +1775,54 @@ void handle_resetapconfig() {
   webserver.send(200, html_text, generate_html_body("To Be Implemented - WiFi configuration reset"));
 #endif
 }
-void handle_saveconfig() {
+void handle_saveconfig()
+{
   log_i("Storing preferences intermediate menu");
   String message((char *)0);
   message.reserve(1000);
   message += F("<h1>All configuration values</h1><p>Save <a href='/save_config/withwifi'>all config <b>including </b> WiFi </a></p><p>Save <a href='/save_config/withoutwifi'>all config except for WiFi-");
-  if(stored_preferences.wifi_mode == WIFI_AP) {
+  if (stored_preferences.wifi_mode == WIFI_AP)
+  {
     message += "AP";
     message += ap_ssid;
-    } else {
+  }
+  else
+  {
     message += "STA";
   }
   message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/save_config/wifi/sta'>WiFi client mode WIFI-STA </a></p><p>Save <a href='/save_config/wifi/ap'>WiFi Access Point mode WIFI-AP</a></p>");
   webserver.send(200, html_text, generate_html_body(message));
 }
-void handle_saveconfig_withwifi() {
+void handle_saveconfig_withwifi()
+{
   StoreNVMPreferences(true);
   log_i("Storing preferences including WiFi");
   webserver.send(200, html_text, generate_html_body(F("Preferences including WiFi stored")));
 }
-void handle_saveconfig_withoutwifi() {
+void handle_saveconfig_withoutwifi()
+{
   StoreNVMPreferences(false);
   log_i("Storing preferences excluding WiFi");
   webserver.send(200, html_text, generate_html_body(F("Preferences excluding WiFi stored")));
 }
-void handle_saveconfig_wifi_sta() {
+void handle_saveconfig_wifi_sta()
+{
   StoreNVMPreferencesWiFi("WIFI_STA");
   log_i("Storing preference WIFI_STA");
   webserver.send(200, html_text, generate_html_body(F("Stored preference WIFI_STA as default: this will be used at next restart")));
 }
-void handle_saveconfig_wifi_ap() {
+void handle_saveconfig_wifi_ap()
+{
   StoreNVMPreferencesWiFi("WIFI_AP");
   log_i("Storing preference WIFI_AP");
   webserver.send(200, html_text, generate_html_body(F("Stored preference WIFI_AP as default: this will be used at next restart")));
 }
-void handle_NotFound() {
+void handle_NotFound()
+{
   webserver.send(404, html_text, generate_html_body(F("Not found")));
 }
-void WebConfig_start() {
+void WebConfig_start()
+{
   webserver.on("/", handle_menu);
   webserver.on("/css", handle_css);
   webserver.on("/rate/1hz", handle_rate_1hz);
@@ -1734,8 +1857,8 @@ void WebConfig_start() {
   webserver.on("/save_config/wifi/sta", handle_saveconfig_wifi_sta);
   webserver.on("/save_config/wifi/ap", handle_saveconfig_wifi_ap);
   webserver.on("/preset", handle_preset);
-  webserver.on("/powersave/3600",handle_powersave_1hr);
-  webserver.on("/powersave/1800",handle_powersave_30min);
+  webserver.on("/powersave/3600", handle_powersave_1hr);
+  webserver.on("/powersave/1800", handle_powersave_30min);
   webserver.on("/status", handle_status);
   webserver.on("/clients", handle_clients);
   webserver.on("/baud/38400", handle_baudrate_38400);
@@ -1772,39 +1895,46 @@ void WebConfig_start() {
 #endif
 
 #ifdef TASK_SCHEDULER
-Task tOTA (1000, OTA_AVAILABLE , &handle_OTA, &ts, false );
+Task tOTA(1000, OTA_AVAILABLE, &handle_OTA, &ts, false);
 #endif
 
-void handle_OTA() {
+void handle_OTA()
+{
   ArduinoOTA.handle();
 }
-void OTA_start() {
+void OTA_start()
+{
   ArduinoOTA.setHostname(BONOGPS_MDNS);
   ArduinoOTA
-  .onStart([]() {
-    String type;
-    if (ArduinoOTA.getCommand() == U_FLASH)
-      type = "sketch";
-    else // U_SPIFFS
-      type = "filesystem";
+      .onStart([]() {
+        String type;
+        if (ArduinoOTA.getCommand() == U_FLASH)
+          type = "sketch";
+        else // U_SPIFFS
+          type = "filesystem";
 
-    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-    log_i("Start updating %s", type);
-  })
-  .onEnd([]() {
-    log_i("\nEnd");
-  })
-  .onProgress([](unsigned int progress, unsigned int total) {
-    SerialMonitor.printf("Progress: %u%%\r", (progress / (total / 100)));
-  })
-  .onError([](ota_error_t error) {
-    log_e("Error[ %u]: ", error);
-    if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-    else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-    else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-    else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-    else if (error == OTA_END_ERROR) Serial.println("End Failed");
-  });
+        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        log_i("Start updating %s", type);
+      })
+      .onEnd([]() {
+        log_i("\nEnd");
+      })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        SerialMonitor.printf("Progress: %u%%\r", (progress / (total / 100)));
+      })
+      .onError([](ota_error_t error) {
+        log_e("Error[ %u]: ", error);
+        if (error == OTA_AUTH_ERROR)
+          Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR)
+          Serial.println("Begin Failed");
+        else if (error == OTA_CONNECT_ERROR)
+          Serial.println("Connect Failed");
+        else if (error == OTA_RECEIVE_ERROR)
+          Serial.println("Receive Failed");
+        else if (error == OTA_END_ERROR)
+          Serial.println("End Failed");
+      });
   ArduinoOTA.begin();
   tOTA.enable();
 }
@@ -1818,48 +1948,52 @@ void OTA_start() {
 
 #ifdef BLEENABLED
 
-#define DEVINFO_UUID              (uint16_t)0x180a
+#define DEVINFO_UUID (uint16_t)0x180a
 #define DEVINFO_MANUFACTURER_UUID (uint16_t)0x2a29 //0x2A29 MfgName utf8s
-#define DEVINFO_NAME_UUID         (uint16_t)0x2a24 //0x2A24 ModelNum utf8s
-#define DEVINFO_SERIAL_UUID       (uint16_t)0x2a25 //0x2A25 SerialNum utf8s
-#define DEVINFO_FWREV_UUID        (uint16_t)0x2a26 //0x2A26 FirmwareRev utf8s
+#define DEVINFO_NAME_UUID (uint16_t)0x2a24         //0x2A24 ModelNum utf8s
+#define DEVINFO_SERIAL_UUID (uint16_t)0x2a25       //0x2A25 SerialNum utf8s
+#define DEVINFO_FWREV_UUID (uint16_t)0x2a26        //0x2A26 FirmwareRev utf8s
 
-#define SERVICE_BATTERY_SERVICE_UUID              (uint16_t)0x180F // not used
-#define CHARACTERISTIC_BATTERY_LEVEL_UUID         (uint16_t)0x2A19 // not used
-#define CHARACTERISTIC_BATTERY_LEVEL_STATE_UUID   (uint16_t)0x2A1B // not used
-#define CHARACTERISTIC_BATTERY_POWER_STATE_UUID   (uint16_t)0x2A1A // not used
+#define SERVICE_BATTERY_SERVICE_UUID (uint16_t)0x180F            // not used
+#define CHARACTERISTIC_BATTERY_LEVEL_UUID (uint16_t)0x2A19       // not used
+#define CHARACTERISTIC_BATTERY_LEVEL_STATE_UUID (uint16_t)0x2A1B // not used
+#define CHARACTERISTIC_BATTERY_POWER_STATE_UUID (uint16_t)0x2A1A // not used
 //#define HardwareRev "0001"    //0x2A27 utf8s
 //#define SystemID "000001"     //0x2A23 uint40
 
-NimBLEServer* pServer = NULL;
-NimBLECharacteristic* pCharacteristic = NULL;
+NimBLEServer *pServer = NULL;
+NimBLECharacteristic *pCharacteristic = NULL;
 uint16_t ble_mtu;
 
 // Build BTLE messages here
-uint8_t gps_currentmessage[MAX_UART_BUFFER_SIZE] ; // hold current buffer
-uint8_t gps_currentchar = '$'; // hold current char
-int gps_message_pointer = 0; //pointer
+uint8_t gps_currentmessage[MAX_UART_BUFFER_SIZE]; // hold current buffer
+uint8_t gps_currentchar = '$';                    // hold current char
+int gps_message_pointer = 0;                      //pointer
 
-class MyServerCallbacks: public BLEServerCallbacks {
-    void onConnect(NimBLEServer* pServer, ble_gap_conn_desc* desc) {
-      ble_deviceConnected = true;
-      ble_client = String(NimBLEAddress(desc->peer_ota_addr).toString().c_str());
-      log_i("BLE Client address: %s", ble_client);
-    };
-    void onDisconnect(NimBLEServer* pServer) {
-      ble_deviceConnected = false;
-    }
+class MyServerCallbacks : public BLEServerCallbacks
+{
+  void onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc)
+  {
+    ble_deviceConnected = true;
+    ble_client = String(NimBLEAddress(desc->peer_ota_addr).toString().c_str());
+    log_i("BLE Client address: %s", ble_client);
+  };
+  void onDisconnect(NimBLEServer *pServer)
+  {
+    ble_deviceConnected = false;
+  }
 };
 
-void ble_start() {
+void ble_start()
+{
 #ifdef BTSPPENABLED
   bt_spp_stop();
 #endif
   /// Create the BLE Device
   NimBLEDevice::init(ble_device_id);
   /** Optional: set the transmit power, default is 3db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_ADV); /** +9db */
+  NimBLEDevice::setPower(ESP_PWR_LVL_P9);                             /** +9db */
+  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_ADV);       /** +9db */
   NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL0); /** +9db */
   NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL1); /** +9db */
   NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL2); /** +9db */
@@ -1904,8 +2038,10 @@ void ble_start() {
   log_i("Waiting a client connection to notify...");
 }
 
-void ble_stop() {
-  if (NimBLEDevice::getInitialized()) {
+void ble_stop()
+{
+  if (NimBLEDevice::getInitialized())
+  {
     NimBLEDevice::stopAdvertising();
     NimBLEDevice::deinit(true);
   }
@@ -1918,7 +2054,8 @@ void ble_stop() {
   Bluetooth Classic
 
 *******************************************************************/
-void bt_spp_start() {
+void bt_spp_start()
+{
 #ifdef BLEENABLED
   // disable BTLE
   ble_stop();
@@ -1927,38 +2064,44 @@ void bt_spp_start() {
   SerialBT.register_callback(bt_callback);
   log_i("Started BT-SPP port");
 }
-void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param) {
-  if (event == ESP_SPP_SRV_OPEN_EVT) {
+void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
+{
+  if (event == ESP_SPP_SRV_OPEN_EVT)
+  {
     log_d("BT-SPP Client Connected");
 #ifdef BLEENABLED
     ble_deviceConnected = false;
 #endif
     bt_deviceConnected = true;
   }
-  if (event == ESP_SPP_CLOSE_EVT) {
+  if (event == ESP_SPP_CLOSE_EVT)
+  {
     log_d("BT-SPP Client closed connection");
     bt_deviceConnected = false;
   }
 }
-void bt_spp_stop() {
+void bt_spp_stop()
+{
   SerialBT.end();
 }
 #endif
-
-
 
 /*********************************************************************
 
   SETUP
 
 *******************************************************************/
-void gps_initialize_settings() {
-    // GPS Connection
+void gps_initialize_settings()
+{
+  // GPS Connection
   // if preferences have a value <> than the one stored in the GPS, connect+switch
-  if (GPS_STANDARD_BAUD_RATE == stored_preferences.gps_baud_rate) {
+  if (GPS_STANDARD_BAUD_RATE == stored_preferences.gps_baud_rate)
+  {
     log_i("Connecting to GPS at standard %d", stored_preferences.gps_baud_rate);
     gpsPort.begin(stored_preferences.gps_baud_rate);
-  } else {
+  }
+  else
+  {
     log_i("Connecting to GPS at standard %d", GPS_STANDARD_BAUD_RATE);
     gpsPort.begin(GPS_STANDARD_BAUD_RATE);
     log_i("Re-Connecting to GPS at updated %d", stored_preferences.gps_baud_rate);
@@ -1968,53 +2111,67 @@ void gps_initialize_settings() {
   gpsPort.setRxBufferSize(UART_BUFFER_SIZE_RX);
   delay(50);
 
-  if (stored_preferences.nmeaGSV) {
+  if (stored_preferences.nmeaGSV)
+  {
     push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
-  } else {
+  }
+  else
+  {
     push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
   }
 
-  if (stored_preferences.nmeaGSA) {
+  if (stored_preferences.nmeaGSA)
+  {
     push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
-  } else {
+  }
+  else
+  {
     push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
   }
 
-  if (stored_preferences.nmeaGBS) {
+  if (stored_preferences.nmeaGBS)
+  {
     push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
-  } else {
+  }
+  else
+  {
     push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
   }
 
 #ifdef BTSPPENABLED
   // apply settings required by TrackAddict
-  if (stored_preferences.trackaddict) {
+  if (stored_preferences.trackaddict)
+  {
     gps_enable_trackaddict();
-  } else {
+  }
+  else
+  {
     push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   }
 #endif
 
-  switch (stored_preferences.gps_rate) {
-    case 1:
-      push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
-      break;
-    case 5:
-      push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
-      break;
-    case 10:
-      push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-      break;
-    default:
-      push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
-      break;
+  switch (stored_preferences.gps_rate)
+  {
+  case 1:
+    push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
+    break;
+  case 5:
+    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
+    break;
+  case 10:
+    push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
+    break;
+  default:
+    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
+    break;
   }
-#ifdef TASK_SCHEDULER  
+#ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
-#endif 
+#endif
 }
 
-void setup() {
+void setup()
+{
 
   SerialMonitor.begin(LOG_BAUD_RATE); // Initialize the serial monitor
   delay(500);
@@ -2023,7 +2180,7 @@ void setup() {
   log_d("Compiled on: %s", __DATE__);
 
   // Generate device name
-  chip = (uint16_t)((uint64_t) ESP.getEfuseMac() >> 32);
+  chip = (uint16_t)((uint64_t)ESP.getEfuseMac() >> 32);
   sprintf(ap_ssid, "%s-%04X", BONOGPS_AP, chip);
 #if defined(BLEENABLED) || defined(BTSPPENABLED)
   sprintf(ble_device_id, "%s-%04X", BLE_DEVICE_ID, chip);
@@ -2038,13 +2195,16 @@ void setup() {
   prefs.begin(BONOGPS_MDNS);
   ReadNVMPreferences();
 
-  if (stored_preferences.ble_active) {
+  if (stored_preferences.ble_active)
+  {
     // start BTLE
 #ifdef BLEENABLED
     ble_start();
 #endif
 #ifdef BTSPPENABLED
-  } else if (stored_preferences.btspp_active) {
+  }
+  else if (stored_preferences.btspp_active)
+  {
     // else prevents BT-SPP and BLE to start at the same time which crashes the Bluetooth stacks
     // start BTSPP
     bt_spp_start();
@@ -2059,43 +2219,50 @@ void setup() {
   WiFi.setHostname(BONOGPS_MDNS);
   WiFi.setSleep(false);
 
-  switch (stored_preferences.wifi_mode) {
-    case WIFI_AP:
-      wifi_AP();
-      break;
-    case WIFI_STA:
-      wifi_STA();
-      break;
-    default:
-      wifi_STA();
-      break;
+  switch (stored_preferences.wifi_mode)
+  {
+  case WIFI_AP:
+    wifi_AP();
+    break;
+  case WIFI_STA:
+    wifi_STA();
+    break;
+  default:
+    wifi_STA();
+    break;
   }
 
   gps_initialize_settings();
-
 }
 
-void loop() {
+void loop()
+{
   // check UART for data
-  if (gpsPort.available()) {
+  if (gpsPort.available())
+  {
     size_t len = gpsPort.available();
     uint8_t sbuf[len];
     gpsPort.readBytes(sbuf, len);
     // log max buffer size
-    if (len > max_buffer) {
+    if (len > max_buffer)
+    {
       max_buffer = len;
       log_w("New max buffer: %d", max_buffer);
     }
-    if (wifi_connected && NMEARemoteClient && NMEARemoteClient.connected()) {
+    if (wifi_connected && NMEARemoteClient && NMEARemoteClient.connected())
+    {
       //push UART data to the TCP client
       NMEARemoteClient.write(sbuf, len);
     }
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
-    if (wifi_connected && NBPRemoteClient && NBPRemoteClient.connected()) {
+    if (wifi_connected && NBPRemoteClient && NBPRemoteClient.connected())
+    {
       // send GPS data to NeoGPS processor for parsing
-      for (int i = 0; i < len ; i++) {
-        if (gps.decode((char) sbuf[i] ) == NMEAGPS::DECODE_COMPLETED) {
+      for (int i = 0; i < len; i++)
+      {
+        if (gps.decode((char)sbuf[i]) == NMEAGPS::DECODE_COMPLETED)
+        {
           log_d("Fix available, size: %d", sizeof(gps.fix()));
           my_fix = gps.fix();
 
@@ -2103,7 +2270,8 @@ void loop() {
           NBPRemoteClient.print(my_fix.dateTime);
           NBPRemoteClient.print(".");
           NBPRemoteClient.println(my_fix.dateTime_ms());
-          if (my_fix.valid.location) {
+          if (my_fix.valid.location)
+          {
             NBPRemoteClient.print("\"Latitude\",\"deg\":");
             NBPRemoteClient.println(my_fix.latitude(), 12);
             NBPRemoteClient.print("\"Longitude\",\"deg\":");
@@ -2111,11 +2279,13 @@ void loop() {
             NBPRemoteClient.print("\"Altitude\",\"m\":");
             NBPRemoteClient.println(my_fix.altitude());
           }
-          if (my_fix.valid.heading) {
+          if (my_fix.valid.heading)
+          {
             NBPRemoteClient.print("\"Heading\",\"deg\":");
             NBPRemoteClient.println(my_fix.heading());
           }
-          if (my_fix.valid.speed) {
+          if (my_fix.valid.speed)
+          {
             NBPRemoteClient.print("\"Speed\",\"kmh\":");
             NBPRemoteClient.println(my_fix.speed_kph());
           }
@@ -2125,34 +2295,42 @@ void loop() {
           NBPRemoteClient.println(ap_ssid);
         }
       }
-    } else {
+    }
+    else
+    {
       NBPCheckForConnections();
     }
 #endif
 
 #ifdef BTSPPENABLED
-    if (bt_deviceConnected && stored_preferences.btspp_active) {
+    if (bt_deviceConnected && stored_preferences.btspp_active)
+    {
       // we have BT-SPP active
       SerialBT.write(sbuf, len);
     }
 #endif
 
 #ifdef BLEENABLED
-    if (ble_deviceConnected && stored_preferences.ble_active) {
+    if (ble_deviceConnected && stored_preferences.ble_active)
+    {
       // we have BLE active
-      for (int i = 0; i < len ; i++) {
-        if (gps_message_pointer > MAX_UART_BUFFER_SIZE - 3) {
+      for (int i = 0; i < len; i++)
+      {
+        if (gps_message_pointer > MAX_UART_BUFFER_SIZE - 3)
+        {
           log_e("BLE Buffer saturated, resetting ");
           gps_currentmessage[0] = '$';
           gps_currentmessage[1] = '\0';
           gps_message_pointer = 1;
         }
-        if (sbuf[i] == '$' ) {
+        if (sbuf[i] == '$')
+        {
           gps_currentmessage[gps_message_pointer++] = '\r';
           gps_currentmessage[gps_message_pointer++] = '\n';
           gps_currentmessage[gps_message_pointer] = '\0';
           // There is a new message -> Notify BLE of the changed value if connected and size says it is likely to be valid
-          if (gps_message_pointer > MIN_NMEA_MESSAGE_SIZE) {
+          if (gps_message_pointer > MIN_NMEA_MESSAGE_SIZE)
+          {
             pCharacteristic->setValue(gps_currentmessage);
             pCharacteristic->notify();
             delay(1);
@@ -2160,21 +2338,26 @@ void loop() {
           gps_currentmessage[0] = '$';
           gps_currentmessage[1] = '\0';
           gps_message_pointer = 1;
-        } else {
+        }
+        else
+        {
           // Accumulate more of the GPS message
           gps_currentmessage[gps_message_pointer++] = sbuf[i];
         }
       }
     }
 #endif
-
   }
 
-  if (wifi_connected) {
+  if (wifi_connected)
+  {
     // handle sending instructions to GPS via uBlox center connected with TCP/IP
-    if ( NMEARemoteClient.connected() && NMEARemoteClient.available()) {
+    if (NMEARemoteClient.connected() && NMEARemoteClient.available())
+    {
       gpsPort.write(NMEARemoteClient.read());
-    } else {
+    }
+    else
+    {
       NMEACheckForConnections();
     }
 
