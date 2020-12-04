@@ -2,7 +2,7 @@
 # They rely on this folder being cloned from the repo, e.g. from https://github.com/renatobo/bonogps
 # Author: Renato Bonomini
 
-import subprocess
+import subprocess, re
 
 revision = (
     subprocess.check_output(["git", "describe", "--tags", "--always", "--dirty"])
@@ -16,4 +16,7 @@ repo = (
     .decode("utf-8")
     .replace('.git','')
 )
-print("-DGIT_REV='\"%s\"' -DGIT_REPO='\"%s/releases/tag/%s\"'" % (revision,repo,revision.replace('-dirty','')))
+
+repolink = re.sub(r'(v[\d+\.]+)-.*',r"\1", revision)
+
+print("-DGIT_REV='\"%s\"' -DGIT_REPO='\"%s/releases/tag/%s\"'" % (revision,repo,repolink))
