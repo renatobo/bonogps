@@ -1,73 +1,8 @@
 /******************************************************************************
 
-  Repeat NMEA sentences read on UART to TCP, BLE, BT-SPP 
-  You can interface uBloxCenter via TCP/IP, only issue in this case is the fixed GPS_BAUD_RATE
-  A web configuration panel allows changing select uBlox parameters on the fly: access it via http://bonogps.local (when in WiFi AP mode, this becomes http://10.0.0.1)
-
+  BonoGPS: connect a GPS to mobile Apps to track lap times
+  More info at https://github.com/renatobo/bonogps
   Renato Bonomini https://github.com/renatobo
-
-  The main goal of this is interfacing with apps running on your phone.
-
-  Harry's LapTimer:
-  - NMEA parsing offered by HLT directly. Enable or Disable GSV/GSA as needed
-  - WiFi: TCP at port 8118
-  - tested with v24
-  - BLE and WiFi supported and tested on iPhone (tested with 7). BLE handles 5Hz and 10Hz  when GSV/GSA disabled
-  - BT-SPP and WiFi supported and tested on Android
-
-  TrackAddict
-  - tested with v4.6.0 on Android
-  - BT-SPP is the only option
-  - it needs a specific set of NMEA messages configuration, available as option
-  - NBP was coded, yet not going to matter for TrackAddict as reported in https://forum.hptuners.com/showthread.php?78403-GPS-over-NBP&highlight=gps
-  - Notes for the Classic BT-SPP version to optimize transfer to TrackAddict on Android
-    - Ideally, TrackAddict wants RMC, GGA, and GLL messages, with RMC and GGA being the recommended minimum.
-    - Track Addict is similarly configured to only accept NMEA messages with a GPS talker ID (i.e., $GPRMC instead of $GNRMC) https://forum.hptuners.com/showthread.php?69123-Track-addict-external-GPS&highlight=gps
-
-  RaceChrono
-  - tested with v7.0.10 free (thus satellites view untested) on Android
-  - BT-SPP is the only option
-  - GSA+GSV polling disabled
-
-  Compiling notices
-  - you have to select a partitioning schema with 1.7 Mb of programming space (e.g. Minimal SPIFF with 1.9Mb), as the app with its libraries tend to be pretty large due to BT stacks
-
-  esp32.menu.PartitionScheme.min_spiffs=Minimal SPIFFS (1.9MB APP with OTA/190KB SPIFFS)
-  esp32.menu.PartitionScheme.min_spiffs.build.partitions=min_spiffs
-  esp32.menu.PartitionScheme.min_spiffs.upload.maximum_size=1966080
-
-  Enhancements:
-   
-  - add display: https://randomnerdtutorials.com/esp32-ssd1306-oled-display-arduino-ide/
-  - add battery and expose battery level via BLE and/or web interface
-  - log to SD  https://randomnerdtutorials.com/esp32-data-logging-temperature-to-microsd-card/
-  - test https://apps.apple.com/us/app/espressif-esptouch/id1071176700 or https://apps.apple.com/in/app/esp-ble-provisioning/id1473590141
-  - OTA via browser or from internet location https://lastminuteengineers.com/esp32-ota-web-updater-arduino-ide/ https://github.com/chrisjoyce911/esp32FOTA or https://github.com/platformio/bintray-secure-ota
-  - use ootb library at https://os.mbed.com/teams/ublox/code/gnss/ or https://github.com/ldab/u-blox_GNSS
-  - use packed binary format with custom binary parser for HLT
-  - use https with https://github.com/fhessel/esp32_https_server and https://github.com/fhessel/esp32_https_server_compat
-  - restore usage of https://github.com/khoih-prog/ESPAsync_WiFiManager and Async webserver (issues with ASyncTCP not being able to send info back outside of request/reply
-
-  Additional Libraries
-  - Nimble-Arduino https://github.com/h2zero/NimBLE-Arduino
-  - Uptime Library https://github.com/YiannisBourkelis/Uptime-Library
-  - EasyButton https://easybtn.earias.me/
-  - WiFiManager https://github.com/tzapu/WiFiManager 
-
-  Optional libraries depending on #define options
-  - Task Scheduler https://github.com/arkhipenko/TaskScheduler [included by default]
-  - NeoGPS https://github.com/SlashDevin/NeoGPS [not included right now, but coded and available for some additional cases]
-
-  Built-in libraries
-  - WebServer
-  - FS
-  - Preferences
-  - WiFi
-  - DNSServer
-  - ESPmDNS
-  - ArduinoOTA
-  - Update
-  - BluetoothSerial 
 
 ******************************************************************************/
 
@@ -75,7 +10,6 @@
 #include <Arduino.h>
 
 // Enable or disable compiling features
-#define WIFIMANAGER    // library to manage credentials and connectivity to an existing WiFi
 #define UPTIME         // add library to display for how long the device has been running
 #define BTSPPENABLED   // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
 #define BLEENABLED     // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
@@ -94,7 +28,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v0.2"
+#define BONOGPS_FIRMWARE_VER "v0.3"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
 #define BONOGPS_MDNS "bonogps"
@@ -118,8 +52,6 @@
 #define NBP_TCP_PORT 35000
 #endif
 
-// Define for how long the WiFi access manager is available for
-#define WIFI_MGT_TIMEOUT 300
 // Which pin controls the button to switch to STA mode
 #define WIFI_MODE_BUTTON 0
 
@@ -157,6 +89,10 @@ Preferences prefs;
 // data to be stored
 #include "esp_wifi.h"
 #include <WiFi.h>
+
+#define WIFI_KEY_MAXLEN (int)64
+#define WIFI_SSID_MAXLEN (int)32
+
 typedef struct
 {
   unsigned long gps_baud_rate = GPS_STANDARD_BAUD_RATE; // initial or current baud rate
@@ -169,6 +105,8 @@ typedef struct
   bool btspp_active = false;
   bool trackaddict = false;
   uint8_t nmeaGSAGSVpolling = 0;
+  char wifi_ssid[WIFI_SSID_MAXLEN];
+  char wifi_key[WIFI_KEY_MAXLEN];
 } stored_preference_t;
 
 stored_preference_t stored_preferences;
@@ -218,12 +156,6 @@ NMEAGPS gps;
 gps_fix my_fix;
 #endif
 
-// WiFi Manager to set up AP credentials
-#ifdef WIFIMANAGER
-#include <WiFiManager.h> // https://github.com/tzapu/WiFiManager
-#else
-
-#endif
 #ifdef MDNS_ENABLE
 #include <ESPmDNS.h>
 #endif
@@ -463,16 +395,18 @@ void ReadNVMPreferences()
   stored_preferences.gps_rate = prefs.getUChar("gpsrate", stored_preferences.gps_rate);
   stored_preferences.nmeaGSAGSVpolling = prefs.getUChar("gsagsvpoll", stored_preferences.nmeaGSAGSVpolling);
   // wifi mode TODO
-  string_wifi_mode = prefs.getString("wifi", string_wifi_mode);
-  if (string_wifi_mode == "WIFI_AP")
-  {
-    stored_preferences.wifi_mode = WIFI_AP;
-  }
-  else
+  prefs.getString("wifi", string_wifi_mode);
+  if (string_wifi_mode == "WIFI_STA")
   {
     stored_preferences.wifi_mode = WIFI_STA;
   }
+  else
+  {
+    stored_preferences.wifi_mode = WIFI_AP;
+  }
 
+  prefs.getString("wifikey", stored_preferences.wifi_key, WIFI_KEY_MAXLEN);
+  prefs.getString("wifissid", stored_preferences.wifi_ssid, WIFI_SSID_MAXLEN);
   stored_preferences.nmeaGSA = prefs.getBool("nmeagsa", stored_preferences.nmeaGSA);
   stored_preferences.nmeaGSV = prefs.getBool("nmeagsv", stored_preferences.nmeaGSV);
   stored_preferences.nmeaGBS = prefs.getBool("nmeagbs", stored_preferences.nmeaGBS);
@@ -523,6 +457,9 @@ void StoreNVMPreferences(bool savewifi = false)
     }
     size_t_written = prefs.putString("wifi", string_wifi_mode);
   }
+  size_t_written = prefs.putString("wifikey", stored_preferences.wifi_key);
+  size_t_written = prefs.putString("wifissid", stored_preferences.wifi_ssid);
+
   size_t_written = prefs.putULong("gpsbaudrate", stored_preferences.gps_baud_rate);
   size_t_written = prefs.putUChar("gpsrate", stored_preferences.gps_rate);
   size_t_written = prefs.putUChar("gsagsvpoll", stored_preferences.nmeaGSAGSVpolling);
@@ -557,6 +494,30 @@ void StoreNVMPreferencesWiFi(String string_wifi_mode)
   }
 }
 
+void StoreNVMPreferencesWiFiCreds()
+{
+  // prefs assumed global
+  size_t size_t_written;
+  size_t_written = prefs.putString("wifikey", stored_preferences.wifi_key);
+  if (size_t_written > 0)
+  {
+    log_i("WiFi Key written (size %d)",size_t_written);
+  }
+  else
+  {
+    log_e("WiFi Key NOT written");
+  }
+  size_t_written = prefs.putString("wifissid", stored_preferences.wifi_ssid);
+  if (size_t_written > 0)
+  {
+    log_i("WiFi SSID written (size %d)",size_t_written);
+  }
+  else
+  {
+    log_e("WiFi SSID NOT written");
+  }
+}
+
 void gps_enable_trackaddict()
 {
   log_d("Setting GPS to specific Track Addict needs");
@@ -586,14 +547,16 @@ const uint NMEAServerPort = NMEA_TCP_PORT;
 WiFiServer NMEAServer(NMEAServerPort);
 WiFiClient NMEARemoteClient;
 
+bool ledon;
 void led_blink()
 {
   //toggle state
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // set pin to the opposite state
+  ledon=!ledon;
+  digitalWrite(LED_BUILTIN, (ledon?HIGH:LOW)); // set pin to the opposite state
 }
 
 #ifdef TASK_SCHEDULER
-Task tLedBlink(0, TASK_FOREVER, &led_blink, &ts, true);
+Task tLedBlink(0, TASK_FOREVER, &led_blink, &ts, false);
 #endif
 
 /********************************
@@ -607,22 +570,6 @@ const char json_ok[] PROGMEM = "{'status':'ok'}";
 const char json_error[] PROGMEM = "{'status':'error'}";
 bool wifi_connected = false;
 IPAddress MyIP;
-
-#ifdef WIFIMANAGER
-//gets called when WiFiManager enters configuration mode
-void configModeCallback(WiFiManager *myWiFiManager)
-{
-  log_i("Entered config mode, connect to %s", ap_ssid);
-  log_i("IP: %s", WiFi.softAPIP().toString());
-  //if you used auto generated SSID, print it
-  log_i("SSID: %s", myWiFiManager->getConfigPortalSSID());
-  //entered config mode, make led toggle faster
-#ifdef TASK_SCHEDULER
-  tLedBlink.setInterval(100);
-  tLedBlink.enableIfNot();
-#endif
-}
-#endif
 
 void NMEACheckForConnections()
 {
@@ -681,61 +628,29 @@ void wifi_STA()
 {
   // WiFi Access
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
-  //set led pin as output
-  pinMode(LED_BUILTIN, OUTPUT);
   // start ticker_wifi with 50 ms because we start in STA mode and try to connect
 #ifdef TASK_SCHEDULER
+log_d("Start rapid blinking");
   tLedBlink.setInterval(50);
-  tLedBlink.enableIfNot();
+  tLedBlink.enable();
 #endif
 
-#ifdef WIFIMANAGER
-  //WiFiManager //Local intialization. Once its business is done, there is no need to keep it around
-  WiFiManager wm;
-  // disable debug logging
-  wm.setDebugOutput(false);
-  // set dark theme
-  wm.setClass("invert");
-  // set configportal timeout
-  wm.setConfigPortalTimeout(WIFI_MGT_TIMEOUT);
-  //reset settings - for testing
-  // wm.resetSettings();
-  //set callback that gets called when connecting to previous WiFi fails, and enters Access Point mode
-  wm.setAPCallback(configModeCallback);
-  // set a static ip that we recognize
-  wm.setAPStaticIPConfig(IPAddress(10, 0, 0, 1), IPAddress(10, 0, 0, 1), IPAddress(255, 255, 255, 0));
-  //fetches ssid and pass and tries to connect
-  //if it does not connect it starts an access point named 'ap_ssid' with password 'ap_password' and goes into a blocking loop awaiting configuration
-  if (!wm.autoConnect(ap_ssid, ap_password))
+  // TODO : add connection to STA mode with stored passwords here
+  WiFi.begin(stored_preferences.wifi_ssid, stored_preferences.wifi_key);
+  wifi_connected = false;
+
+  int times = 0;
+  while (WiFi.status() != WL_CONNECTED && times < 50)
   {
-    log_e("failed to connect and hit timeout");
-    // ESP.restart();
-    // delay(1000);
-    wifi_connected = false;
+    delay(100);
+    log_i("Connecting to WiFi %s , trial %d", stored_preferences.wifi_ssid, times++);
   }
-  else
+
+  if (WiFi.status() == WL_CONNECTED)
   {
+    log_i("Connected to SSID %s", stored_preferences.wifi_ssid);
+      tLedBlink.setInterval(250);
     wifi_connected = true;
-    //if you get here you have connected to the WiFi
-    log_i("connected to wifi...yeey:)");
-#ifdef TASK_SCHEDULER
-    tLedBlink.setInterval(500);
-    tLedBlink.enableIfNot();
-#endif
-    //keep LED on
-    digitalWrite(LED_BUILTIN, LOW);
-
-#ifdef MDNS_ENABLE
-    if (!MDNS.begin(BONOGPS_MDNS))
-    {
-      log_e("Error setting up MDNS responder!");
-    }
-    else
-    {
-      log_i("mDNS responder started");
-    }
-#endif
-
 #ifdef ENABLE_OTA
     log_i("Start OTA service");
     OTA_start();
@@ -748,14 +663,19 @@ void wifi_STA()
     // WLAN Server for GNSS data
     start_NBP_server();
 #endif
-  }
-#endif // #ifdef WIFIMANAGER
-  MyIP = WiFi.localIP();
+
+    MyIP = WiFi.localIP();
 
 #ifdef BUTTON
-  button.onPressed(wifi_AP);
+    button.onPressed(wifi_AP);
 #endif
-  stored_preferences.wifi_mode = WIFI_STA;
+    stored_preferences.wifi_mode = WIFI_STA;
+  }
+  else
+  {
+    log_e("Could not connect to SSID %s, reverting to AP mode", stored_preferences.wifi_ssid);
+    wifi_AP();
+  }
 }
 
 void wifi_AP()
@@ -801,8 +721,9 @@ void wifi_AP()
   WebConfig_start();
 
 #ifdef TASK_SCHEDULER
-  tLedBlink.setInterval(500);
-  tLedBlink.enableIfNot();
+log_d("Start blinking");
+  tLedBlink.setInterval(1000);
+  tLedBlink.enable();
 #endif
 
   // WLAN Server for GNSS data
@@ -823,13 +744,8 @@ void wifi_AP()
    Web Configuration portal
 
  * ******************************/
-#ifdef ESPWEBSERVER // this conflicts with WebServer.h included in WiFiManager
-#include <ESPWebServer.hpp>
-ESPWebServer webserver(80);
-#else
 #include <WebServer.h>
 WebServer webserver(80);
-#endif
 
 // Helper to populate a page with style sheet
 String generate_html_body(String input, bool add_menu = true)
@@ -845,15 +761,9 @@ String generate_html_body(String input, bool add_menu = true)
   htmlbody += F("</header>\n");
   htmlbody += input;
 #ifdef GIT_REPO
-  htmlbody += F("<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='");
-  htmlbody += GIT_REPO;
-  htmlbody += "'>";
-  htmlbody += BONO_GPS_VERSION;
-  htmlbody += F("</a></footer></body></html>");
+  htmlbody += F("<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='" GIT_REPO "'>" BONO_GPS_VERSION "</a></footer></body></html>");
 #else
-  htmlbody += F("<footer>Version: ");
-  htmlbody += BONO_GPS_VERSION;
-  htmlbody += F("</footer></body></html>");
+  htmlbody += F("<footer>Version: " BONO_GPS_VERSION "</footer></body></html>");
 #endif
   return htmlbody;
 }
@@ -866,7 +776,7 @@ String input_onoff(String divlabel, String parameter, bool parameter_status)
   message += divlabel;
   message += F("\n\t<input type='radio' id='");
   message += parameter;
-  message += F("/on'  onchange='Select(this.id)' name='");
+  message += F("/on' onchange='Select(this.id)' name='");
   message += parameter;
   if (parameter_status)
   {
@@ -880,7 +790,7 @@ String input_onoff(String divlabel, String parameter, bool parameter_status)
   message += parameter;
   message += F("/on'> On </label>\n\t<input type='radio' id='");
   message += parameter;
-  message += F("/off'  onchange='Select(this.id)' name='");
+  message += F("/off' onchange='Select(this.id)' name='");
   message += parameter;
   if (parameter_status)
   {
@@ -908,7 +818,7 @@ String html_select(String divlabel, String parameters[], String parameters_names
     message += groupname;
     message += "/";
     message += parameters[i];
-    message += F("'  onchange='Select(this.id)' name='");
+    message += F("' onchange='Select(this.id)' name='");
     message += groupname;
     if (parameters_status[i])
     {
@@ -985,7 +895,7 @@ void handle_menu()
 #ifdef BTSPPENABLED
   mainpage += input_onoff("Bluetooth SPP", "btspp", stored_preferences.btspp_active);
 #endif
-  mainpage += F("\n</details>\n<details><summary>Device</summary>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/restart'>Restart</a></article>\n<article><a href='/save_config'>Save config</a></article>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article></details>");
+  mainpage += F("\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/restart'>Restart</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/savecfg/wifi/creds'>Save WiFi credentials</a></article></details>");
   log_i("sending webserver root response");
   webserver.send(200, html_text, generate_html_body(mainpage, false));
 }
@@ -1034,7 +944,7 @@ void handle_ble_off()
 #ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE<br><a href='/save_config/withoutwifi'>Save settings</a>")));
+  webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE<br><a href='/savecfg/nowifi'>Save settings</a>")));
 #endif
 }
 void handle_ble_on()
@@ -1053,7 +963,7 @@ void handle_ble_on()
 #ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE<br><a href='/save_config/withoutwifi'>Save settings</a>")));
+  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE<br><a href='/savecfg/nowifi'>Save settings</a>")));
 #endif
 #endif
   ble_start();
@@ -1081,7 +991,7 @@ void handle_btspp_on()
 #ifdef SHORT_API
   webserver.send(200, text_json, json_ok);
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<br><a href='/save_config/withoutwifi'>Save settings</a>")));
+  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<br><a href='/savecfg/nowifi'>Save settings</a>")));
 #endif
 #else
 #ifdef SHORT_API
@@ -1127,7 +1037,7 @@ void handle_powersave_30min()
   webserver.send(200, html_text, generate_html_body(F("Enabled power saving mode for 1800 seconds")));
 #endif
 }
-static const char savecfg[] PROGMEM = "<br><a href='/save_config/withoutwifi'>Save settings</a>";
+static const char savecfg[] PROGMEM = "<br><a href='/savecfg/nowifi'>Save settings</a>";
 void handle_rate_1hz()
 {
   log_i("Set GPS Rate to 1 Hz");
@@ -1349,7 +1259,7 @@ void handle_gbs_on()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 
-  webserver.send(200, html_text, generate_html_body(F("Enabled GxGBS messages<br><a href='/save_config/withoutwifi'>Save settings</a>")));
+  webserver.send(200, html_text, generate_html_body(F("Enabled GxGBS messages<br><a href='/savecfg/nowifi'>Save settings</a>")));
 }
 void handle_gbs_off()
 {
@@ -1366,7 +1276,7 @@ void handle_gbs_off()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 
-  webserver.send(200, html_text, generate_html_body(F("Disabled GxGBS messages<br><a href='/save_config/withoutwifi'>Save settings</a>")));
+  webserver.send(200, html_text, generate_html_body(F("Disabled GxGBS messages<br><a href='/savecfg/nowifi'>Save settings</a>")));
 }
 void handle_svchannel_8()
 {
@@ -1759,38 +1669,42 @@ void handle_clients()
   message += F(" connected");
   webserver.send(200, html_text, generate_html_body(message));
 }
-void handle_resetapconfig()
+
+void handle_saveconfig_wifi_creds()
 {
-#ifdef WIFIMANAGER
-  log_i("Resetting AP Configuration for WiFiManager");
-  webserver.send(200, html_text, generate_html_body(F("WiFi configuration reset - restarting device")));
-  WiFiManager wm;
-  //reset settings - for testing
-  wm.resetSettings();
-  delay(1000);
-  ESP.restart();
-  delay(1000);
-#else
-  log_i("To Be Implemented Resetting AP Configuration");
-  webserver.send(200, html_text, generate_html_body("To Be Implemented - WiFi configuration reset"));
-#endif
+  webserver.send(200, html_text, generate_html_body(F("<article><form action='/savecfg/wifi/creds/post'>SSID<br><input style='background: none' name='ssid' maxlength='32'><p>WPA Key<br><input style='background: none' type='password' name='key' maxlength='64'><p><input type='submit' value='Save'></form></article>")));
 }
+
+void handle_saveconfig_wifi_creds_post()
+{
+  String wifissid = webserver.arg("ssid"); 
+  String wifikey = webserver.arg("key");
+  // TODO Check inputs
+  log_i("WiFi SSID %s", wifissid);
+  log_d("WiFi Key %s", wifikey);
+  wifissid.toCharArray(stored_preferences.wifi_ssid,WIFI_SSID_MAXLEN);
+  wifikey.toCharArray(stored_preferences.wifi_key,WIFI_KEY_MAXLEN);
+  // TODO check if writes were ok
+  StoreNVMPreferencesWiFiCreds();
+  // TODO check is storing went fine
+  webserver.send(200, html_text, generate_html_body(F("<article>New WiFi SSID and Key stored <p><a href='/wifi/sta'>Try them</a></article>")));
+}
+
 void handle_saveconfig()
 {
   log_i("Storing preferences intermediate menu");
   String message((char *)0);
   message.reserve(1000);
-  message += F("<h1>All configuration values</h1><p>Save <a href='/save_config/withwifi'>all config <b>including </b> WiFi </a></p><p>Save <a href='/save_config/withoutwifi'>all config except for WiFi-");
+  message += F("<h1>All configuration values</h1><p>Save <a href='/savecfg/wifi'>all config <b>including</b> WiFi </a></p><p>Save <a href='/savecfg/nowifi'>all but WiFi-");
   if (stored_preferences.wifi_mode == WIFI_AP)
   {
     message += "AP";
-    message += ap_ssid;
   }
   else
   {
     message += "STA";
   }
-  message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/save_config/wifi/sta'>WiFi client mode WIFI-STA </a></p><p>Save <a href='/save_config/wifi/ap'>WiFi Access Point mode WIFI-AP</a></p>");
+  message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/savecfg/wifi/sta'>WiFi client mode WiFi-STA </a></p><p>Save <a href='/savecfg/wifi/ap'>WiFi Access Point mode WiFi-AP</a></p>");
   webserver.send(200, html_text, generate_html_body(message));
 }
 void handle_saveconfig_withwifi()
@@ -1850,12 +1764,13 @@ void WebConfig_start()
   webserver.on("/wifi/ap", handle_wifi_ap);
   webserver.on("/restart", handle_restart);
   webserver.on("/restart_execute", handle_restart_execute);
-  webserver.on("/reset_wifi", handle_resetapconfig);
-  webserver.on("/save_config", handle_saveconfig);
-  webserver.on("/save_config/withwifi", handle_saveconfig_withwifi);
-  webserver.on("/save_config/withoutwifi", handle_saveconfig_withoutwifi);
-  webserver.on("/save_config/wifi/sta", handle_saveconfig_wifi_sta);
-  webserver.on("/save_config/wifi/ap", handle_saveconfig_wifi_ap);
+  webserver.on("/savecfg", handle_saveconfig);
+  webserver.on("/savecfg/wifi", handle_saveconfig_withwifi);
+  webserver.on("/savecfg/nowifi", handle_saveconfig_withoutwifi);
+  webserver.on("/savecfg/wifi/sta", handle_saveconfig_wifi_sta);
+  webserver.on("/savecfg/wifi/ap", handle_saveconfig_wifi_ap);
+  webserver.on("/savecfg/wifi/creds", handle_saveconfig_wifi_creds);
+  webserver.on("/savecfg/wifi/creds/post", handle_saveconfig_wifi_creds_post);
   webserver.on("/preset", handle_preset);
   webserver.on("/powersave/3600", handle_powersave_1hr);
   webserver.on("/powersave/1800", handle_powersave_30min);
@@ -2172,12 +2087,16 @@ void gps_initialize_settings()
 
 void setup()
 {
-
   SerialMonitor.begin(LOG_BAUD_RATE); // Initialize the serial monitor
-  delay(500);
+  delay(200);
   log_d("ESP32 SDK: %s", ESP.getSdkVersion());
   log_d("Arduino sketch: %s", __FILE__);
   log_d("Compiled on: %s", __DATE__);
+
+  //set led pin as output
+  pinMode(LED_BUILTIN, OUTPUT);
+  tLedBlink.setInterval(100);
+  tLedBlink.enable();
 
   // Generate device name
   chip = (uint16_t)((uint64_t)ESP.getEfuseMac() >> 32);
@@ -2185,11 +2104,6 @@ void setup()
 #if defined(BLEENABLED) || defined(BTSPPENABLED)
   sprintf(ble_device_id, "%s-%04X", BLE_DEVICE_ID, chip);
 #endif
-
-  log_d("Total heap: %d", ESP.getHeapSize());
-  log_d("Free heap: %d", ESP.getFreeHeap());
-  log_d("Total PSRAM: %d", ESP.getPsramSize());
-  log_d("Free PSRAM: %d", ESP.getFreePsram());
 
   // Read desired status from NVM
   prefs.begin(BONOGPS_MDNS);
@@ -2233,6 +2147,11 @@ void setup()
   }
 
   gps_initialize_settings();
+
+  log_d("Total heap: %d", ESP.getHeapSize());
+  log_d("Free heap: %d", ESP.getFreeHeap());
+  log_d("Total PSRAM: %d", ESP.getPsramSize());
+  log_d("Free PSRAM: %d", ESP.getFreePsram());
 }
 
 void loop()
