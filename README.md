@@ -7,11 +7,11 @@ BonoGPS is a firmware for ESP32 devices that reads NMEA sentences from a ublox G
 3. a BT Classic (BT-SPP) stream
 
 
-The main goal is making GPS data available to mobile apps that can record data, for example for track riding. Currently these apps are supported
+The main goal is to **make GPS data available to mobile apps that can record data, for example for track riding**. Currently these apps are supported
 
-1. Harry's Lap Timer
-2. TrackAddict
-3. RaceChrono
+1. [Harry's Lap Timer](https://www.gps-laptimer.de)
+2. [TrackAddict](https://www.hptuners.com/product/trackaddict-app/)
+3. [RaceChrono](https://racechrono.com/)
 
 A web configuration (responsive HTML) panel allows changing select GPS parameters on the fly: access it via [http://bonogps.local]() (when in WiFi AP mode, this becomes [http://10.0.0.1]() on Android without mDNS resolution).
 
@@ -21,62 +21,53 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 
 ## Usage
 
+1. Turn on the ESP32 and wait a few minutes for the GPS to get a fix on position (on BN devices, the red led will blink every second)
+2. Open your preferred mobile app and connect 
+3. Enjoy your ride!
+
 Most runtime configurations are managed via the web-based interface
 
-- Load presets for the supported/tested apps
-- Change GPS messages, rate, etc.
-- Enable BLE/BT-SPP connectivity
-- Switch between WiFi client to a well-known WiFi network or built-in Access Point
-- Collect information about current status of the device
-- Save current configuration
-- Put GPS in powersaving for some time
-- Restart the ESP32
+![Main page of web configuration panel](software/using/webinterface_root.png)
 
-The BOOT button also allows you to switch between WiFi modes on the fly.
+- **GPS runtime settings:** GPS messages, rate of updates, serial port speed
+- **Connections:** List clients, enable BLE/BT-SPP connectivity, switch between WiFi client to a well-known WiFi network or built-in Access Point
+- **Device:** Put GPS in powersaving for some time, load preset configurations, collect information about current status of the device, restart the ESP32, save current configuration, save WiFi credentials for client mode
 
-### Harry's LapTimer
+The BOOT button allows you to switch between WiFi modes on the fly: WiFi client or WiFi Access Point.
 
-More info at https://www.gps-laptimer.de/, where you can also find a very good user and developer forum. It offers the largest set of customizable options to build your own external device and it is the only supported platform for iOS phones via Bluetooth Low Energy
+- WiFi Client (WiFi STA): the led light flashes rapidly (250 ms cycle)
+- WiFi Access Point (WiFi AP): the led light flashes slowly (500 ms cycle)
 
-Features:
+### Saving configuration
 
-  - NMEA parsing offered by HLT directly. Enable or Disable GSV/GSA as needed
-  - WiFi: TCP at port 8118
-  - tested with v24
-  - BLE and WiFi supported and tested on iPhone (tested with 7). BLE handles 5Hz and 10Hz  when GSV/GSA disabled
-  - BT-SPP and WiFi supported and tested on Android
+If you load a preset or if you change a runtime settings, you can preserve it across restart of the device.
 
-##### iOS Bluetooth Low Energy setup
+Go to Device > Save Config and you'll find these options
 
-Open your advanced configuration settings in the HTL app and enable BLE device for GPS. Settings are displayed in the "information" page in the web configuration panel
+![Save Config page](software/using/webinterface_saveconfig.png)
 
-- the device name is a combination of "BonoGPS" and the last 4 chars of the EPS32 MAC: you can also look it up in the web interface as the main page title
-- the service uuid is **1819** (standard for SERVICE_LOCATION_AND_NAVIGATION_UUID)
-- the characteristic uuid is **2A67** (standard for CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID)
+For convenience, the WiFi status can be excluded or saved separately.
 
-### TrackAddict
+## Connecting to an app
 
-Another very popular app, [https://www.hptuners.com/product/trackaddict-app/]()
+There are many mobile apps to log lap times, few accept custom devices, in particular on iOS. The ones below are tested.
 
-  - tested with v4.6.0 on Android
-  - BT-SPP is the only option
-  - it needs a specific set of NMEA messages configuration, available as option
-  - NBP was coded, yet not going to matter for TrackAddict as reported in https://forum.hptuners.com/showthread.php?78403-GPS-over-NBP&highlight=gps
-  - Notes for the Classic BT-SPP version to optimize transfer to TrackAddict on Android
-    - Ideally, TrackAddict wants RMC, GGA, and GLL messages, with RMC and GGA being the recommended minimum.
-    - Track Addict is similarly configured to only accept NMEA messages with a GPS talker ID (i.e., $GPRMC instead of $GNRMC) https://forum.hptuners.com/showthread.php?69123-Track-addict-external-GPS&highlight=gps
+| | [Harry Lap Timer](configuring/harrylaptimer) | [TrackAddict](configuring/trackaddict) | [RaceChrono](configuring/racechrono) |
+| --- | --- | --- | --- |
+| iOS | **BLE**, TCP-IP | | |
+| Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP |
 
-### RaceChrono
-
-The cleanset lap timer supported: [https://racechrono.com/]()
-
-  - tested with v7.0.10 free (thus satellites view untested) on Android
-  - BT-SPP is the only option
-  - GSA+GSV polling disabled as it's not used
 
 ## Hardware build instructions
 
 You only need to connect your ublox GPS module to a Hardware serial port such as UART2/Serial2 and the GPS power to the Vin and Ground pins of ESP32.
+
+Schematics are relatively simple
+
+* power the GPS module
+* connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX
+
+![](hardware/esp32/esp32_to_gps_schem.png)
 
 ### GPS Preconfiguration
 
@@ -89,6 +80,8 @@ To reduce complexity of this software, you need to save a baseline configuration
 - set motion defaults
 
 ... etc.
+
+A backup of the options is in the [hardware/GPS folder](hardware/GPS/gps-bn220-config.txt), stored for a BN-220 but it's identical to a BN-880
 
 
 ## Software build instructions
@@ -115,14 +108,20 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
   - Update
   - BluetoothSerial 
 
-### Partition size
-  - you have to select a partitioning schema with 1.7 Mb of programming space (e.g. Minimal SPIFF with 1.9Mb), as the app with its libraries tend to be pretty large due to BT stacks
+### Important: Partition size
+
+You have to select a partitioning schema with 1.7 Mb of programming space (e.g. Minimal SPIFF with 1.9Mb), as the app with its libraries tend to be pretty large due to BT stacks.
+
+Within PlatformIO, use the [platformio.ini](platformio.ini) available configuration
 
 ```
-esp32.menu.PartitionScheme.min_spiffs=Minimal SPIFFS (1.9MB APP with OTA/190KB SPIFFS)
-esp32.menu.PartitionScheme.min_spiffs.build.partitions=min_spiffs
-esp32.menu.PartitionScheme.min_spiffs.upload.maximum_size=1966080
+board_build.partitions = min_spiffs.csv
 ```
+
+Within the Arduino IDE, from `Tools > Partition Scheme`
+
+![](software/building/partition_setting.png)
+
 
 ## Possible enhancements and ideas
    
