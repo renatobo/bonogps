@@ -907,23 +907,23 @@ void handle_preset()
 #if defined(BTSPPENABLED) || defined(BLEENABLED)
   // hlt main page
 #if defined(BTSPPENABLED) && defined(BLEENABLED)
-  mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li><li>iOS: BT-LE Connection</li></ul></article><article>Load options for:<p><a href='/hlt/tcpip'>WiFi</a></p><a href='/hlt/ios'>iOS</a></p><p><a href='/hlt/android'>Android</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
+  mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li><li>iOS: BLE Connection</li></ul></article><article>Load options for:<p><a href='/hlt/tcpip'>iOS + Android: WiFi</a></p><p><a href='/hlt/ios'>iOS: BLE</a></p><p><a href='/hlt/android'>Android: BT-SPP</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
 #else
 #ifdef BLEENABLED
-  mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>iOS: BT-LE Connection</li></ul></article><article>Load  options forn:<p><a href='/hlt/ios'>iOS</a></article></details>");
+  mainpage += F("<details open><summary>Harry Lap Timer <a target='_blank' href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>iOS: BLE Connection</li></ul></article><article>Load  options forn:<p><a href='/hlt/tcpip'>iOS + Android: WiFi</a></p><p><a href='/hlt/ios'>iOS: BLE</a></article></details>");
 #endif
 #ifdef BTSPPENABLED
-  mainpage += F("<details open><summary>Harry Lap Timer <a href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li></ul></article><article><Load options for:<p><a href='/hlt/android'>Android</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</article></details>");
+  mainpage += F("<details open><summary>Harry Lap Timer <a href='https://www.gps-laptimer.de/'>?</a></summary><article>Recommended options:<br><ul><li>GBS streaming</li><li>GSA GSV polling</li><li>10 Hz updates</li><li>Android: BT-SPP Connection</li></ul></article><article><Load options for:<p><a href='/hlt/tcpip'>iOS + Android: WiFi</a></p><p><a href='/hlt/android'>Android: BT-SPP</a></p><p>A save config and restart are recommended after enabling/disabling BT-SPP</article></details>");
 #endif
 #endif // defined(BTSPPENABLED) && defined(BLEENABLED)
 
 #ifdef BTSPPENABLED
   // racechrono main page
-  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android</a></p></article></details>");
+  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
   // trackaddict main page
   mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
-  mainpage += input_onoff("Android", "trackaddict", stored_preferences.trackaddict);
+  mainpage += input_onoff("Android: BT-SPP", "trackaddict", stored_preferences.trackaddict);
   mainpage += F("<article><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
 
 #endif
