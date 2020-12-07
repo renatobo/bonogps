@@ -52,10 +52,10 @@ For convenience, the WiFi status can be excluded or saved separately.
 
 There are many mobile apps to log lap times, few accept custom devices, in particular on iOS. The ones below are tested.
 
-| | [Harry Lap Timer](configuring/harrylaptimer) | [TrackAddict](configuring/trackaddict) | [RaceChrono](configuring/racechrono) |
-| --- | --- | --- | --- |
-| iOS | **BLE**, TCP-IP | | |
-| Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP |
+ | [Harry Lap Timer](configuring/harrylaptimer) | [TrackAddict](configuring/trackaddict) | [RaceChrono](configuring/racechrono) 
+--- | --- | --- | --- 
+ iOS | **BLE**, TCP-IP | | 
+ Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP 
 
 
 ## Hardware build instructions
