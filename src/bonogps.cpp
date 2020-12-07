@@ -394,17 +394,20 @@ void ReadNVMPreferences()
   stored_preferences.gps_baud_rate = prefs.getULong("gpsbaudrate", stored_preferences.gps_baud_rate);
   stored_preferences.gps_rate = prefs.getUChar("gpsrate", stored_preferences.gps_rate);
   stored_preferences.nmeaGSAGSVpolling = prefs.getUChar("gsagsvpoll", stored_preferences.nmeaGSAGSVpolling);
-  // wifi mode TODO
-  prefs.getString("wifi", string_wifi_mode);
+// wifi mode : remember https://www.esp32.com/viewtopic.php?t=12085
+  string_wifi_mode = prefs.getString("wifi");
   if (string_wifi_mode == "WIFI_STA")
   {
     stored_preferences.wifi_mode = WIFI_STA;
+    log_d("Preference read as WIFI_STA");
   }
   else
   {
     stored_preferences.wifi_mode = WIFI_AP;
+    log_d("Preference read as WIFI_AP");
   }
 
+  // this being a char*, we pass size
   prefs.getString("wifikey", stored_preferences.wifi_key, WIFI_KEY_MAXLEN);
   prefs.getString("wifissid", stored_preferences.wifi_ssid, WIFI_SSID_MAXLEN);
   stored_preferences.nmeaGSA = prefs.getBool("nmeagsa", stored_preferences.nmeaGSA);
@@ -447,14 +450,6 @@ void StoreNVMPreferences(bool savewifi = false)
       string_wifi_mode = "WIFI_STA";
       break;
     }
-    if (stored_preferences.wifi_mode == WIFI_AP)
-    {
-      string_wifi_mode == "WIFI_AP";
-    }
-    else
-    {
-      string_wifi_mode = "WIFI_STA";
-    }
     size_t_written = prefs.putString("wifi", string_wifi_mode);
   }
   size_t_written = prefs.putString("wifikey", stored_preferences.wifi_key);
@@ -486,11 +481,11 @@ void StoreNVMPreferencesWiFi(String string_wifi_mode)
   size_t_written = prefs.putString("wifi", string_wifi_mode);
   if (size_t_written > 0)
   {
-    log_i("Preferences written");
+    log_i("Preferences %s written", string_wifi_mode);
   }
   else
   {
-    log_e("Preferences NOT written");
+    log_e("Preferences %s NOT written", string_wifi_mode);
   }
 }
 
