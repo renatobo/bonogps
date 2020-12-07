@@ -52,16 +52,16 @@ For convenience, the WiFi status can be excluded or saved separately.
 
 There are many mobile apps to log lap times, few accept custom devices, in particular on iOS. The ones below are tested.
 
- | Harry Lap Timer| TrackAddict | RaceChrono
---- | --- | --- | --- 
- iOS | **BLE**, TCP-IP | | 
- Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP 
+| | Harry Lap Timer| TrackAddict | RaceChrono
+| --- | --- | --- | --- 
+| iOS | **BLE**, TCP-IP | | 
+| Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP 
 
 See more info in each subfolder of **connecting**.
 
 You can load a preset configuration from the configuration page selecting *Device > Load Preset* and then choosing your mobile phone device and app combination
 
-![](software/using/webinterface_loadpreset.png)
+![Loading presets](software/using/webinterface_loadpreset.png)
 
 ## Hardware build instructions
 
@@ -72,7 +72,7 @@ Schematics are relatively simple
 * power the GPS module
 * connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX
 
-![](hardware/esp32/esp32_to_gps_schem.png)
+![Schematics](hardware/esp32/esp32_to_gps_schem.png)
 
 ### GPS Preconfiguration
 
@@ -125,7 +125,7 @@ board_build.partitions = min_spiffs.csv
 
 Within the Arduino IDE, from `Tools > Partition Scheme`
 
-![](software/building/partition_setting.png)
+![Partition settings](software/building/partition_setting.png)
 
 
 ## Possible enhancements and ideas
