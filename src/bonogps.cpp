@@ -914,7 +914,7 @@ void handle_preset()
 
 #ifdef BTSPPENABLED
   // racechrono main page
-  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
+  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 1 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
   // trackaddict main page
   mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
@@ -1361,8 +1361,8 @@ void handle_racechrono_android()
   stored_preferences.nmeaGSA = false;
   stored_preferences.nmeaGSV = false;
 #ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling = 0;
-  control_poll_GSA_GSV(0);
+  stored_preferences.nmeaGSAGSVpolling = 1;
+  control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
 #else
   // control_poll will disable GSA and GSV on its own
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
