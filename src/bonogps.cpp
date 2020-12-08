@@ -28,7 +28,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v0.3"
+#define BONOGPS_FIRMWARE_VER "v0.4"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
 #define BONOGPS_MDNS "bonogps"
