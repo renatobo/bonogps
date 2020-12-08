@@ -16,15 +16,15 @@ Connections
  
 After configuring the connection, your unit shows up in the Sensors List as 'Custom [BTLE/TCP-IP] GNSS' device
 
-![](hlt-ble-configured.png)
+![](hlt-ble-configured.PNG)
 
 now you can open the '**GPS**' page and check that you are receiving valid GPS data
 
-![](hlt-ble-running.png)
+![](hlt-ble-running.PNG)
 
 with a paid add-on, you can also see the satellites constellation map
 
-![](hlt-gps-map.png)
+![](hlt-gps-map.PNG)
 
 
 ## iOS Bluetooth Low Energy setup
