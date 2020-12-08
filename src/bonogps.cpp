@@ -10,10 +10,10 @@
 #include <Arduino.h>
 
 // Enable or disable compiling features
-#define UPTIME         // add library to display for how long the device has been running
-#define BTSPPENABLED   // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
-#define BLEENABLED     // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
-#define ENABLE_OTA     // add code for OTA - decent memory save
+#define UPTIME       // add library to display for how long the device has been running
+#define BTSPPENABLED // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
+#define BLEENABLED   // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
+// #define ENABLE_OTA     // add code for OTA, to be enabled only when developing
 #define MDNS_ENABLE    // Enable or disable mDNS - currently not working in all conditions. Small memory save to be worth removing
 #define TASK_SCHEDULER // enable adv task scheduler. Small memory save to be worth removing
 #define BUTTON         // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
@@ -101,6 +101,7 @@ typedef struct
   bool nmeaGSA = false;
   bool nmeaGSV = false;
   bool nmeaGBS = true;
+  bool nmeaTcpServer = false;
   bool ble_active = true;
   bool btspp_active = false;
   bool trackaddict = false;
@@ -313,6 +314,7 @@ void poll_GSA_GSV_info()
 Task tpoll_GSA_GSV_info(0, TASK_FOREVER, poll_GSA_GSV_info, &ts, false);
 void control_poll_GSA_GSV(int frequency)
 {
+  stored_preferences.nmeaGSAGSVpolling = frequency;
   if (frequency > 0)
   {
     push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
@@ -394,7 +396,7 @@ void ReadNVMPreferences()
   stored_preferences.gps_baud_rate = prefs.getULong("gpsbaudrate", stored_preferences.gps_baud_rate);
   stored_preferences.gps_rate = prefs.getUChar("gpsrate", stored_preferences.gps_rate);
   stored_preferences.nmeaGSAGSVpolling = prefs.getUChar("gsagsvpoll", stored_preferences.nmeaGSAGSVpolling);
-// wifi mode : remember https://www.esp32.com/viewtopic.php?t=12085
+  // wifi mode : remember https://www.esp32.com/viewtopic.php?t=12085
   string_wifi_mode = prefs.getString("wifi");
   if (string_wifi_mode == "WIFI_STA")
   {
@@ -413,6 +415,7 @@ void ReadNVMPreferences()
   stored_preferences.nmeaGSA = prefs.getBool("nmeagsa", stored_preferences.nmeaGSA);
   stored_preferences.nmeaGSV = prefs.getBool("nmeagsv", stored_preferences.nmeaGSV);
   stored_preferences.nmeaGBS = prefs.getBool("nmeagbs", stored_preferences.nmeaGBS);
+  stored_preferences.nmeaTcpServer = prefs.getBool("nmeatcp", stored_preferences.nmeaTcpServer);
   stored_preferences.ble_active = prefs.getBool("ble", stored_preferences.ble_active);
   stored_preferences.btspp_active = prefs.getBool("btspp", stored_preferences.btspp_active);
   stored_preferences.trackaddict = prefs.getBool("trackaddict", stored_preferences.trackaddict);
@@ -461,6 +464,7 @@ void StoreNVMPreferences(bool savewifi = false)
   size_t_written = prefs.putBool("nmeagsa", stored_preferences.nmeaGSA);
   size_t_written = prefs.putBool("nmeagsv", stored_preferences.nmeaGSV);
   size_t_written = prefs.putBool("nmeagbs", stored_preferences.nmeaGBS);
+  size_t_written = prefs.putBool("nmeatcp", stored_preferences.nmeaTcpServer);
   size_t_written = prefs.putBool("ble", stored_preferences.ble_active);
   size_t_written = prefs.putBool("btspp", stored_preferences.btspp_active);
   size_t_written = prefs.putBool("trackaddict", stored_preferences.trackaddict);
@@ -496,7 +500,7 @@ void StoreNVMPreferencesWiFiCreds()
   size_t_written = prefs.putString("wifikey", stored_preferences.wifi_key);
   if (size_t_written > 0)
   {
-    log_i("WiFi Key written (size %d)",size_t_written);
+    log_i("WiFi Key written (size %d)", size_t_written);
   }
   else
   {
@@ -505,7 +509,7 @@ void StoreNVMPreferencesWiFiCreds()
   size_t_written = prefs.putString("wifissid", stored_preferences.wifi_ssid);
   if (size_t_written > 0)
   {
-    log_i("WiFi SSID written (size %d)",size_t_written);
+    log_i("WiFi SSID written (size %d)", size_t_written);
   }
   else
   {
@@ -528,8 +532,9 @@ void gps_enable_trackaddict()
   stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
-#endif
+#else
   stored_preferences.nmeaGSAGSVpolling = 0;
+#endif
 }
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
@@ -546,8 +551,8 @@ bool ledon;
 void led_blink()
 {
   //toggle state
-  ledon=!ledon;
-  digitalWrite(LED_BUILTIN, (ledon?HIGH:LOW)); // set pin to the opposite state
+  ledon = !ledon;
+  digitalWrite(LED_BUILTIN, (ledon ? HIGH : LOW)); // set pin to the opposite state
 }
 
 #ifdef TASK_SCHEDULER
@@ -559,10 +564,6 @@ Task tLedBlink(0, TASK_FOREVER, &led_blink, &ts, false);
     WiFi connection
 
  * ******************************/
-const char html_text[] PROGMEM = "text/html";
-const char text_json[] PROGMEM = "application/json";
-const char json_ok[] PROGMEM = "{'status':'ok'}";
-const char json_error[] PROGMEM = "{'status':'error'}";
 bool wifi_connected = false;
 IPAddress MyIP;
 
@@ -589,6 +590,12 @@ void start_NMEA_server()
   log_i("Start GNSS TCP/IP Service");
   NMEAServer.begin();
   NMEAServer.setNoDelay(true);
+}
+
+void stop_NMEA_server()
+{
+  log_i("Stop GNSS TCP/IP Service");
+  NMEAServer.stop();
 }
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
@@ -621,11 +628,13 @@ void start_NBP_server()
 // Start STATION mode to connect to a well-known Access Point
 void wifi_STA()
 {
+  if (stored_preferences.nmeaTcpServer)
+    stop_NMEA_server();
   // WiFi Access
   WiFi.mode(WIFI_STA); // explicitly set mode, esp defaults to STA+AP
   // start ticker_wifi with 50 ms because we start in STA mode and try to connect
 #ifdef TASK_SCHEDULER
-log_d("Start rapid blinking");
+  log_d("Start rapid blinking");
   tLedBlink.setInterval(50);
   tLedBlink.enable();
 #endif
@@ -644,7 +653,7 @@ log_d("Start rapid blinking");
   if (WiFi.status() == WL_CONNECTED)
   {
     log_i("Connected to SSID %s", stored_preferences.wifi_ssid);
-      tLedBlink.setInterval(250);
+    tLedBlink.setInterval(250);
     wifi_connected = true;
 #ifdef ENABLE_OTA
     log_i("Start OTA service");
@@ -653,7 +662,8 @@ log_d("Start rapid blinking");
     log_i("Start Web Portal");
     WebConfig_start();
     // WLAN Server for GNSS data
-    start_NMEA_server();
+    if (stored_preferences.nmeaTcpServer)
+      start_NMEA_server();
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
     // WLAN Server for GNSS data
     start_NBP_server();
@@ -676,6 +686,8 @@ log_d("Start rapid blinking");
 void wifi_AP()
 {
   // WiFi Access
+  if (stored_preferences.nmeaTcpServer)
+    stop_NMEA_server();
   WiFi.mode(WIFI_AP); // explicitly set mode, esp defaults to STA+AP
   // Set WiFi options
   wifi_country_t country = {
@@ -716,13 +728,14 @@ void wifi_AP()
   WebConfig_start();
 
 #ifdef TASK_SCHEDULER
-log_d("Start blinking");
+  log_d("Start blinking");
   tLedBlink.setInterval(1000);
   tLedBlink.enable();
 #endif
 
   // WLAN Server for GNSS data
-  start_NMEA_server();
+  if (stored_preferences.nmeaTcpServer)
+    start_NMEA_server();
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
   // WLAN Server for GNSS data
   start_NBP_server();
@@ -740,26 +753,49 @@ log_d("Start blinking");
 
  * ******************************/
 #include <WebServer.h>
+/* UriBraces is available at https://github.com/espressif/arduino-esp32/tree/master/libraries/WebServer/src/uri
+Unfortunately, Nimble-Arduino is not compatible yet with the arduino framework here, so we won't use it
+#include <uri/UriBraces.h> // to parse /url/{} options
+*/
 WebServer webserver(80);
 
-// Helper to populate a page with style sheet
+const char html_text[] PROGMEM = "text/html";
+const char html_css[] PROGMEM = "text/css";
+const char text_json[] PROGMEM = "application/json";
+const char json_ok[] PROGMEM = "{'status':'ok'}";
+const char json_error[] PROGMEM = "{'status':'error'}";
+const char WEBPORTAL_CSS[] PROGMEM = "*{box-sizing:border-box;text-align:center;width:100%;font-weight:300}body{font-family:Roboto,system-ui,Arial,Helvetica,sans-serif;font-size:5vw;margin:0}header{background-color:#666;padding:.5vw;text-align:center;color:#fff}article{float:left;padding:10px;width:100%;height:auto}details{display:table;clear:both}summary{font-size:larger;font-weight:400;padding:10px;background-color:#f1f1f1}footer{background-color:#777;padding:.2vw;text-align:center;color:#fff;clear:both;position:fixed;bottom:0;font-size:small}@media (min-width:800px){article{width:50%}*{font-size:2.5vw}}a,input{color:#fff;border-radius:8pt;background:red;text-decoration:none;padding:5pt}.bg input{display:none}label{border:solid;border-radius:8pt;padding:5px;margin:2px;border-color:#bdbdbd;border-width:2px;color:#9e9e9e}.bg input:checked+label,.bg input:checked+label:active{background:red;color:#fff;border-color:red}";
+const char WEBPORTAL_HEADER[] PROGMEM = "<!DOCTYPE html>\n<html lang='en'>\n\t<head>\n\t\t<title>Bono GPS</title>\n\t\t<meta charset='utf-8'>\n\t\t<meta name='viewport' content='width=device-width, initial-scale=1'>\n\t\t<link rel='stylesheet' href='/css'>\n\t</head>\n<body>\n<script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script>\n<header>";
+#ifdef GIT_REPO
+const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='" GIT_REPO "'>" BONO_GPS_VERSION "</a></footer>\n</body>\n</html>";
+#else
+const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: " BONO_GPS_VERSION "</footer>\n</body>\n</html>";
+#endif
+const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/restart'>Restart</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/savewificreds'>Save WiFi credentials</a></article></details>";
+
+// Helpers to populate a page with style sheet
+String generate_html_header(bool add_menu = true)
+{
+  String htmlbody((char *)0);
+  htmlbody.reserve(500);
+  htmlbody += (add_menu ? "Back to <a href='/'>Main menu</a>" : ap_ssid);
+  htmlbody += (gps_powersave ? "<br><em>Powersave mode</em>" : "");
+  htmlbody += F("</header>\n");
+  return htmlbody;
+}
+String generate_html_footer()
+{
+  return String(WEBPORTAL_FOOTER);
+}
 String generate_html_body(String input, bool add_menu = true)
 {
   // assumption: ap_ssid is populated
   String htmlbody((char *)0);
-  htmlbody.reserve(5000);
-  htmlbody += F("<!DOCTYPE html><html lang='en'><head><title>");
-  htmlbody += ap_ssid;
-  htmlbody += F("</title><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><link rel='stylesheet' href='/css'></head><body><script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script><header>");
-  htmlbody += (add_menu ? "Back to <a href='/'>Main menu</a>" : ap_ssid);
-  htmlbody += (gps_powersave ? "<br><em>Powersave mode</em>" : "");
-  htmlbody += F("</header>\n");
+  htmlbody.reserve(2000);
+  htmlbody += String(WEBPORTAL_HEADER);
+  htmlbody += generate_html_header(add_menu);
   htmlbody += input;
-#ifdef GIT_REPO
-  htmlbody += F("<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='" GIT_REPO "'>" BONO_GPS_VERSION "</a></footer></body></html>");
-#else
-  htmlbody += F("<footer>Version: " BONO_GPS_VERSION "</footer></body></html>");
-#endif
+  htmlbody += String(WEBPORTAL_FOOTER);
   return htmlbody;
 }
 
@@ -839,9 +875,7 @@ void handle_css()
 {
   log_i("Handle CSS response");
   webserver.sendHeader("Cache-Control", "max-age=3600");
-  webserver.send(200,
-                 "text/css",
-                 F("*{box-sizing:border-box;text-align:center;width:100%;font-weight:300}body{font-family:Roboto,system-ui,Arial,Helvetica,sans-serif;font-size:5vw;margin:0}header{background-color:#666;padding:.5vw;text-align:center;color:#fff}article{float:left;padding:10px;width:100%;height:auto}details{display:table;clear:both}summary{font-size:larger;font-weight:400;padding:10px;background-color:#f1f1f1}footer{background-color:#777;padding:.2vw;text-align:center;color:#fff;clear:both;position:fixed;bottom:0;font-size:small}@media (min-width:800px){article{width:50%}*{font-size:2.5vw}}a,input{color:#fff;border-radius:8pt;background:red;text-decoration:none;padding:5pt}.bg input{display:none}label{border:solid;border-radius:8pt;padding:5px;margin:2px;border-color:#bdbdbd;border-width:2px;color:#9e9e9e}.bg input:checked+label,.bg input:checked+label:active{background:red;color:#fff;border-color:red}"));
+  webserver.send_P(200, html_css, WEBPORTAL_CSS);
 }
 void handle_menu()
 {
@@ -866,7 +900,8 @@ void handle_menu()
 
   log_i("Handle webserver root response");
   String mainpage((char *)0);
-  mainpage.reserve(4500);
+  mainpage.reserve(3500);
+  mainpage += generate_html_header(false);
   mainpage += F("\n<details open><summary>GPS runtime settings</summary>\n<article class='bg'>Update\n<input type='radio' id='rate/1hz' onchange='Select(this.id)' name='rate'");
   mainpage += ((stored_preferences.gps_rate == 1) ? "checked" : " ");
   mainpage += F("><label class='button' for='rate/1hz'>1 Hz</label>\n<input type='radio' id='rate/5hz' onchange='Select(this.id)' name='rate' ");
@@ -890,15 +925,20 @@ void handle_menu()
 #ifdef BTSPPENABLED
   mainpage += input_onoff("Bluetooth SPP", "btspp", stored_preferences.btspp_active);
 #endif
-  mainpage += F("\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/restart'>Restart</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/savecfg/wifi/creds'>Save WiFi credentials</a></article></details>");
+  mainpage += input_onoff("TCP/IP", "tcpserver", stored_preferences.nmeaTcpServer);
   log_i("sending webserver root response");
-  webserver.send(200, html_text, generate_html_body(mainpage, false));
+  webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  webserver.send_P(200, html_text, WEBPORTAL_HEADER);
+  webserver.sendContent(mainpage);
+  webserver.sendContent_P(WEBPORTAL_ROOT_OPTIONS);
+  webserver.sendContent_P(WEBPORTAL_FOOTER);
 }
 
 void handle_preset()
 {
   String mainpage((char *)0);
-  mainpage.reserve(2000);
+  mainpage.reserve(1000);
+  mainpage += generate_html_header(true);
 #if defined(BTSPPENABLED) || defined(BLEENABLED)
   // hlt main page
 #if defined(BTSPPENABLED) && defined(BLEENABLED)
@@ -920,217 +960,257 @@ void handle_preset()
   mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
   mainpage += input_onoff("Android: BT-SPP", "trackaddict", stored_preferences.trackaddict);
   mainpage += F("<article><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
-
 #endif
 
 #else
   String mainpage = "No settings available with this firmware options";
 #endif
   log_i("Handle load preset");
-  webserver.send(200, html_text, generate_html_body(mainpage));
+  webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  webserver.send_P(200, html_text, WEBPORTAL_HEADER);
+  webserver.sendContent(mainpage);
+  webserver.sendContent_P(WEBPORTAL_FOOTER);
 }
 
 #ifdef BLEENABLED
-void handle_ble_off()
+void handle_ble()
 {
-  log_i("Turning off BLE");
-  stored_preferences.ble_active = false;
-  ble_stop();
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE<br><a href='/savecfg/nowifi'>Save settings</a>")));
-#endif
-}
-void handle_ble_on()
-{
-  log_i("Turning on BLE");
-  stored_preferences.ble_active = true;
+  String onoff = webserver.pathArg(0);
+  log_i("Set BLE Server to %s ", onoff);
+  if (onoff == "on")
+  {
 #ifdef BTSPPENABLED
-  stored_preferences.btspp_active = false;
-  bt_spp_stop();
+    if (stored_preferences.btspp_active)
+    {
+      stored_preferences.btspp_active = false;
+      bt_spp_stop();
+    }
+#endif
+    if (!stored_preferences.ble_active)
+    {
+      stored_preferences.ble_active = true;
+      ble_start();
+    }
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(200, text_json, json_ok);
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<p>This causes a restart of the device: to store permanently, disable BT-SPP, save config, enable BLE")));
-#endif
-#else
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE<br><a href='/savecfg/nowifi'>Save settings</a>")));
-#endif
-#endif
-  ble_start();
-}
-#endif
 #ifdef BTSPPENABLED
-void handle_btspp_off()
-{
-  log_i("Turning off BT-SPP");
-  stored_preferences.btspp_active = false;
-  bt_spp_stop();
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<p>This causes a restart of the device: to store permanently, disable BT-SPP, save config, enable BLE")));
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE")));
-#endif
+    webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE<br><a href='/savecfg/nowifi'>Save settings</a>")));
+#endif // BTSPPENABLED
+#endif // SHORT_API
+  }
+  else if (onoff == "off")
+  {
+    if (stored_preferences.ble_active)
+    {
+      stored_preferences.ble_active = false;
+      ble_stop();
+    }
+#ifdef SHORT_API
+    webserver.send_P(200, text_json, json_ok);
+#else
+    webserver.send(200, html_text, generate_html_body(F("Turn <b>off</b> BLE<br><a href='/savecfg/nowifi'>Save settings</a>")));
+#endif // SHORT_API
+  }
 }
-void handle_btspp_on()
+#endif // BLEENABLED
+
+#ifdef BTSPPENABLED
+void handle_btspp()
 {
-  log_i("Turning on BT-SPP");
-  stored_preferences.btspp_active = true;
+  String onoff = webserver.pathArg(0);
+  log_i("Set BT-SPP Server to %s ", onoff);
+  if (onoff == "on")
+  {
+
 #ifdef BLEENABLED
-  stored_preferences.ble_active = false;
-  ble_stop();
+    if (stored_preferences.ble_active)
+    {
+      stored_preferences.ble_active = false;
+      ble_stop();
+    }
+#endif
+    if (!stored_preferences.btspp_active)
+    {
+      stored_preferences.btspp_active = true;
+      bt_spp_start();
+    }
+  }
+  else if (onoff == "off")
+  {
+    if (stored_preferences.btspp_active)
+    {
+      stored_preferences.btspp_active = false;
+      bt_spp_stop();
+    }
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(500, text_json, json_error);
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BLE, and turned <b>OFF</b> BT-SPP<br><a href='/savecfg/nowifi'>Save settings</a>")));
+    webserver.send(500, html_text, generate_html_body(String(F("Error: BT-SPP not set to")) + onoff));
 #endif
-#else
+  }
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+  webserver.send_P(200, text_json, json_ok);
 #else
-  webserver.send(200, html_text, generate_html_body(F("Turned <b>ON</b> BT-SPP")));
+  webserver.send(200, html_text, generate_html_body(String(F("BT-SPP set to")) + onoff));
 #endif
-#endif
-  bt_spp_start();
 }
-#endif
-void handle_powersave_1hr()
+#endif // BTSPPENABLED
+void handle_powersave()
 {
-  log_i("enable power saving mode for 3600 seconds");
+  String sttime = webserver.pathArg(0);
+  log_i("Set power saving mode for %s sec", sttime);
   // disable polling of GSA and GSV
-#ifdef TASKSCHEDULER
+  int time = sttime.toInt();
+#ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
-  trestart_after_sleep.setInterval(3600000);
+  trestart_after_sleep.setInterval(time * 1000);
   trestart_after_sleep.enableDelayed();
 #endif
-  push_gps_message(UBLOX_PWR_SAVE_1HR, sizeof(UBLOX_PWR_SAVE_1HR));
+  switch (time)
+  {
+  case 3600:
+    push_gps_message(UBLOX_PWR_SAVE_1HR, sizeof(UBLOX_PWR_SAVE_1HR));
+    break;
+  case 1800:
+    push_gps_message(UBLOX_PWR_SAVE_30MIN, sizeof(UBLOX_PWR_SAVE_30MIN));
+    break;
+  default:
+    break;
+  }
   gps_powersave = true;
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+  webserver.send_P(200, text_json, json_ok);
 #else
   webserver.send(200, html_text, generate_html_body(F("Enabled power saving mode for 3600 seconds")));
 #endif
 }
-void handle_powersave_30min()
-{
-  log_i("enable power saving mode for 1800 seconds");
-  // disable polling of GSA and GSV
-#ifdef TASKSCHEDULER
-  control_poll_GSA_GSV(0);
-  trestart_after_sleep.setInterval(1800000);
-  trestart_after_sleep.enableDelayed();
-#endif
-  push_gps_message(UBLOX_PWR_SAVE_30MIN, sizeof(UBLOX_PWR_SAVE_30MIN));
-  gps_powersave = true;
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  webserver.send(200, html_text, generate_html_body(F("Enabled power saving mode for 1800 seconds")));
-#endif
-}
+
 static const char savecfg[] PROGMEM = "<br><a href='/savecfg/nowifi'>Save settings</a>";
-void handle_rate_1hz()
+void handle_rate()
 {
-  log_i("Set GPS Rate to 1 Hz");
-  push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
-  stored_preferences.gps_rate = 1;
+  String strate = webserver.pathArg(0);
+  log_i("Set GPS Rate to %s Hz", strate);
+  int rate = strate.toInt();
+  stored_preferences.gps_rate = rate;
+  switch (rate)
+  {
+  case 10:
+    push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
+    break;
+  case 5:
+    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
+    break;
+  default:
+    push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
+    break;
+  }
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
-  message += F("Rate set to <b>1 Hz</b>");
+  message += F("Rate set to ");
+  message += strate;
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_rate_5hz()
+
+void handle_baudrate()
 {
-  log_i("Set GPS Rate to 5 Hz");
-  push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
-  stored_preferences.gps_rate = 5;
+  String baudrate = webserver.pathArg(0);
+  log_i("Set BAUD Rate to %s", baudrate);
+  switch_baudrate(baudrate.toInt());
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
-  message += F("Rate set to <b>5 Hz</b>");
+  message += F("Baud set to ");
+  message += baudrate;
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_rate_10hz()
+
+void handle_tcpserver()
 {
-  log_i("Set GPS Rate to 10 Hz");
-  push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-  stored_preferences.gps_rate = 10;
+  // stored_preferences.nmeaTcpServer
+  String onoff = webserver.pathArg(0);
+  log_i("Set TCP/IP Server to %s ", onoff);
+  if (onoff == "on")
+  {
+    start_NMEA_server();
+    stored_preferences.nmeaTcpServer = true;
+  }
+  else if (onoff == "off")
+  {
+    stop_NMEA_server();
+    stored_preferences.nmeaTcpServer = false;
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(500, text_json, json_error);
+#else
+    String message((char *)0);
+    message.reserve(70);
+    message += F("Error state when changing TCP/IP server status");
+    message += FPSTR(savecfg);
+    webserver.send(200, html_text, generate_html_body(message));
+#endif
+    return;
+  }
+#ifdef SHORT_API
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
-  message += F("Rate set to <b>10 Hz</b>");
+  message += F("TCP/IP Server now: ");
+  message += choice;
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_baudrate_38400()
+void handle_gsv()
 {
-  log_i("Set BAUD Rate to 38400");
-  switch_baudrate(38400);
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Baud set to <b>38k4</b>");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-}
-void handle_baudrate_57600()
-{
-  log_i("Set BAUD Rate to 57600");
-  switch_baudrate(57600);
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Baud set to <b>57k6</b>");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-}
-void handle_baudrate_115200()
-{
-  log_i("Set BAUD Rate to 115200");
-  switch_baudrate(115200);
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(71);
-  message += F("Baud set to <b>115k2</b>");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-}
-void handle_gsv_on()
-{
-  log_i("Enable GxGSV messages");
-#ifdef TASKSCHEDULER
+  String onoff = webserver.pathArg(0);
+  log_i("Set GSV to %s ", onoff);
+#ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
 #endif
-  push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
-  stored_preferences.nmeaGSV = true;
-  stored_preferences.nmeaGSAGSVpolling = 0;
+  if (onoff == "on")
+  {
+    push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
+    stored_preferences.nmeaGSV = true;
+    stored_preferences.nmeaGSAGSVpolling = 0;
+  }
+  else if (onoff == "off")
+  {
+    push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
+    stored_preferences.nmeaGSV = false;
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(500, text_json, json_error);
+#else
+    String message((char *)0);
+    message.reserve(70);
+    message += F("Error state when changing GxGSV messages");
+    message += FPSTR(savecfg);
+    webserver.send(200, html_text, generate_html_body(message));
+#endif
+    return;
+  }
+#ifdef SHORT_API
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
@@ -1139,32 +1219,40 @@ void handle_gsv_on()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_gsv_off()
+
+void handle_gsa()
 {
-  log_i("Disable GxGSV messages");
-  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
-  stored_preferences.nmeaGSV = false;
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(71);
-  message += F("Disabled GxGSV messages");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-}
-void handle_gsa_on()
-{
-  log_i("Enable GxGSA messages");
-#ifdef TASKSCHEDULER
+  String onoff = webserver.pathArg(0);
+  log_i("Set GSA to %s ", onoff);
+#ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
 #endif
-  push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
-  stored_preferences.nmeaGSA = true;
-  stored_preferences.nmeaGSAGSVpolling = 0;
+  if (onoff == "on")
+  {
+    push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
+    stored_preferences.nmeaGSA = true;
+    stored_preferences.nmeaGSAGSVpolling = 0;
+  }
+  else if (onoff == "off")
+  {
+    push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
+    stored_preferences.nmeaGSA = false;
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(500, text_json, json_error);
+#else
+    String message((char *)0);
+    message.reserve(70);
+    message += F("Error state when changing GxGSA messages");
+    message += FPSTR(savecfg);
+    webserver.send(200, html_text, generate_html_body(message));
+#endif
+    return;
+  }
+#ifdef SHORT_API
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
@@ -1173,181 +1261,161 @@ void handle_gsa_on()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_gsa_off()
-{
-  log_i("Disable GxGSA messages");
-  push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
-  stored_preferences.nmeaGSA = false;
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Disable GxGSA messages");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-}
+
 #ifdef TASK_SCHEDULER
-void handle_pollgsagsv_on_1()
+void handle_pollgsagsv()
 {
-  log_i("Enable polling of GSA and GSV messages every 1 sec");
-  control_poll_GSA_GSV(1);
+  String stfrequency = webserver.pathArg(0);
+  log_i("Set polling of GSA and GSV messages every %s sec", stfrequency);
+  control_poll_GSA_GSV(stfrequency.toInt());
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
-  message += F("Disable GxGSA messages");
+  message += F("Polling of GSA+GSV messages every ");
+  message += stfrequency;
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 #endif
-
-  webserver.send(200, html_text, generate_html_body(F("Enabled polling of alternate GSA and GSV messages every 1 second")));
 }
-void handle_pollgsagsv_on_5()
-{
-  log_i("Enable polling of GSA and GSV messages every 5 sec");
-  control_poll_GSA_GSV(5);
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Disable GxGSA messages");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
+#endif // #ifdef TASK_SCHEDULER
 
-  webserver.send(200, html_text, generate_html_body(F("Enabled polling of alternate GSA and GSV messages every 5 seconds")));
-}
-void handle_pollgsagsv_off()
+void handle_gbs()
 {
-  log_i("Disable polling of GSA and GSV messages every");
+  String onoff = webserver.pathArg(0);
+  log_i("Set GxGBS to %s ", onoff);
+#ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
+#endif
+  if (onoff == "on")
+  {
+    push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
+    stored_preferences.nmeaGBS = true;
+  }
+  else if (onoff == "off")
+  {
+    push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
+    stored_preferences.nmeaGBS = false;
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(500, text_json, json_error);
+#else
+    String message((char *)0);
+    message.reserve(70);
+    message += F("Error state when changing GBS messages, value: ");
+    message += onoff;
+    message += FPSTR(savecfg);
+    webserver.send(200, html_text, generate_html_body(message));
+#endif
+    return;
+  }
+#ifdef SHORT_API
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
-  message += F("Disable GxGSA messages");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-
-  webserver.send(200, html_text, generate_html_body(F("Disabled polling of alternate GSA and GSV messages")));
-}
-#endif
-
-void handle_gbs_on()
-{
-  log_i("Enable GxGBS messages");
-  push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
-  stored_preferences.nmeaGBS = true;
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Disable GxGSA messages");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-
-  webserver.send(200, html_text, generate_html_body(F("Enabled GxGBS messages<br><a href='/savecfg/nowifi'>Save settings</a>")));
-}
-void handle_gbs_off()
-{
-  log_i("Disable GxGBS messages");
-  push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
-  stored_preferences.nmeaGBS = false;
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Disable GxGSA messages");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
-
-  webserver.send(200, html_text, generate_html_body(F("Disabled GxGBS messages<br><a href='/savecfg/nowifi'>Save settings</a>")));
-}
-void handle_svchannel_8()
-{
-  log_i("Restric to 8 SVs per Talker Id");
-  push_gps_message(UBLOX_INIT_CHANNEL_8, sizeof(UBLOX_INIT_CHANNEL_8));
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("NMEA  8 SVs per Talker");
+  message += F("Set GxGSA messages to ");
+  message += onoff;
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-void handle_svchannel_all()
+
+void handle_svchannel()
 {
-  log_i("All SVs per Talker Id");
-  push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
+  String channels = webserver.pathArg(0);
+  log_i("Set %s SVs per Talker Id", channels);
+  if (channels == "8")
+  {
+    push_gps_message(UBLOX_INIT_CHANNEL_8, sizeof(UBLOX_INIT_CHANNEL_8));
+    // TODO stored_preferences.nmeaGBS = true;
+  }
+  else if (channels == "off")
+  {
+    push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
+    // TODO stored_preferences.nmeaGBS = false;
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(200, text_json, json_error);
+#else
+    String message((char *)0);
+    message.reserve(70);
+    message += F("Error when setting SVs per Talked Id, value: ");
+    message += channels;
+    message += FPSTR(savecfg);
+    webserver.send(200, html_text, generate_html_body(message));
+#endif
+    return;
+  }
+
+#ifdef SHORT_API
+  webserver.send_P(200, text_json, json_ok);
 #else
   String message((char *)0);
   message.reserve(70);
-  message += F("All SVs ");
+  message += "Set" + channels + " SVs ";
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
 
 #ifdef BTSPPENABLED
-void handle_trackaddict_on()
+void handle_trackaddict()
 {
-  // /trackaddict/on
-  log_i("Set optimal configuration for Track Addict");
-  gps_enable_trackaddict();
+  String choice = webserver.pathArg(0);
+
+  log_i("Set optimal configuration for Track Addict to %s", choice);
+
+  if (choice == "on")
+  { // /trackaddict/on
+    gps_enable_trackaddict();
 #ifdef BLEENABLED
-  stored_preferences.ble_active = false;
-  ble_stop();
+    stored_preferences.ble_active = false;
+    ble_stop();
 #endif
-  bt_spp_start();
-  stored_preferences.btspp_active = true;
+    bt_spp_start();
+    stored_preferences.btspp_active = true;
+  }
+  else if (choice == "off")
+  { // /trackaddict/off
+    stored_preferences.trackaddict = false;
+    if (stored_preferences.nmeaGSA)
+      push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
+    if (stored_preferences.nmeaGSV)
+      push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
+    if (stored_preferences.nmeaGBS)
+      push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
+#ifdef TASK_SCHEDULER
+    control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
+#endif
+    // this also resets the Main Talker ID
+    push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
+  }
+  else
+  {
 #ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
+    webserver.send_P(200, text_json, json_ok);
 #else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Set TrackAddict ");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
+    String message((char *)0);
+    message.reserve(70);
+    message += F("Set TrackAddict ");
+    message += FPSTR(savecfg);
+    webserver.send(200, html_text, generate_html_body(String("Error setting TrackAddict")));
+#endif
+  }
+#ifdef SHORT_API
+  webserver.send_P(500, text_json, json_error);
+#else
+  webserver.send(200, html_text, generate_html_body(String("Error setting TrackAddict")));
 #endif
 }
 void handle_trackaddict_off()
 {
-  // /trackaddict/off
-  log_i("Unset optimal configuration for Track Addict");
-  stored_preferences.trackaddict = false;
-  if (stored_preferences.nmeaGSA)
-    push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
-  if (stored_preferences.nmeaGSV)
-    push_gps_message(UBLOX_GxGSV_ON, sizeof(UBLOX_GxGSV_ON));
-  if (stored_preferences.nmeaGBS)
-    push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
-#ifdef TASK_SCHEDULER
-  control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
-#endif
-  push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
-#ifdef SHORT_API
-  webserver.send(200, text_json, json_ok);
-#else
-  String message((char *)0);
-  message.reserve(70);
-  message += F("UnSet TrackAddict ");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-#endif
 }
 #endif
 
@@ -1419,17 +1487,19 @@ void handle_hlt_android()
   webserver.send(200, html_text, generate_html_body(message));
 }
 #endif
-void handle_hlt_tcpip()
+void handle_hlt()
 {
+  // TODO find which device type
+  String choice = webserver.pathArg(0);
   // /hlt/tcpip
-  log_i("Setting optimal configuration for Harry Lap Timer on TCP-IP: 10Hz, GSA+GSV Polling, GBS On, BLE Off, BT-SPP Off");
+  log_i("Setting optimal configuration for Harry Lap Timer on %s: 10Hz, GSA+GSV Polling, GBS On", choice);
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
   stored_preferences.nmeaGSA = false;
   stored_preferences.nmeaGSV = false;
 #ifdef TASK_SCHEDULER
   stored_preferences.nmeaGSAGSVpolling = 5;
-  control_poll_GSA_GSV(5);
+  control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
 #else
   // control_poll will disable GSA and GSV on its own
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
@@ -1439,97 +1509,84 @@ void handle_hlt_tcpip()
   stored_preferences.nmeaGBS = true;
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   stored_preferences.trackaddict = false;
-  log_i("Set optimal configuration for Harry Lap Timer on tcpip");
-#ifdef BLEENABLED
-  if (stored_preferences.ble_active)
+
+  if (choice == "tcpip")
   {
-    ble_stop();
-    stored_preferences.ble_active = false;
-  }
+    if (!stored_preferences.nmeaTcpServer)
+    {
+      stored_preferences.nmeaTcpServer = true;
+      start_NMEA_server();
+    }
+#ifdef BLEENABLED
+    if (stored_preferences.ble_active)
+    {
+      ble_stop();
+      stored_preferences.ble_active = false;
+    }
 #endif
 #ifdef BTSPPENABLED
-  if (stored_preferences.btspp_active)
-  {
-    // Hack: since disabling spp and enabling BLE crashes the stack and restart ESP32, we store the current configuration for a restart
-    // stored_preferences.btspp_active = false;
-    // StoreNVMPreferences(true);
-    // webserver.send(200, html_text, generate_html_body(F("<b>RESTARTING</b> to set optimal configuration for Harry Lap Timer on iOS devices:</p><p><ul><li>All SV's</li><li>GBS On</li><li>GSA+GSV stream off</li><li>GSA+GSV polled on a 5 sec cycle</li><li>Updates at 10 Hz</li><li>BLE connection</li></ul></p><p>Settings have been already saved</p>")));
-    // delay(1000);
-    // ESP.restart();
-    // This is how it should be:
-    stored_preferences.btspp_active = false;
-    bt_spp_stop();
+    if (stored_preferences.btspp_active)
+    {
+      stored_preferences.btspp_active = false;
+      bt_spp_stop();
+    }
+#endif
   }
-#endif
-  String message((char *)0);
-  message.reserve(70);
-  message += F("Set optimal configuration for Harry Lap Timer on WiFi:");
-  message += FPSTR(savecfg);
-  webserver.send(200, html_text, generate_html_body(message));
-}
-#ifdef BLEENABLED
-void handle_hlt_ios()
-{
-  // /hlt/ios
-  log_i("Setting optimal configuration for Harry Lap Timer on iOS devices: 10Hz, GSA+GSV Off, GBS On, BLE");
-  push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-  stored_preferences.gps_rate = 10;
-  stored_preferences.nmeaGSA = false;
-  stored_preferences.nmeaGSV = false;
-#ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling = 5;
-  control_poll_GSA_GSV(5);
-#else
-  // control_poll will disable GSA and GSV on its own
-  push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
-  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
-#endif
-  push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
-  stored_preferences.nmeaGBS = true;
-  push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
-  stored_preferences.trackaddict = false;
-  log_i("Set optimal configuration for Harry Lap Timer on iOS");
+  else if (choice == "ios")
+  {
 #ifdef BTSPPENABLED
-  if (stored_preferences.btspp_active)
-  {
-    // Hack: since disabling spp and enabling BLE crashes the stack and restart ESP32, we store the current configuration for a restart
-    stored_preferences.btspp_active = false;
-    stored_preferences.ble_active = true;
-    StoreNVMPreferences(true);
-    webserver.send(200, html_text, generate_html_body(F("<b>RESTARTING</b> to set optimal configuration for Harry Lap Timer on iOS devices:</p><p>Settings have been already saved</p>")));
-    delay(1000);
-    ESP.restart();
-    // This is how it should be:
-    // stored_preferences.btspp_active = false;
-    // bt_spp_stop();
-  }
+    if (stored_preferences.btspp_active)
+    {
+      // Hack: since disabling spp and enabling BLE crashes the stack and restart ESP32, we store the current configuration for a restart
+      stored_preferences.btspp_active = false;
+      stored_preferences.ble_active = true;
+      StoreNVMPreferences(true);
+      webserver.send(200, html_text, generate_html_body(F("<b>RESTARTING</b> to set optimal configuration for Harry Lap Timer on iOS devices:</p><p>Settings have been already saved</p>")));
+      delay(1000);
+      ESP.restart();
+      // This is how it should be:
+      // stored_preferences.btspp_active = false;
+      // bt_spp_stop();
+    }
 #endif
-  if (stored_preferences.ble_active == false)
-  {
-    ble_start();
-    stored_preferences.ble_active = true;
+    if (stored_preferences.ble_active == false)
+    {
+      ble_start();
+      stored_preferences.ble_active = true;
+    }
   }
   String message((char *)0);
   message.reserve(70);
-  message += F("Set optimal configuration for Harry Lap Timer on iOS:");
+  message += F("Set optimal configuration for Harry Lap Timer on:");
+  message += choice;
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 }
-#endif
-void handle_wifi_sta()
+
+void handle_wifi_mode()
 {
-  log_i("Start WiFi in STA mode");
-  webserver.send(200, html_text, generate_html_body(F("WiFi STATION mode started, trying to connect to a know Access Point. <br>Reconnect in a few seconds")));
-  stored_preferences.wifi_mode = WIFI_STA;
-  wifi_STA();
+  String strwifimode = webserver.pathArg(0);
+  log_i("Start WiFi in %s mode", strwifimode);
+  if (strwifimode == "sta")
+  {
+    webserver.send(200, html_text, generate_html_body(F("WiFi STATION mode started, trying to connect to a know Access Point. <br>Reconnect in a few seconds")));
+    stored_preferences.wifi_mode = WIFI_STA;
+    wifi_STA();
+  }
+  else if (strwifimode == "ap")
+  {
+    log_i("Start WiFi in AP mode");
+    webserver.send(200, html_text, generate_html_body(String("WiFi Access Point mode started. <br>Reconnect in a few seconds to AP:" + String(ap_ssid))));
+    stored_preferences.wifi_mode = WIFI_AP;
+    wifi_AP();
+  }
+  else
+  {
+    log_e("Incorrect '%s' mode for WiFi");
+    webserver.send(400, html_text, generate_html_body(String("Wrong WiFi mode selected")));
+  }
 }
-void handle_wifi_ap()
-{
-  log_i("Start WiFi in AP mode");
-  webserver.send(200, html_text, generate_html_body(String("WiFi Access Point mode started. <br>Reconnect in a few seconds to AP:" + String(ap_ssid))));
-  stored_preferences.wifi_mode = WIFI_AP;
-  wifi_AP();
-}
+
 void handle_restart()
 {
   webserver.send(200, html_text, generate_html_body(F("Please confirm <form action='/restart_execute' method='post'><input type='submit' value='Restart'></form>")));
@@ -1563,6 +1620,8 @@ void handle_status()
   message += F("<br>IP: ");
   message += MyIP.toString();
   message += F("<br>TCP Port for NMEA repeater: ");
+  message += (stored_preferences.nmeaTcpServer ? F("ON") : F("OFF"));
+  message += F("<br> Port:");
   message += String(NMEAServerPort);
   message += F("<br>u-center URL: tcp://");
   message += MyIP.toString();
@@ -1665,20 +1724,24 @@ void handle_clients()
   webserver.send(200, html_text, generate_html_body(message));
 }
 
+const char WEBPORTAL_SAVECONFIG[] PROGMEM = "<article><form action='/savewificreds'>SSID<br><input style='background: none' name='ssid' maxlength='32'><p>WPA Key<br><input style='background: none' type='password' name='key' maxlength='64'><p><input type='submit' value='Save'></form></article>";
 void handle_saveconfig_wifi_creds()
 {
-  webserver.send(200, html_text, generate_html_body(F("<article><form action='/savecfg/wifi/creds/post'>SSID<br><input style='background: none' name='ssid' maxlength='32'><p>WPA Key<br><input style='background: none' type='password' name='key' maxlength='64'><p><input type='submit' value='Save'></form></article>")));
+  webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  webserver.send_P(200, html_text, WEBPORTAL_HEADER);
+  webserver.sendContent(generate_html_header(true));
+  webserver.sendContent_P(WEBPORTAL_FOOTER);
 }
 
 void handle_saveconfig_wifi_creds_post()
 {
-  String wifissid = webserver.arg("ssid"); 
+  String wifissid = webserver.arg("ssid");
   String wifikey = webserver.arg("key");
   // TODO Check inputs
   log_i("WiFi SSID %s", wifissid);
   log_d("WiFi Key %s", wifikey);
-  wifissid.toCharArray(stored_preferences.wifi_ssid,WIFI_SSID_MAXLEN);
-  wifikey.toCharArray(stored_preferences.wifi_key,WIFI_KEY_MAXLEN);
+  wifissid.toCharArray(stored_preferences.wifi_ssid, WIFI_SSID_MAXLEN);
+  wifikey.toCharArray(stored_preferences.wifi_key, WIFI_KEY_MAXLEN);
   // TODO check if writes were ok
   StoreNVMPreferencesWiFiCreds();
   // TODO check is storing went fine
@@ -1699,93 +1762,80 @@ void handle_saveconfig()
   {
     message += "STA";
   }
-  message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/savecfg/wifi/sta'>WiFi client mode WiFi-STA </a></p><p>Save <a href='/savecfg/wifi/ap'>WiFi Access Point mode WiFi-AP</a></p>");
+  message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/savewifi/sta'>WiFi client mode WiFi-STA </a></p><p>Save <a href='/savewifi/ap'>WiFi Access Point mode WiFi-AP</a></p>");
   webserver.send(200, html_text, generate_html_body(message));
 }
-void handle_saveconfig_withwifi()
+void handle_saveconfig_wifi()
 {
-  StoreNVMPreferences(true);
-  log_i("Storing preferences including WiFi");
-  webserver.send(200, html_text, generate_html_body(F("Preferences including WiFi stored")));
+  String withorwout = webserver.pathArg(0);
+  log_i("Save config %s ", withorwout);
+  if (withorwout == "wifi")
+  {
+    StoreNVMPreferences(true);
+  }
+  else
+  {
+    StoreNVMPreferences(false);
+  }
+  String message = "Preferences";
+  message += withorwout;
+  message += " stored";
+  webserver.send(200, html_text, generate_html_body(message));
 }
-void handle_saveconfig_withoutwifi()
+
+void handle_saveconfig_wifimode()
 {
-  StoreNVMPreferences(false);
-  log_i("Storing preferences excluding WiFi");
-  webserver.send(200, html_text, generate_html_body(F("Preferences excluding WiFi stored")));
+  String strwifimode = webserver.pathArg(0);
+  log_i("Save WiFi  %s mode", strwifimode);
+  if (strwifimode == "sta")
+    StoreNVMPreferencesWiFi("WIFI_STA");
+  if (strwifimode == "ap")
+    StoreNVMPreferencesWiFi("WIFI_AP");
+  String message = F("Stored preference for wifi :");
+  message += strwifimode;
+  webserver.send(200, html_text, generate_html_body(message));
 }
-void handle_saveconfig_wifi_sta()
-{
-  StoreNVMPreferencesWiFi("WIFI_STA");
-  log_i("Storing preference WIFI_STA");
-  webserver.send(200, html_text, generate_html_body(F("Stored preference WIFI_STA as default: this will be used at next restart")));
-}
-void handle_saveconfig_wifi_ap()
-{
-  StoreNVMPreferencesWiFi("WIFI_AP");
-  log_i("Storing preference WIFI_AP");
-  webserver.send(200, html_text, generate_html_body(F("Stored preference WIFI_AP as default: this will be used at next restart")));
-}
+
 void handle_NotFound()
 {
-  webserver.send(404, html_text, generate_html_body(F("Not found")));
+  webserver.send(404, html_text, generate_html_body(F("<h1> 404 Not found</h1><p>The requested resource was not found on this server.</p>")));
 }
 void WebConfig_start()
 {
   webserver.on("/", handle_menu);
   webserver.on("/css", handle_css);
-  webserver.on("/rate/1hz", handle_rate_1hz);
-  webserver.on("/rate/5hz", handle_rate_5hz);
-  webserver.on("/rate/10hz", handle_rate_10hz);
-  webserver.on("/gsa/on", handle_gsa_on);
-  webserver.on("/gsa/off", handle_gsa_off);
-  webserver.on("/gsv/on", handle_gsv_on);
-  webserver.on("/gsv/off", handle_gsv_off);
-  webserver.on("/gbs/on", handle_gbs_on);
-  webserver.on("/gbs/off", handle_gbs_off);
-  webserver.on("/sv/8", handle_svchannel_8);
-  webserver.on("/sv/all", handle_svchannel_all);
+  webserver.on("/rate/{}hz", handle_rate);
+  webserver.on("/gsa/{}", handle_gsa);
+  webserver.on("/gsv/{}", handle_gsv);
+  webserver.on("/gbs/{}", handle_gbs);
+  webserver.on("/sv/{}", handle_svchannel);
+  webserver.on("/tcpserver/{}", handle_tcpserver);
 #ifdef BTSPPENABLED
-  webserver.on("/hlt/android", handle_hlt_android);
-  webserver.on("/trackaddict/on", handle_trackaddict_on);
-  webserver.on("/trackaddict/off", handle_trackaddict_off);
+  webserver.on("/trackaddict/{}", handle_trackaddict);
   webserver.on("/racechrono/android", handle_racechrono_android);
 #endif
-#ifdef BLEENABLED
-  webserver.on("/hlt/ios", handle_hlt_ios);
-#endif
-  webserver.on("/hlt/tcpip", handle_hlt_tcpip);
-  webserver.on("/wifi/sta", handle_wifi_sta);
-  webserver.on("/wifi/ap", handle_wifi_ap);
+  webserver.on("/hlt/{}", handle_hlt);
+  webserver.on("/wifi/{}", handle_wifi_mode);
   webserver.on("/restart", handle_restart);
   webserver.on("/restart_execute", handle_restart_execute);
   webserver.on("/savecfg", handle_saveconfig);
-  webserver.on("/savecfg/wifi", handle_saveconfig_withwifi);
-  webserver.on("/savecfg/nowifi", handle_saveconfig_withoutwifi);
-  webserver.on("/savecfg/wifi/sta", handle_saveconfig_wifi_sta);
-  webserver.on("/savecfg/wifi/ap", handle_saveconfig_wifi_ap);
-  webserver.on("/savecfg/wifi/creds", handle_saveconfig_wifi_creds);
-  webserver.on("/savecfg/wifi/creds/post", handle_saveconfig_wifi_creds_post);
+  webserver.on("/savecfg/{}", handle_saveconfig_wifi);
+  webserver.on("/savewifi/{}", handle_saveconfig_wifimode);
+  webserver.on("/savewificreds", HTTP_GET, handle_saveconfig_wifi_creds);
+  webserver.on("/savewificreds", HTTP_POST, handle_saveconfig_wifi_creds_post);
   webserver.on("/preset", handle_preset);
-  webserver.on("/powersave/3600", handle_powersave_1hr);
-  webserver.on("/powersave/1800", handle_powersave_30min);
+  webserver.on("/powersave/{}", handle_powersave);
   webserver.on("/status", handle_status);
   webserver.on("/clients", handle_clients);
-  webserver.on("/baud/38400", handle_baudrate_38400);
-  webserver.on("/baud/57600", handle_baudrate_57600);
-  webserver.on("/baud/115200", handle_baudrate_115200);
+  webserver.on("/baud/{}", handle_baudrate);
 #ifdef BLEENABLED
-  webserver.on("/ble/on", handle_ble_on);
-  webserver.on("/ble/off", handle_ble_off);
+  webserver.on("/ble/{}", handle_ble);
 #endif
 #ifdef BTSPPENABLED
-  webserver.on("/btspp/on", handle_btspp_on);
-  webserver.on("/btspp/off", handle_btspp_off);
+  webserver.on("/btspp/{}", handle_btspp);
 #endif
 #ifdef TASK_SCHEDULER
-  webserver.on("/poll/gsagsv/0", handle_pollgsagsv_off);
-  webserver.on("/poll/gsagsv/1", handle_pollgsagsv_on_1);
-  webserver.on("/poll/gsagsv/5", handle_pollgsagsv_on_5);
+  webserver.on("/poll/gsagsv/{}", handle_pollgsagsv);
 #endif
   webserver.onNotFound(handle_NotFound);
   webserver.begin();
@@ -2128,6 +2178,7 @@ void setup()
   WiFi.setHostname(BONOGPS_MDNS);
   WiFi.setSleep(false);
 
+  // WifiAP or STA will also start the NMEA server on port 1818
   switch (stored_preferences.wifi_mode)
   {
   case WIFI_AP:
