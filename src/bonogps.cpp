@@ -28,7 +28,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v0.4"
+#define BONOGPS_FIRMWARE_VER "v0.4.1"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
 #define BONOGPS_MDNS "bonogps"
@@ -771,7 +771,7 @@ const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size:
 #else
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: " BONO_GPS_VERSION "</footer>\n</body>\n</html>";
 #endif
-const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/restart'>Restart</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/savewificreds'>Save WiFi credentials</a></article></details>";
+const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/savewificreds'>Set WiFi credentials</a></article>\n<article><a href='/restart'>Restart</a><br><br></article></details>";
 
 // Helpers to populate a page with style sheet
 String generate_html_header(bool add_menu = true)
@@ -1589,7 +1589,7 @@ void handle_wifi_mode()
 
 void handle_restart()
 {
-  webserver.send(200, html_text, generate_html_body(F("Please confirm <form action='/restart_execute' method='post'><input type='submit' value='Restart'></form>")));
+  webserver.send(200, html_text, generate_html_body(F("Please confirm <form action='/restart' method='post'><input type='submit' value='Restart'></form>")));
 }
 void handle_restart_execute()
 {
@@ -1724,12 +1724,14 @@ void handle_clients()
   webserver.send(200, html_text, generate_html_body(message));
 }
 
-const char WEBPORTAL_SAVECONFIG[] PROGMEM = "<article><form action='/savewificreds'>SSID<br><input style='background: none' name='ssid' maxlength='32'><p>WPA Key<br><input style='background: none' type='password' name='key' maxlength='64'><p><input type='submit' value='Save'></form></article>";
+const char WEBPORTAL_SAVECONFIG[] PROGMEM = "<article><form action='/savewificreds' method='post'>WiFi SSID<br><input style='background: none; color: black' name='ssid' maxlength='32'><p>WiFi Key<br><input style='background: none; color: black' type='password' name='key' maxlength='64'><p><input type='submit' value='Save'></form></article>";
 void handle_saveconfig_wifi_creds()
 {
+  log_d("Form to save wifi credentials");
   webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   webserver.send_P(200, html_text, WEBPORTAL_HEADER);
   webserver.sendContent(generate_html_header(true));
+  webserver.sendContent_P(WEBPORTAL_SAVECONFIG);
   webserver.sendContent_P(WEBPORTAL_FOOTER);
 }
 
@@ -1816,8 +1818,8 @@ void WebConfig_start()
 #endif
   webserver.on("/hlt/{}", handle_hlt);
   webserver.on("/wifi/{}", handle_wifi_mode);
-  webserver.on("/restart", handle_restart);
-  webserver.on("/restart_execute", handle_restart_execute);
+  webserver.on("/restart", HTTP_GET, handle_restart);
+  webserver.on("/restart", HTTP_POST, handle_restart_execute);
   webserver.on("/savecfg", handle_saveconfig);
   webserver.on("/savecfg/{}", handle_saveconfig_wifi);
   webserver.on("/savewifi/{}", handle_saveconfig_wifimode);
@@ -2178,7 +2180,7 @@ void setup()
   WiFi.setHostname(BONOGPS_MDNS);
   WiFi.setSleep(false);
 
-  // WifiAP or STA will also start the NMEA server on port 1818
+  // WifiAP or STA will also start the NMEA server on port 1818, if the service is turned on (starting with v0.4)
   switch (stored_preferences.wifi_mode)
   {
   case WIFI_AP:

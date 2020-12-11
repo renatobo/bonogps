@@ -134,7 +134,7 @@ Within the Arduino IDE, from `Tools > Partition Scheme`
   - add battery and expose battery level via BLE and/or web interface
   - log to SD  https://randomnerdtutorials.com/esp32-data-logging-temperature-to-microsd-card/
   - test https://apps.apple.com/us/app/espressif-esptouch/id1071176700 or https://apps.apple.com/in/app/esp-ble-provisioning/id1473590141
-  - OTA via browser or from internet location https://lastminuteengineers.com/esp32-ota-web-updater-arduino-ide/ https://github.com/chrisjoyce911/esp32FOTA or https://github.com/platformio/bintray-secure-ota
+  - OTA via browser or from internet location https://lastminuteengineers.com/esp32-ota-web-updater-arduino-ide/ https://github.com/chrisjoyce911/esp32FOTA or https://github.com/platformio/bintray-secure-ota or https://github.com/ayushsharma82/AsyncElegantOTA
   - use ootb library at https://os.mbed.com/teams/ublox/code/gnss/ or https://github.com/ldab/u-blox_GNSS
   - use packed binary format with custom binary parser for HLT
   - use https with https://github.com/fhessel/esp32_https_server and https://github.com/fhessel/esp32_https_server_compat
