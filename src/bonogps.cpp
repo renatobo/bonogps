@@ -1762,6 +1762,12 @@ void handle_status()
   message += String(ESP.getPsramSize());
   message += F("<br>Free PSRAM: ");
   message += String(ESP.getFreePsram());
+  message += F("<p>SDK version: ");
+  message += ESP.getSdkVersion();
+  message += F("<br>Chip Revision: ");
+  message += String(ESP.getChipRevision());
+  message += F("<br>CPU Freq: ");
+  message += String(ESP.getCpuFreqMHz());
 
   webserver.send(200, html_text, generate_html_body(message));
 }
