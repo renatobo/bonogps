@@ -213,9 +213,11 @@ EasyButton button(WIFI_MODE_BUTTON);
 ********************************/
 
 void WebConfig_start();
+void WebConfig_stop();
 void gps_initialize_settings();
 void restart_after_sleep();
 void wifi_AP();
+void wifi_OFF();
 #ifdef ENABLE_OTA
 void handle_OTA();
 void OTA_start();
@@ -388,6 +390,9 @@ void ReadNVMPreferences()
   case WIFI_STA:
     string_wifi_mode = "WIFI_STA";
     break;
+  case WIFI_OFF:
+    string_wifi_mode = "WIFI_OFF";
+    break;
   default:
     string_wifi_mode = "WIFI_STA";
     break;
@@ -403,10 +408,20 @@ void ReadNVMPreferences()
     stored_preferences.wifi_mode = WIFI_STA;
     log_d("Preference read as WIFI_STA");
   }
-  else
+  else if (string_wifi_mode == "WIFI_AP")
   {
     stored_preferences.wifi_mode = WIFI_AP;
     log_d("Preference read as WIFI_AP");
+  }
+  else if (string_wifi_mode == "WIFI_OFF")
+  {
+    stored_preferences.wifi_mode = WIFI_OFF;
+    log_d("Preference read as WIFI_OFF");
+  }
+  else 
+  {
+    stored_preferences.wifi_mode = WIFI_AP;
+    log_d("Error reading WiFi, Preference set as WIFI_AP");
   }
 
   // this being a char*, we pass size
@@ -448,6 +463,9 @@ void StoreNVMPreferences(bool savewifi = false)
       break;
     case WIFI_STA:
       string_wifi_mode = "WIFI_STA";
+      break;
+    case WIFI_OFF:
+      string_wifi_mode = "WIFI_OFF";
       break;
     default:
       string_wifi_mode = "WIFI_STA";
@@ -653,7 +671,9 @@ void wifi_STA()
   if (WiFi.status() == WL_CONNECTED)
   {
     log_i("Connected to SSID %s", stored_preferences.wifi_ssid);
+    #ifdef TASK_SCHEDULER
     tLedBlink.setInterval(250);
+    #endif
     wifi_connected = true;
 #ifdef ENABLE_OTA
     log_i("Start OTA service");
@@ -672,7 +692,7 @@ void wifi_STA()
     MyIP = WiFi.localIP();
 
 #ifdef BUTTON
-    button.onPressed(wifi_AP);
+    button.onPressed(wifi_OFF);
 #endif
     stored_preferences.wifi_mode = WIFI_STA;
   }
@@ -747,6 +767,52 @@ void wifi_AP()
   stored_preferences.wifi_mode = WIFI_AP;
 }
 
+void wifi_OFF()
+{
+
+  #ifdef TASK_SCHEDULER
+  log_d("Flash blinking");
+  tLedBlink.setInterval(50);
+  #endif
+
+  #ifdef ENABLE_OTA
+    log_i("Stop OTA service");
+    OTA_stop();
+  #endif
+  #ifdef NUMERICAL_BROADCAST_PROTOCOL
+  // WLAN Server for GNSS data
+  stop_NBP_server();
+  #endif
+  // WiFi Access
+  if (stored_preferences.nmeaTcpServer)
+    stop_NMEA_server();
+  
+  log_i("Stop Web Portal");
+  WebConfig_stop();
+  
+  #ifdef MDNS_ENABLE
+  MDNS.end();
+  #endif
+
+  WiFi.mode(WIFI_OFF);
+  log_i("Stopped WiFi service");
+
+  #ifdef TASK_SCHEDULER
+  log_d("Stop blinking");
+  tLedBlink.setInterval(0);
+  tLedBlink.disable();
+  ledon=HIGH;
+  led_blink();
+  #endif
+
+  #ifdef BUTTON
+  button.onPressed(wifi_AP);
+  #endif
+
+  stored_preferences.wifi_mode = WIFI_OFF;
+
+}
+
 /********************************
 
    Web Configuration portal
@@ -771,7 +837,7 @@ const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size:
 #else
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: " BONO_GPS_VERSION "</footer>\n</body>\n</html>";
 #endif
-const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/savewificreds'>Set WiFi credentials</a></article>\n<article><a href='/restart'>Restart</a><br><br></article></details>";
+const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article>Disable<a href='/wifioff'>WiFi</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/savewificreds'>Set WiFi credentials</a></article>\n<article><a href='/restart'>Restart</a><br><br></article></details>";
 
 // Helpers to populate a page with style sheet
 String generate_html_header(bool add_menu = true)
@@ -1586,6 +1652,17 @@ void handle_wifi_mode()
     webserver.send(400, html_text, generate_html_body(String("Wrong WiFi mode selected")));
   }
 }
+void handle_wifioff()
+{
+  webserver.send(200, html_text, generate_html_body(F("Please confirm disabling WiFi - you will need to power cycle the unit or use the BOOT button to re-enable it<form action='/wifioff' method='post'><input type='submit' value='Turn WiFi OFF'></form>")));
+}
+void handle_wifioff_post()
+{
+  log_i("WiFi OFF");
+  webserver.send(200, html_text, generate_html_body(F("Powering off WiFi - power cycle the unit or use BOOT to re-enable it")));
+  delay(1000);
+  wifi_OFF();
+}
 
 void handle_restart()
 {
@@ -1685,6 +1762,12 @@ void handle_status()
   message += String(ESP.getPsramSize());
   message += F("<br>Free PSRAM: ");
   message += String(ESP.getFreePsram());
+  message += F("<p>SDK version: ");
+  message += ESP.getSdkVersion();
+  message += F("<br>Chip Revision: ");
+  message += String(ESP.getChipRevision());
+  message += F("<br>CPU Freq: ");
+  message += String(ESP.getCpuFreqMHz());
 
   webserver.send(200, html_text, generate_html_body(message));
 }
@@ -1820,6 +1903,8 @@ void WebConfig_start()
   webserver.on("/wifi/{}", handle_wifi_mode);
   webserver.on("/restart", HTTP_GET, handle_restart);
   webserver.on("/restart", HTTP_POST, handle_restart_execute);
+  webserver.on("/wifioff", HTTP_GET, handle_wifioff);
+  webserver.on("/wifioff", HTTP_POST, handle_wifioff_post);
   webserver.on("/savecfg", handle_saveconfig);
   webserver.on("/savecfg/{}", handle_saveconfig_wifi);
   webserver.on("/savewifi/{}", handle_saveconfig_wifimode);
@@ -1844,6 +1929,11 @@ void WebConfig_start()
 #ifdef MDNS_ENABLE
   MDNS.addService("http", "tcp", 80);
 #endif
+}
+
+void WebConfig_stop()
+{
+  webserver.close();
 }
 
 /********************************
@@ -2189,8 +2279,10 @@ void setup()
   case WIFI_STA:
     wifi_STA();
     break;
+  case WIFI_OFF:
+    break;
   default:
-    wifi_STA();
+    wifi_AP();
     break;
   }
 

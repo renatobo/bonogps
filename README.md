@@ -98,6 +98,8 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
   - [Uptime Library](https://github.com/YiannisBourkelis/Uptime-Library) 
   - [EasyButton](https://easybtn.earias.me/) 
 
+You can reduce flash size by ~30kb of Nimble-Arduino removing role roles `CONFIG_BT_NIMBLE_ROLE_CENTRAL` and `CONFIG_BT_NIMBLE_ROLE_OBSERVER` in `nimconfig.h` by simply commenting the two defines.
+
 ### Optional libraries depending on #define options
   - [Task Scheduler](https://github.com/arkhipenko/TaskScheduler)  [included by default]
   - [NeoGPS](https://github.com/SlashDevin/NeoGPS)  [not included right now, but coded and available for some additional cases]
