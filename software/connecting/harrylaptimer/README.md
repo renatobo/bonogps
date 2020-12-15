@@ -4,7 +4,8 @@ More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where
 
 Features:
 
- - NMEA parsing offered by HLT directly. Enable or Disable GSV/GSA as needed
+ - NMEA parsing offered by HLT directly: RMC+GGA messages
+ - Enable or Disable GSV/GSA as needed, with a lower update frequency selectable for 1, 2, or 5 sec (as [instructed by Harry](http://forum.gps-laptimer.de/viewtopic.php?t=4359))
  - tested with v24
 
 Connections
