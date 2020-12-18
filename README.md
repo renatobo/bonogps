@@ -51,6 +51,7 @@ The BOOT button allows you to loop between WiFi modes on the fly: WiFi Access Po
 - WiFi Access Point (WiFi AP): the blue led light flashes slowly (500 ms cycle)
 - No WiFi: the blue led light is off
 
+>>>>>>> ff33c633d513b93d3e34d88f0418333a7adb1523
 ![Fast blinking - Client](hardware/esp32/wifi_client.webm)
 ![Slow blinking - AP](hardware/esp32/wifi_ap.webm)
 
