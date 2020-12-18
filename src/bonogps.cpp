@@ -612,6 +612,8 @@ void gps_enable_trackaddict()
   log_i("Setting GPS to specific Track Addict needs");
   gps_enable_common();
   push_gps_message(UBLOX_INIT_MAINTALKER_GP, sizeof(UBLOX_INIT_MAINTALKER_GP));
+  push_gps_message(UBLOX_GxGLL_ON, sizeof(UBLOX_GxGLL_ON));
+  stored_preferences.nmeaGLL = true;
   stored_preferences.trackaddict = true;
 }
 void gps_enable_racetime()
@@ -1104,7 +1106,7 @@ void handle_preset()
 
 #ifdef BTSPPENABLED
   // racechrono main page
-  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
+  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL Streaming</li><li>Restrict GSV to GPS</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
 // racetime main page
   mainpage += F("<details open><summary>Racetime Lite <a target='_blank' href='https://www.racetimeapp.com/en/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL+VTG+RMC+GGA Enabled</li><li>no GSA GSV GBS streaming</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racetime/android'>Android: BT-SPP</a></p></article></details>");
