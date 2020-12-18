@@ -28,7 +28,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v0.4.1"
+#define BONOGPS_FIRMWARE_VER "v0.6"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
 #define BONOGPS_MDNS "bonogps"
@@ -105,6 +105,7 @@ typedef struct
   bool ble_active = true;
   bool btspp_active = false;
   bool trackaddict = false;
+  bool racechrono = false;
   uint8_t nmeaGSAGSVpolling = 0;
   char wifi_ssid[WIFI_SSID_MAXLEN];
   char wifi_key[WIFI_KEY_MAXLEN];
@@ -260,8 +261,10 @@ const char UBLOX_GxGSV_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0
 const char UBLOX_INIT_CHANNEL_8[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7D, 0xE7};
 // standard max SVs and extended digits for unsupported SVs
 const char UBLOX_INIT_CHANNEL_ALL[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x63};
-// use GP as Main talker and GSV Talker ID - this is needed for some apps like TrackAddict
-const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
+// use GP as Main talker and GSV Talker ID - this is needed for TrackAddict
+const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM =  {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
+// use GP as Main talker and GSV Talker ID and restrict to GPS SVs ony - this is needed for RaceChrono
+const char UBLOX_INIT_MAINTALKER_GP_GPSONLY[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x10, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0xB8};
 // set gps port BAUD rate
 const char UBLOX_BAUD_57600[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDA, 0xA9};
 const char UBLOX_BAUD_38400[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8F, 0x70};
@@ -276,10 +279,14 @@ const char UBLOX_WARMSTART[] PROGMEM = {0xB5, 0x62, 0x06, 0x04, 0x04, 0x00, 0x00
 // Display precision in some apps
 const char UBLOX_GxGBS_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x0C, 0x72};
 const char UBLOX_GxGBS_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x62};
-// Poll GSA
+// Poll GNGSA
 const char UBLOX_GNGSA_POLL[] PROGMEM = "$EIGNQ,GSA*2D\r\n";
-// Poll GSV
+// Poll GNGSV
 const char UBLOX_GNGSV_POLL[] PROGMEM = "$EIGNQ,GSV*3A\r\n";
+// Poll GPGSA
+const char UBLOX_GPGSA_POLL[] PROGMEM = "$EIGPQ,GSA*33\r\n";
+// Poll GPGSV
+const char UBLOX_GPGSV_POLL[] PROGMEM = "$EIGPQ,GSV*24\r\n";
 bool gsaorgsv_turn = true;
 
 void push_gps_message(const char message[], int message_size = 0)
@@ -304,11 +311,27 @@ void poll_GSA_GSV_info()
 {
   if (gsaorgsv_turn)
   {
-    gpsPort.write(UBLOX_GNGSA_POLL);
+    if (stored_preferences.racechrono)
+    {
+      // RaceChrono only understand GPGSA
+      gpsPort.write(UBLOX_GPGSA_POLL);
+    }
+    else
+    {
+      gpsPort.write(UBLOX_GNGSA_POLL);
+    }
   }
   else
   {
-    gpsPort.write(UBLOX_GNGSV_POLL);
+    if (stored_preferences.racechrono)
+    {
+      // RaceChrono only understand GPGSV
+      gpsPort.write(UBLOX_GPGSV_POLL);
+    }
+    else
+    {
+      gpsPort.write(UBLOX_GNGSV_POLL);
+    }
   }
   gsaorgsv_turn = !gsaorgsv_turn;
 }
@@ -434,6 +457,7 @@ void ReadNVMPreferences()
   stored_preferences.ble_active = prefs.getBool("ble", stored_preferences.ble_active);
   stored_preferences.btspp_active = prefs.getBool("btspp", stored_preferences.btspp_active);
   stored_preferences.trackaddict = prefs.getBool("trackaddict", stored_preferences.trackaddict);
+  stored_preferences.racechrono = prefs.getBool("racechrono", stored_preferences.racechrono);
 
   if (stored_preferences.ble_active && stored_preferences.btspp_active)
   {
@@ -486,6 +510,7 @@ void StoreNVMPreferences(bool savewifi = false)
   size_t_written = prefs.putBool("ble", stored_preferences.ble_active);
   size_t_written = prefs.putBool("btspp", stored_preferences.btspp_active);
   size_t_written = prefs.putBool("trackaddict", stored_preferences.trackaddict);
+  size_t_written = prefs.putBool("racechrono", stored_preferences.racechrono);
   if (size_t_written > 0)
   {
     log_i("Preferences written");
@@ -538,6 +563,8 @@ void StoreNVMPreferencesWiFiCreds()
 void gps_enable_trackaddict()
 {
   log_d("Setting GPS to specific Track Addict needs");
+  stored_preferences.racechrono = false;
+  stored_preferences.trackaddict = true;
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
   stored_preferences.nmeaGSA = false;
   push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSA_OFF));
@@ -545,11 +572,31 @@ void gps_enable_trackaddict()
   push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
   stored_preferences.nmeaGBS = false;
   push_gps_message(UBLOX_INIT_MAINTALKER_GP, sizeof(UBLOX_INIT_MAINTALKER_GP));
-  stored_preferences.trackaddict = true;
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
+#else
+  stored_preferences.nmeaGSAGSVpolling = 0;
+#endif
+}
+
+void gps_enable_racechrono()
+{
+  log_d("Setting GPS to specific RaceChrono needs");
+  stored_preferences.racechrono = true;
+  push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
+  stored_preferences.nmeaGSA = false;
+  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSA_OFF));
+  stored_preferences.nmeaGSV = false;
+  push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
+  stored_preferences.nmeaGBS = false;
+  push_gps_message(UBLOX_INIT_MAINTALKER_GP_GPSONLY, sizeof(UBLOX_INIT_MAINTALKER_GP_GPSONLY));
+  push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
+  stored_preferences.gps_rate = 10;
+#ifdef TASK_SCHEDULER
+  control_poll_GSA_GSV(5);
+  stored_preferences.nmeaGSAGSVpolling = 5;
 #else
   stored_preferences.nmeaGSAGSVpolling = 0;
 #endif
@@ -1020,7 +1067,7 @@ void handle_preset()
 
 #ifdef BTSPPENABLED
   // racechrono main page
-  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 1 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
+  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
   // trackaddict main page
   mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
@@ -1397,12 +1444,10 @@ void handle_svchannel()
   if (channels == "8")
   {
     push_gps_message(UBLOX_INIT_CHANNEL_8, sizeof(UBLOX_INIT_CHANNEL_8));
-    // TODO stored_preferences.nmeaGBS = true;
   }
   else if (channels == "off")
   {
     push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
-    // TODO stored_preferences.nmeaGBS = false;
   }
   else
   {
@@ -1459,7 +1504,7 @@ void handle_trackaddict()
 #ifdef TASK_SCHEDULER
     control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
 #endif
-    // this also resets the Main Talker ID
+    // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
     push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   }
   else
@@ -1489,23 +1534,8 @@ void handle_trackaddict_off()
 void handle_racechrono_android()
 {
   // /hlt/android
-  log_i("Setting optimal configuration for RaceChrono on Android: 10Hz, GSA+GSV Off, GBS On, BT-SPP");
-  push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-  stored_preferences.gps_rate = 10;
-  stored_preferences.nmeaGSA = false;
-  stored_preferences.nmeaGSV = false;
-#ifdef TASK_SCHEDULER
-  stored_preferences.nmeaGSAGSVpolling = 1;
-  control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
-#else
-  // control_poll will disable GSA and GSV on its own
-  push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
-  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
-#endif
-  push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
-  stored_preferences.nmeaGBS = true;
-  push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
-  log_i("Set optimal configuration for RaceChrono on Android");
+  log_i("Setting optimal configuration for RaceChrono on Android: 10Hz, GSA+GSV+GBS Off, BT-SPP");
+  gps_enable_racechrono();
   stored_preferences.trackaddict = false;
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
@@ -1537,9 +1567,11 @@ void handle_hlt_android()
 #endif
   push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
   stored_preferences.nmeaGBS = true;
+  // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   log_i("Set optimal configuration for Harry Lap Timer on Android");
   stored_preferences.trackaddict = false;
+  stored_preferences.racechrono = false;
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
   ble_stop();
@@ -1573,8 +1605,10 @@ void handle_hlt()
 #endif
   push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
   stored_preferences.nmeaGBS = true;
+    // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   stored_preferences.trackaddict = false;
+  stored_preferences.racechrono = false;
 
   if (choice == "tcpip")
   {
@@ -1732,7 +1766,9 @@ void handle_status()
   message += F("<br>Refresh rate: ");
   message += stored_preferences.gps_rate + String("Hz");
   message += F("<br>Main Talker ID: ");
-  message += (stored_preferences.trackaddict ? F("GPS (TrackAddict)") : F("System Specific (default)"));
+  message += ((stored_preferences.trackaddict || stored_preferences.racechrono )? F("GPS ") : F("System Specific (default)"));
+  message += F("<br>Restrict SV to GPS: ");
+  message += (stored_preferences.racechrono? F("Yes ") : F("No (default)"));
   message += F("<br>NMEA GxGSV: ");
   message += (stored_preferences.nmeaGSV ? String("ON") : String("OFF"));
   message += F("<br>NMEA GxGSA: ");
@@ -2195,6 +2231,10 @@ void gps_initialize_settings()
   if (stored_preferences.trackaddict)
   {
     gps_enable_trackaddict();
+  }
+  else if (stored_preferences.racechrono)
+  {
+    gps_enable_racechrono();
   }
   else
   {
