@@ -12,6 +12,7 @@ The main goal is to **make GPS data available to mobile apps that can record dat
 1. [Harry's Lap Timer](https://www.gps-laptimer.de)
 2. [TrackAddict](https://www.hptuners.com/product/trackaddict-app/)
 3. [RaceChrono](https://racechrono.com/)
+4. [Racetime](hhttps://www.racetimeapp.com/en/)
 
 A web configuration (responsive HTML) panel allows changing select GPS parameters on the fly: access it via [http://bonogps.local]() (when in WiFi AP mode, this becomes [http://10.0.0.1]() on Android without mDNS resolution).
 
@@ -52,10 +53,10 @@ For convenience, the WiFi status can be excluded or saved separately.
 
 There are many mobile apps to log lap times, few accept custom devices, in particular on iOS. The ones below are tested.
 
-| | Harry Lap Timer| TrackAddict | RaceChrono
-| --- | --- | --- | --- 
-| iOS | **BLE**, TCP-IP | | 
-| Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP 
+| | Harry Lap Timer| TrackAddict | RaceChrono | Racetime
+| --- | --- | --- | --- | ---
+| iOS | **BLE**, TCP-IP | | |
+| Android | **BT-SPP**, TCP-IP | BT-SPP | BT-SPP | BT-SPP 
 
 See more info in each subfolder of **connecting**.
 

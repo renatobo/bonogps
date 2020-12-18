@@ -100,12 +100,15 @@ typedef struct
   WiFiMode_t wifi_mode = WIFI_AP;
   bool nmeaGSA = false;
   bool nmeaGSV = false;
+  bool nmeaVTG = false;
+  bool nmeaGLL = false;
   bool nmeaGBS = true;
   bool nmeaTcpServer = false;
   bool ble_active = true;
   bool btspp_active = false;
   bool trackaddict = false;
   bool racechrono = false;
+  bool racetime = false;
   uint8_t nmeaGSAGSVpolling = 0;
   char wifi_ssid[WIFI_SSID_MAXLEN];
   char wifi_key[WIFI_KEY_MAXLEN];
@@ -248,6 +251,16 @@ const char UBLOX_INIT_10HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64
 const char UBLOX_INIT_1HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
 // set rate of GPS to 1Hz
 const char UBLOX_INIT_16HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
+
+// GLL_ON
+const char UBLOX_GxGLL_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2F};
+// GLL OFF
+const char UBLOX_GxGLL_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A};
+
+// VTG ON
+const char UBLOX_GxVTG_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x05, 0x4B};
+// VTG OFF
+const char UBLOX_GxVTG_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x46};
 
 // Enable GxGSA (GNSS DOP and Active Satellites)
 const char UBLOX_GxGSA_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x05, 0x41};
@@ -453,11 +466,14 @@ void ReadNVMPreferences()
   stored_preferences.nmeaGSA = prefs.getBool("nmeagsa", stored_preferences.nmeaGSA);
   stored_preferences.nmeaGSV = prefs.getBool("nmeagsv", stored_preferences.nmeaGSV);
   stored_preferences.nmeaGBS = prefs.getBool("nmeagbs", stored_preferences.nmeaGBS);
+  stored_preferences.nmeaVTG = prefs.getBool("nmeavtg", stored_preferences.nmeaVTG);
+  stored_preferences.nmeaGLL = prefs.getBool("nmeagll", stored_preferences.nmeaGLL);
   stored_preferences.nmeaTcpServer = prefs.getBool("nmeatcp", stored_preferences.nmeaTcpServer);
   stored_preferences.ble_active = prefs.getBool("ble", stored_preferences.ble_active);
   stored_preferences.btspp_active = prefs.getBool("btspp", stored_preferences.btspp_active);
   stored_preferences.trackaddict = prefs.getBool("trackaddict", stored_preferences.trackaddict);
   stored_preferences.racechrono = prefs.getBool("racechrono", stored_preferences.racechrono);
+  stored_preferences.racetime = prefs.getBool("racetime", stored_preferences.racetime);
 
   if (stored_preferences.ble_active && stored_preferences.btspp_active)
   {
@@ -506,11 +522,15 @@ void StoreNVMPreferences(bool savewifi = false)
   size_t_written = prefs.putBool("nmeagsa", stored_preferences.nmeaGSA);
   size_t_written = prefs.putBool("nmeagsv", stored_preferences.nmeaGSV);
   size_t_written = prefs.putBool("nmeagbs", stored_preferences.nmeaGBS);
+  size_t_written = prefs.putBool("nmeavtg", stored_preferences.nmeaVTG);
+  size_t_written = prefs.putBool("nmeagll", stored_preferences.nmeaGLL);
   size_t_written = prefs.putBool("nmeatcp", stored_preferences.nmeaTcpServer);
   size_t_written = prefs.putBool("ble", stored_preferences.ble_active);
   size_t_written = prefs.putBool("btspp", stored_preferences.btspp_active);
   size_t_written = prefs.putBool("trackaddict", stored_preferences.trackaddict);
   size_t_written = prefs.putBool("racechrono", stored_preferences.racechrono);
+  size_t_written = prefs.putBool("racetime", stored_preferences.racetime);
+  
   if (size_t_written > 0)
   {
     log_i("Preferences written");
@@ -560,18 +580,25 @@ void StoreNVMPreferencesWiFiCreds()
   }
 }
 
-void gps_enable_trackaddict()
+void gps_disable_all()
 {
-  log_d("Setting GPS to specific Track Addict needs");
+  stored_preferences.trackaddict = false;
   stored_preferences.racechrono = false;
-  stored_preferences.trackaddict = true;
+  stored_preferences.racetime = false;
+}
+void gps_enable_common()
+{
+  gps_disable_all();
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
   stored_preferences.nmeaGSA = false;
-  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSA_OFF));
+  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
   stored_preferences.nmeaGSV = false;
   push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
   stored_preferences.nmeaGBS = false;
-  push_gps_message(UBLOX_INIT_MAINTALKER_GP, sizeof(UBLOX_INIT_MAINTALKER_GP));
+  push_gps_message(UBLOX_GxVTG_OFF, sizeof(UBLOX_GxVTG_OFF));
+  stored_preferences.nmeaVTG = false;
+  push_gps_message(UBLOX_GxGLL_OFF, sizeof(UBLOX_GxGLL_OFF));
+  stored_preferences.nmeaGLL = false;
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
@@ -580,26 +607,36 @@ void gps_enable_trackaddict()
   stored_preferences.nmeaGSAGSVpolling = 0;
 #endif
 }
-
+void gps_enable_trackaddict()
+{
+  log_i("Setting GPS to specific Track Addict needs");
+  gps_enable_common();
+  push_gps_message(UBLOX_INIT_MAINTALKER_GP, sizeof(UBLOX_INIT_MAINTALKER_GP));
+  stored_preferences.trackaddict = true;
+}
+void gps_enable_racetime()
+{
+  log_i("Setting GPS to specific RaceTime needs");
+  gps_enable_common();
+  push_gps_message(UBLOX_GxVTG_ON, sizeof(UBLOX_GxVTG_ON));
+  stored_preferences.nmeaVTG = true;
+  push_gps_message(UBLOX_GxGLL_ON, sizeof(UBLOX_GxGLL_ON));
+  stored_preferences.nmeaGLL = true;
+  push_gps_message(UBLOX_INIT_MAINTALKER_GP, sizeof(UBLOX_INIT_MAINTALKER_GP));
+  stored_preferences.racetime = true;
+}
 void gps_enable_racechrono()
 {
-  log_d("Setting GPS to specific RaceChrono needs");
-  stored_preferences.racechrono = true;
-  push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
-  stored_preferences.nmeaGSA = false;
-  push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSA_OFF));
-  stored_preferences.nmeaGSV = false;
-  push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
-  stored_preferences.nmeaGBS = false;
+  log_i("Setting GPS to specific RaceChrono needs");
+  gps_enable_common();
   push_gps_message(UBLOX_INIT_MAINTALKER_GP_GPSONLY, sizeof(UBLOX_INIT_MAINTALKER_GP_GPSONLY));
-  push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-  stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(5);
   stored_preferences.nmeaGSAGSVpolling = 5;
 #else
   stored_preferences.nmeaGSAGSVpolling = 0;
 #endif
+  stored_preferences.racechrono = true;
 }
 
 #ifdef NUMERICAL_BROADCAST_PROTOCOL
@@ -1069,6 +1106,9 @@ void handle_preset()
   // racechrono main page
   mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
+// racetime main page
+  mainpage += F("<details open><summary>Racetime Lite <a target='_blank' href='https://www.racetimeapp.com/en/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL+VTG+RMC+GGA Enabled</li><li>no GSA GSV GBS streaming</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racetime/android'>Android: BT-SPP</a></p></article></details>");
+
   // trackaddict main page
   mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
   mainpage += input_onoff("Android: BT-SPP", "trackaddict", stored_preferences.trackaddict);
@@ -1494,7 +1534,7 @@ void handle_trackaddict()
   }
   else if (choice == "off")
   { // /trackaddict/off
-    stored_preferences.trackaddict = false;
+    gps_disable_all();
     if (stored_preferences.nmeaGSA)
       push_gps_message(UBLOX_GxGSA_ON, sizeof(UBLOX_GxGSA_ON));
     if (stored_preferences.nmeaGSV)
@@ -1533,10 +1573,9 @@ void handle_trackaddict_off()
 #ifdef BTSPPENABLED
 void handle_racechrono_android()
 {
-  // /hlt/android
+  // /racechrono/android
   log_i("Setting optimal configuration for RaceChrono on Android: 10Hz, GSA+GSV+GBS Off, BT-SPP");
   gps_enable_racechrono();
-  stored_preferences.trackaddict = false;
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
   ble_stop();
@@ -1546,6 +1585,23 @@ void handle_racechrono_android()
   String message((char *)0);
   message.reserve(70);
   message += F("Set optimal configuration for RaceChrono on Android:");
+  message += FPSTR(savecfg);
+  webserver.send(200, html_text, generate_html_body(message));
+}
+void handle_racetime_android()
+{
+  // /racetime/android
+  log_i("Setting optimal configuration for RaceTime on Android: 10Hz, GSA+GSV+GBS Off, GLL+VTG ON, BT-SPP");
+  gps_enable_racetime();
+#ifdef BLEENABLED
+  stored_preferences.ble_active = false;
+  ble_stop();
+#endif
+  bt_spp_start();
+  stored_preferences.btspp_active = true;
+  String message((char *)0);
+  message.reserve(70);
+  message += F("Set optimal configuration for RaceTime on Android:");
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 }
@@ -1570,8 +1626,7 @@ void handle_hlt_android()
   // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   log_i("Set optimal configuration for Harry Lap Timer on Android");
-  stored_preferences.trackaddict = false;
-  stored_preferences.racechrono = false;
+  gps_disable_all();
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
   ble_stop();
@@ -1607,9 +1662,7 @@ void handle_hlt()
   stored_preferences.nmeaGBS = true;
     // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
-  stored_preferences.trackaddict = false;
-  stored_preferences.racechrono = false;
-
+  gps_disable_all();
   if (choice == "tcpip")
   {
     if (!stored_preferences.nmeaTcpServer)
@@ -1766,7 +1819,7 @@ void handle_status()
   message += F("<br>Refresh rate: ");
   message += stored_preferences.gps_rate + String("Hz");
   message += F("<br>Main Talker ID: ");
-  message += ((stored_preferences.trackaddict || stored_preferences.racechrono )? F("GPS ") : F("System Specific (default)"));
+  message += ((stored_preferences.trackaddict || stored_preferences.racechrono || stored_preferences.racetime)? F("GPS ") : F("System Specific (default)"));
   message += F("<br>Restrict SV to GPS: ");
   message += (stored_preferences.racechrono? F("Yes ") : F("No (default)"));
   message += F("<br>NMEA GxGSV: ");
@@ -1775,6 +1828,10 @@ void handle_status()
   message += (stored_preferences.nmeaGSA ? String("ON") : String("OFF"));
   message += F("<br>NMEA GxGBS: ");
   message += (stored_preferences.nmeaGBS ? String("ON") : String("OFF"));
+  message += F("<br>NMEA GxGLL: ");
+  message += (stored_preferences.nmeaGLL ? String("ON") : String("OFF"));
+  message += F("<br>NMEA GxVTG: ");
+  message += (stored_preferences.nmeaVTG ? String("ON") : String("OFF"));
   message += F("<br>GPS PowerSave: ");
   message += (gps_powersave ? String(" ON") : String("OFF"));
 #ifdef UPTIME
@@ -1934,6 +1991,7 @@ void WebConfig_start()
 #ifdef BTSPPENABLED
   webserver.on("/trackaddict/{}", handle_trackaddict);
   webserver.on("/racechrono/android", handle_racechrono_android);
+  webserver.on("/racetime/android", handle_racetime_android);
 #endif
   webserver.on("/hlt/{}", handle_hlt);
   webserver.on("/wifi/{}", handle_wifi_mode);
@@ -2236,7 +2294,10 @@ void gps_initialize_settings()
   {
     gps_enable_racechrono();
   }
-  else
+  else if (stored_preferences.racetime)
+  {
+    gps_enable_racetime();
+  }  else
   {
     push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   }
@@ -2308,7 +2369,7 @@ void setup()
 
   // Start WiFi
   WiFi.setHostname(BONOGPS_MDNS);
-  WiFi.setSleep(false);
+  // WiFi.setSleep(false);
 
   // WifiAP or STA will also start the NMEA server on port 1818, if the service is turned on (starting with v0.4)
   switch (stored_preferences.wifi_mode)
