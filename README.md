@@ -31,19 +31,23 @@ Most runtime configurations are managed via the web-based interface
 ![Main page of web configuration panel](software/using/webinterface_root.png)
 
 - **GPS runtime settings:** GPS messages, rate of updates, serial port speed
-- **Connections:** List clients, enable BLE/BT-SPP connectivity, switch between WiFi client to a well-known WiFi network or built-in Access Point
-- **Device:** Put GPS in powersaving for some time, load preset configurations, collect information about current status of the device, restart the ESP32, save current configuration, save WiFi credentials for client mode
+- **Connections:** List clients, enable BLE/BT-SPP connectivity, enable/disable the builtin TCP-IP messages repeater, switch between WiFi client to a well-known WiFi network or built-in Access Point
+- **Device:** Put GPS in powersaving for some time, Disable WiFi, load preset configurations, save current configuration, collect information about current status of the device, save WiFi credentials for client mode restart the ESP32
 
-The BOOT button allows you to switch between WiFi modes on the fly: WiFi client or WiFi Access Point.
+The BOOT button allows you to loop between WiFi modes on the fly: WiFi Access Point -> WiFi client -> No WiFi.
 
-- WiFi Client (WiFi STA): the led light flashes rapidly (250 ms cycle)
-- WiFi Access Point (WiFi AP): the led light flashes slowly (500 ms cycle)
+- WiFi Client (WiFi STA): the blue led light flashes rapidly (250 ms cycle)
+- WiFi Access Point (WiFi AP): the blue led light flashes slowly (500 ms cycle)
+- No WiFi: the blue led light is off
+
+![Fast blinking - Client](hardware/esp32/wifi_client.webm)
+![Slow blinking - AP](hardware/esp32/wifi_ap.webm)
 
 ### Saving configuration
 
 If you load a preset or if you change a runtime settings, you can preserve it across restart of the device.
 
-Go to Device > Save Config and you'll find these options
+Go to *Device > Save Config* and you'll find these options
 
 ![Save Config page](software/using/webinterface_saveconfig.png)
 
@@ -60,13 +64,18 @@ There are many mobile apps to log lap times, few accept custom devices, in parti
 
 See more info in each subfolder of **connecting**.
 
-You can load a preset configuration from the configuration page selecting *Device > Load Preset* and then choosing your mobile phone device and app combination
+You can load a preset configuration from the configuration page selecting *Device > Load Preset* and then choosing your mobile phone device and app combination (when there are alternatives, the recommended option is in bold)
 
 ![Loading presets](software/using/webinterface_loadpreset.png)
 
 ## Hardware build instructions
 
-You only need to connect your ublox GPS module to a Hardware serial port such as UART2/Serial2 and the GPS power to the Vin and Ground pins of ESP32.
+The minimum build is a ublox GPS module connected to an ESP32:
+
+- TX/RX from the GPS to a Hardware serial port such as UART2/Serial2 on ESP32
+- the GPS power pins to ESP32: VCC to 3v3, GND to GND
+
+BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the IMU (which is not used)
 
 Schematics are relatively simple
 
@@ -74,6 +83,8 @@ Schematics are relatively simple
 * connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX
 
 ![Schematics](hardware/esp32/esp32_to_gps_schem.png)
+
+Examples are in [hardware/assembled](hardware/assembled)
 
 ### GPS Preconfiguration
 
@@ -95,6 +106,7 @@ A backup of the options is in the [hardware/GPS folder](hardware/GPS/gps-bn220-c
 This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE (1.8.13)](https://www.arduino.cc/en/software)
 
 ### Libraries
+
   - [Nimble-Arduino](https://github.com/h2zero/NimBLE-Arduino) 
   - [Uptime Library](https://github.com/YiannisBourkelis/Uptime-Library) 
   - [EasyButton](https://easybtn.earias.me/) 
@@ -102,19 +114,23 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
 You can reduce flash size by ~30kb of Nimble-Arduino removing role roles `CONFIG_BT_NIMBLE_ROLE_CENTRAL` and `CONFIG_BT_NIMBLE_ROLE_OBSERVER` in `nimconfig.h` by simply commenting the two defines.
 
 ### Optional libraries depending on #define options
-  - [Task Scheduler](https://github.com/arkhipenko/TaskScheduler)  [included by default]
+
+  - [Task Scheduler](https://github.com/arkhipenko/TaskScheduler)  [included by default and recommended as most usefule features depend on it]
   - [NeoGPS](https://github.com/SlashDevin/NeoGPS)  [not included right now, but coded and available for some additional cases]
 
 ### Built-in libraries used by this code
+
   - WebServer
   - FS
   - Preferences
   - WiFi
   - DNSServer
   - ESPmDNS
-  - ArduinoOTA
   - Update
-  - BluetoothSerial 
+  - BluetoothSerial
+
+### Optional builtin libraries disabled by default
+  - ArduinoOTA: this is useful during development only, so it's undefined by default in the current code
 
 ### Important: Partition size
 
@@ -133,13 +149,4 @@ Within the Arduino IDE, from `Tools > Partition Scheme`
 
 ## Possible enhancements and ideas
    
-  - add display: https://randomnerdtutorials.com/esp32-ssd1306-oled-display-arduino-ide/
-  - add battery and expose battery level via BLE and/or web interface
-  - log to SD  https://randomnerdtutorials.com/esp32-data-logging-temperature-to-microsd-card/
-  - test https://apps.apple.com/us/app/espressif-esptouch/id1071176700 or https://apps.apple.com/in/app/esp-ble-provisioning/id1473590141
-  - OTA via browser or from internet location https://lastminuteengineers.com/esp32-ota-web-updater-arduino-ide/ https://github.com/chrisjoyce911/esp32FOTA or https://github.com/platformio/bintray-secure-ota or https://github.com/ayushsharma82/AsyncElegantOTA
-  - use ootb library at https://os.mbed.com/teams/ublox/code/gnss/ or https://github.com/ldab/u-blox_GNSS
-  - use packed binary format with custom binary parser for HLT
-  - use https with https://github.com/fhessel/esp32_https_server and https://github.com/fhessel/esp32_https_server_compat
-  - restore usage of https://github.com/khoih-prog/ESPAsync_WiFiManager and Async webserver (issues with ASyncTCP not being able to send info back outside of request/reply
-
+See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) on the github project
