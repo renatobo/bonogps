@@ -12,7 +12,7 @@ The main goal is to **make GPS data available to mobile apps that can record dat
 1. [Harry's Lap Timer](https://www.gps-laptimer.de)
 2. [TrackAddict](https://www.hptuners.com/product/trackaddict-app/)
 3. [RaceChrono](https://racechrono.com/)
-4. [Racetime](hhttps://www.racetimeapp.com/en/)
+4. [Racetime](https://www.racetimeapp.com/en/)
 
 A web configuration (responsive HTML) panel allows changing select GPS parameters on the fly: access it via [http://bonogps.local]() (when in WiFi AP mode, this becomes [http://10.0.0.1]() on Android without mDNS resolution).
 
