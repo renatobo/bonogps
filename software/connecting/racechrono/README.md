@@ -1,10 +1,10 @@
 # RaceChrono
 
-The cleanest and simplest lap timer supported: [https://racechrono.com/](https://racechrono.com/)
+The lap timer with the cleanest UX currently supported: [https://racechrono.com/](https://racechrono.com/)
 
   - tested with v7.0.10 free (thus satellites view untested) on Android
   - BT-SPP is the only option
-  - GSA+GSV polling at 1 sec
+  - GSA+GSV polling at 5 sec
 
   
 ## Setup
@@ -21,3 +21,18 @@ When you click on the lower left green "swipe up" icon, you'll be able to see fu
 
 
 ![](racechrono_information.png)
+
+
+## GPS configuration for NMEA messages
+
+Instructions directly from the SW Developer of RaceChrono in the support forum point out [here](https://racechrono.com/forum/discussion/comment/11252/#Comment_11252) and [here](https://racechrono.com/forum/discussion/1421/best-settings-for-qstarz818xt)
+
+* Sentences need to start with `$GP`
+* Only `GGA+RMC` or `RMC+VTG+ZDA` combinations are used
+* `GSA+GSV` are optional
+* `GBS` sentence is not used
+
+This means
+
+* Main Talker ID = GP
+* `GSA` and `GSV` every 5 seconds, with only `GSV` restricted to GP
