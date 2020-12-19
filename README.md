@@ -23,7 +23,9 @@ This repo contains software, list of hardware, and (simple) schematics  to build
 2. a Bluetooth Low Energy (BLE) service
 3. a BT Classic (BT-SPP) stream
 
-The logger device is likely going to be one of the *Track Lap time apps* listed above.
+The logger device is likely going to be one of the *Track Lap time apps* listed above running on your phone.
+
+Examples of actual devices are in [hardware/assembled](hardware/assembled)
 
 ![Prototype picture](hardware/assembled/bonogps_bn220_side.jpg)
 
