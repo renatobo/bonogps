@@ -27,7 +27,8 @@ A small 650mAh battery gives ~ 4 hrs of autonomy, I repurposed one that was supp
 
 ![From the side](bonogps_bn220_side.jpg)
 
-I used double sided tape to attach this on top of a back seat/seat cowl or to secure it inside the fairing
+I used double sided tape to attach this on top of a back seat/seat cowl or to secure it inside the fairing: an example for a Ducati Panigale 959/1299 here below:
+
 
 ![Inside](bonogps_bn220_underseat.jpg)
 
@@ -36,7 +37,8 @@ I used double sided tape to attach this on top of a back seat/seat cowl or to se
 Velcro was my friend here, all elements are removable and locked into the top part of the seat cowl so that they don't interfere.
 the GPS antenna is underneath the very end of the tail, with minimal plastic over it and with the best clear line of sight of any other location on the bike
 
-While this is a convenient and compact setup, the device is very exposed.
+While this is a convenient and compact setup, the device is very exposed when you take the seat cowl off.
+An example for the Ducati Panigale 899/1199 seat cowl here below:
 
 ![View from outside](bonogps_bn880_ducati_top.jpg)
 
