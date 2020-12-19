@@ -1106,13 +1106,13 @@ void handle_preset()
 
 #ifdef BTSPPENABLED
   // racechrono main page
-  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL Streaming</li><li>Restrict GSV to GPS</li><li>no GSA GSV GBS streaming</li><li>GSA GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
+  mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GBS</li><li>GSA+GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
 // racetime main page
-  mainpage += F("<details open><summary>Racetime Lite <a target='_blank' href='https://www.racetimeapp.com/en/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL+VTG+RMC+GGA Enabled</li><li>no GSA GSV GBS streaming</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racetime/android'>Android: BT-SPP</a></p></article></details>");
+  mainpage += F("<details open><summary>Racetime Lite <a target='_blank' href='https://www.racetimeapp.com/en/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL+VTG+RMC+GGA Enabled</li><li>no GSA GSV GBS</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racetime/android'>Android: BT-SPP</a></p></article></details>");
 
   // trackaddict main page
-  mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS streaming</li><li>no GSA GSV polling</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
+  mainpage += F("<details open><summary>TrackAddict <a target='_blank' href='https://www.hptuners.com/product/trackaddict-app/'>?</a></summary><article>Required options:<br><ul><li>Talker id GPS for all systems</li><li>no GSA GSV GBS </li><li>GLL Streaming</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article>");
   mainpage += input_onoff("Android: BT-SPP", "trackaddict", stored_preferences.trackaddict);
   mainpage += F("<article><p>A save config and restart are recommended after enabling/disabling BT-SPP</p></article></details>");
 #endif
@@ -1957,9 +1957,9 @@ void handle_saveconfig_wifi()
   {
     StoreNVMPreferences(false);
   }
-  String message = "Preferences";
+  String message = "Preferences [";
   message += withorwout;
-  message += " stored";
+  message += "] stored";
   webserver.send(200, html_text, generate_html_body(message));
 }
 
