@@ -2,6 +2,8 @@
 
 More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where you can also find a very good user and developer forum. It offers the largest set of customizable options to build your own external device and it is the only supported platform for iOS phones via Bluetooth Low Energy.
 
+![Example](hlt_lagunaseca.png)
+
 Features:
 
  - NMEA parsing offered by HLT directly: RMC+GGA messages

@@ -2,6 +2,8 @@
 
 Another very popular app, [https://www.hptuners.com/product/trackaddict-app/](https://www.hptuners.com/product/trackaddict-app/)
 
+![Example](trackaddict_lagunaseca.png)
+
   - tested with v4.6.0 on Android
   - BT-SPP is the only option
   - it needs a specific set of NMEA messages configurations
@@ -16,12 +18,15 @@ Please make sure that your BonoGPS unit is connected before recording a session,
 
 In the main page, click on the gear icon, scroll down to "Input position and speed" and select Bluetooth GPS
 
-![](trackaddict_setup.png)
+![Setup](trackaddict_setup.png)
 
 Assuming everything well, the main page will now show the new refreshed rate of your BonoGPS unit
 
-![](trackaddict_connected.png)
+![Connect](trackaddict_connected.png)
 
 You can click on the green line at the bottom to find out more and validate the connection parameters
 
-![](trackaddict_check.png)
+![Check](trackaddict_check.png)
+
+Once you have setup a connection, remember to check you are using the external GPS when starting the recording of your session
+

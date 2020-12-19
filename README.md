@@ -4,6 +4,8 @@
 
 The main goal of this device is to **make GPS data (speed, location) available to mobile apps that can record data, for example for track riding**. While there are many good (and not even too expensive) solutions out there, COVID-19 happened and this was a great way to spend some time building something myself.
 
+![Map of Buttonwillow lateral acceleration](software/using/buttonwillow_map.png)
+
 Currently these apps are supported
 
 1. [Harry's Lap Timer](https://www.gps-laptimer.de)
@@ -23,9 +25,11 @@ This repo contains software, list of hardware, and (simple) schematics  to build
 
 The logger device is likely going to be one of the *Track Lap time apps* listed above.
 
+![Prototype picture](hardware/assembled/bonogps_bn220_side.jpg)
+
 A web configuration (responsive HTML) panel allows changing configuration and select GPS parameters on the fly: access it via [http://bonogps.local]() (when in WiFi AP mode, this becomes [http://10.0.0.1]() on Android without mDNS resolution).
 
-The settings required by each app are available as presets that you can load for your device (iOS, Android). More information on what version, features, and connections of each app are available below.
+The settings required by each app are available as presets that you can load for your device (iOS, Android). More information on what version, features, and connections of each app are in [software/connecting](software/connecting).
 
 You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/product/u-center) via TCP/IP, in this case be aware that the uart speed is fixed.
 
