@@ -1,13 +1,13 @@
 # Connecting to Harry's LapTimer
 
-More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where you can also find a very good user and developer forum. It offers the largest set of customizable options to build your own external device and it is the only supported platform for iOS phones via Bluetooth Low Energy.
+More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where you can also find a very good [user and developer forum](http://forum.gps-laptimer.de/viewforum.php?f=2). It offers the largest set of customizable options to build your own external device and it is the only supported platform for iOS phones via Bluetooth Low Energy.
 
 ![Example](hlt_lagunaseca.png)
 
 Features:
 
-* NMEA parsing offered by HLT directly: RMC+GGA messages
-* Enable or Disable GSV/GSA as needed, with a lower update frequency selectable for 1, 2, or 5 sec (as [instructed by Harry](http://forum.gps-laptimer.de/viewtopic.php?t=4359))
+* NMEA parsing offered by HLT directly: `GxRMC`+`GxGGA`+`GxGBS` messages
+* Enable or Disable `GxGSV`+`GxGSA` as needed, with a lower update frequency selectable for 1, 2, or 5 sec (as [instructed by Harry](http://forum.gps-laptimer.de/viewtopic.php?t=4359))
 * tested with v24
 
 Connections
