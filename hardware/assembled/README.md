@@ -27,7 +27,9 @@ A small 650mAh battery gives ~ 4 hrs of autonomy, I repurposed one that was supp
 
 ![From the side](bonogps_bn220_side.jpg)
 
-I used double sided tape to attach this to a back seat/seat cowl.
+I used double sided tape to attach this on top of a back seat/seat cowl or to secure it inside the fairing
+
+![Inside](bonogps_bn220_underseat.jpg)
 
 ## Integrated in seat cowl (with BN880)
 
