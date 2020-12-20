@@ -25,7 +25,7 @@ This repo contains software, list of hardware, and (simple) schematics  to build
 
 The logger device is likely going to be one of the *Track Lap time apps* listed above running on your phone.
 
-Examples of actual devices are in [hardware/assembled](hardware/assembled)
+Examples of actual devices are in [hardware/assembled](hardware/assembled), at a cost of 25$ and 40$ (BN-880 is a little bit more expensive, and I used a larger battery too)
 
 ![Prototype picture](hardware/assembled/bonogps_bn220_side.jpg)
 
