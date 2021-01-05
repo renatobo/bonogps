@@ -17,7 +17,7 @@ If you are not into the *maker* thing or if you don't know anyone that might be,
 
 ## For the SW Engineer / maker
 
-This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a ublox GPS device (for example commonly available and cheap [BN220](https://www.amazon.com/Navigation-Raspberry-Betaflight-Geekstory-Shipping/dp/B07PRDY6DS) and [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W)) and repeats them back to a logger device either
+This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M8 (for example [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K), [BN220](https://www.amazon.com/Navigation-Raspberry-Betaflight-Geekstory-Shipping/dp/B07PRDY6DS), or [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W)) and repeats them back to a logger device, either
 
 1. a TCP/IP socket
 2. a Bluetooth Low Energy (BLE) service
@@ -175,6 +175,7 @@ See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q
 
 * Very valuable information from the mobile apps developers: [Harry's Lap Timer forum](http://forum.gps-laptimer.de/viewforum.php?f=2), [HP Tuner Track Adict forum](https://forum.hptuners.com/forumdisplay.php?74-TrackAddict), [RaceChrono forum](https://racechrono.com/forum/categories/diy-builds)
 * Email conversations with Harald Schlangmann (Harry's Lap Timer) and Roberto Morini (Racetime) who I thank for the time and effort in developing and supporting their apps
-* There are several other similar projects on github, a few from which I learned a lot: [RaceChronoDYI-TBeam](https://github.com/0x8008135/RaceChronoDYI-TBeam) [RaceChrono BLE DIY device (GPS and CAN-Bus)](https://github.com/aollin/racechrono-ble-diy-device) 
+* There are several other similar projects on github, a few from which I learned a lot: [RaceChronoDYI-TBeam](https://github.com/0x8008135/RaceChronoDYI-TBeam) [RaceChrono BLE DIY device (GPS and CAN-Bus)](https://github.com/aollin/racechrono-ble-diy-device) [DAWA](https://github.com/quichedood/DAWA-6.x)
 * Screenshot framing by [Mockuphone](https://mockuphone.com/) and [Android developers marketing tools
 ](https://developer.android.com/distribute/marketing-tools/device-art-generator)
+* [The GPS Dictionary](https://www.u-blox.com/sites/default/files/the_gps_dictionary.pdf)
