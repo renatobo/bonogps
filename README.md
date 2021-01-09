@@ -25,7 +25,7 @@ This repo contains software, list of hardware, and (simple) schematics  to build
 
 The logger device is likely going to be one of the *Track Lap time apps* listed above running on your phone.
 
-Examples of actual devices are in [hardware/assembled](hardware/assembled), at a cost of 25$ and 40$ (BN-880 is a little bit more expensive, and I used a larger battery too)
+Examples of actual devices are in [hardware/assembled](hardware/assembled), at a cost of 25$ and 40$ (GPS receivers with active antennas are a little bit more expensive but worth it, and a larger battery helps as well)
 
 ![Prototype picture](hardware/assembled/bonogps_bn220_side.jpg)
 
@@ -40,10 +40,10 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 ## Daily Usage
 
 1. Turn on the ESP32 and wait a few minutes for the GPS to get a fix on position (on BN devices, the red led will blink every second)
-2. Open your preferred mobile app and connect 
+2. Open your preferred mobile app and connect it to your BonoGPS-*ABCD* device
 3. Enjoy your ride!
 
-Most runtime configurations are managed via the web-based interface: you can use your phone or any device with a web browser which is able to connect to either the built-in Access Point the BonoGPS provides or (if you are home and on you have configured the WiFi Client credentials) [http://bonogps.local](http://bonogps.local)
+Most runtime configurations are managed via its web-based interface: you can use your phone or any device with a web browser which is able to connect to either the built-in Access Point the BonoGPS provides or (if you are home and on you have configured the WiFi Client credentials) [http://bonogps.local](http://bonogps.local)
 
 ![Main page of web configuration panel from mobile device](software/using/webinterface_root_mobile.png)
 
@@ -62,7 +62,7 @@ The BOOT button allows you to loop between WiFi modes on the fly: WiFi Access Po
 ![Fast blinking - Client](hardware/esp32/wifi_client.webm)
 ![Slow blinking - AP](hardware/esp32/wifi_ap.webm)
 
-### Saving configuration
+### Save a configuration
 
 If you load a preset or if you change a runtime settings, you can preserve it across restart of the device.
 
@@ -89,17 +89,17 @@ You can load a preset configuration from the configuration page selecting *Devic
 
 ## Hardware build instructions
 
-The minimum build is a ublox GPS module connected to an ESP32:
+The minimum build is a ublox M8 series GPS revceiver module connected to an ESP32:
 
-* TX/RX from the GPS to a Hardware serial port such as UART2/Serial2 on ESP32
+* TX/RX from the GPS to a Hardware serial port (default in the code is UART2/Serial2) on ESP32
 * the GPS power pins to ESP32: VCC to 3v3, GND to GND
 
-BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the IMU (which is not used)
+BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the IMU which are not used so you can leave them unconnected.
 
 Schematics are relatively simple
 
-* power the GPS module
-* connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX
+* power the GPS module (3.3V on ESP32 to VCC on GPS receiver, GND on ESP32 to GND on GPS receiver)
+* connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX (RX and TX are switched: GPS transmits, ESP32 receives)
 
 ![Schematics](hardware/esp32/esp32_to_gps_schem.png)
 
@@ -124,20 +124,24 @@ A backup of the options is in the [hardware/GPS folder](hardware/GPS/gps-bn220-c
 
 This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE (1.8.13)](https://www.arduino.cc/en/software)
 
-### Libraries
+### External Libraries
 
-* [Nimble-Arduino](https://github.com/h2zero/NimBLE-Arduino) 
+* [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino) 
 * [Uptime Library](https://github.com/YiannisBourkelis/Uptime-Library) 
 * [EasyButton](https://easybtn.earias.me/) 
 
 You can reduce flash size by ~30kb of Nimble-Arduino removing role roles `CONFIG_BT_NIMBLE_ROLE_CENTRAL` and `CONFIG_BT_NIMBLE_ROLE_OBSERVER` in `nimconfig.h` by simply commenting the two defines.
 
-### Optional libraries depending on #define options
+#### Optional external libraries 
+
+These are included via `#define` options
 
 * [Task Scheduler](https://github.com/arkhipenko/TaskScheduler)  [included by default and recommended as most usefule features depend on it]
 * [NeoGPS](https://github.com/SlashDevin/NeoGPS)  [not included right now, but coded and available for some additional cases]
 
 ### Built-in libraries used by this code
+
+Always included
 
 * WebServer
 * FS
@@ -148,7 +152,7 @@ You can reduce flash size by ~30kb of Nimble-Arduino removing role roles `CONFIG
 * Update
 * BluetoothSerial
 
-### Optional builtin libraries disabled by default
+Included via `#define`
 
 * ArduinoOTA: this is useful during development only, so it's undefined by default in the current code
 
@@ -165,7 +169,6 @@ board_build.partitions = min_spiffs.csv
 Within the Arduino IDE, from `Tools > Partition Scheme`
 
 ![Partition settings](software/building/partition_setting.png)
-
 
 ## Possible enhancements and ideas
    
