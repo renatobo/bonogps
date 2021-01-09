@@ -117,7 +117,8 @@ To reduce complexity of this software, you need to save a baseline configuration
 
 ... etc.
 
-A backup of the options is in the [hardware/GPS folder](hardware/GPS/gps-bn220-config.txt), stored for a BN-220 but it's identical to a BN-880
+What you need to configure is documented in [in the hardware/GPS folder](hardware/GPS). You can restore a pre-saved configuration from the same page (right now available for BN-220 and BN-880).
+
 
 
 ## Software build instructions
