@@ -20,6 +20,9 @@ This project requires a receiver compatible with ublox M8, for the following rea
 #### Q: No data is made available to my apps, what's wrong?
 **A:** First thing to check is: is the PORT RATE stored in your GPS (see below paragraph **UBX-CFG-PRT**) matching the one expected by the bonogps.cpp code in macro `GPS_STANDARD_BAUD_RATE` ? It should be 115200. Open an issue otherwise so that we can work out troubleshooting
 
+#### Q: M8N, M8Q, M8U .. which one?
+**A:** According to the [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf), you should avoid NEO-M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three). NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
+
 # GPS modules setup
 
 _Note: these instructions are specific to a GPS module compatile with ublox 8 messages._
@@ -40,22 +43,56 @@ The procedure is
 
 at this point the configuration is stored on your device in its flash memory. Please note some cheap GPS receiver modules do not have flash memory and they will not work for this project.
 
+Save configuration is notably (as is - several sources say so and I find it as well) unreliable, so please run it more than a few times and check that settins have actually been saved across resets/power downs.
+
 # Setup on your own, step by step 
 
 ## Settings that are required
 
 After an established connection with your GPS, open 'View > Messages' or press F9
 
+![F9](images/ucenter_messages_view.png)
+
+then go the UBX section
+
+![UBX->CFG](images/ucenter_messages_UBX_CFG.png)
+
 ### UBX-CFG-GNSS
 
-Optimized for Americas:
+More satellites and constellations (GPS, Galileo, GLONASS) does not necessarily mean better results: hardware here limits performances, so you might have to compromise speed for amount of data.
 
-* Enable GPS, SBAS, Galileo, Glonass
+There is plenty of information online on drone GPS solutions that explain the optimal update rate for each hardware (e.g. [ArduPilot](https://github.com/ArduPilot/ardupilot/issues/13053)).
+
+Configurations tested, optimized for Americas:
+
+* BN-880, BN220, NEO-M8Q, NEO-M8M and other devices capable of 10Hz with 2+ constellations: Enable GPS, SBAS, Galileo, Glonass
+
+![All constellations](images/ucenter_UBX-CFG-GNSS_all.png)
+
+* NEO-M8N: GPS, SBAS (unless you are happy with 5Hz, then you can enable additional ones)
+
+![GPS and SBAS only](images/ucenter_UBX-CFG-GNSS_GPS.png)
+
+
+Common
+
 * BeiDou has good coverage in APAC, so disabled for NAMER to use Galileo+Glonass
 * IMES disabled as ineffective for this use
 * QZSS disabled as it is specific for APAC
 
-M8N
+
+
+M8N (Enabled: GPS, SBAS)
+
+```
+B5 62 06 3E 3C 00 00 00 20 07 00 08 10 00 01
+00 01 01 01 01 03 00 01 00 01 01 02 04 08 00
+00 00 01 01 03 08 10 00 00 00 01 01 04 00 08
+00 00 00 01 01 05 00 03 00 00 00 01 01 06 08
+0E 00 00 00 01 01 2D 79
+```
+
+BN-880, BN-220, M8Q and other devices at 10Hz with multiple constellations (Enabled: GPS, SBAS, Galileo, GLONASS)
 
 ```
 B5 62 06 3E 3C 00 00 20 20 07 00 08 10 00 01
@@ -68,7 +105,14 @@ B5 62 06 3E 3C 00 00 20 20 07 00 08 10 00 01
 ### UBX-CFG-MSG
 
 * First disable all messages (click on the top level node NMEA, right click -> 'Disable child messages')
+
+![disable all messages](images/ucenter_disable_all_NMEA_messages.png)
+
 * Enable `GxGGA` and `GxRMC` messages
+
+![Enable GGA](images/ucenter_enable_GGA_messages.png)
+
+![Enable RMC](images/ucenter_enable_RMC_messages.png)
 
 Disable all messages
 
@@ -95,6 +139,7 @@ B5 62 06 01 03 00 F1 06 00 01 1E
 ```
 
 Enable `GGA`
+
 ```
 B5 62 06 01 03 00 F0 00 01 FB 10
 ```
@@ -117,6 +162,8 @@ This is automatically set when changing the number of SV's, no need to set it
 
 If you are using BeiDou, there might be additional configuration required
 
+![ucenter_UBX-CFG-NMEA](images/ucenter_UBX-CFG-NMEA.png)
+
 ```
 B5 62 06 17 14 00 00 41 00 02 00 00 00 00 01
 00 00 01 00 00 00 00 00 00 00 00 76 63
@@ -130,19 +177,15 @@ go to UBX > CFG > PRT (Port) node and for Target 1 set
 * Protocol Out: `0+1 UBX+MNEA`
 * Baudrate: `115200`
   
-While there are sketches that automatically set the correct BAUD rate at startup, having the correct BAUD rate right away is much simpler, faster, and more reliable.
+Version 1 required a predefine Baudrate, but it caused issues when a temporary value was changed, so from version 1.1 BonoGPS tries to automatically set the baud rate.
+
+If you have long cables, you might want to test `56k`
+
+![ucenter_UBX-CFG-PRT](images/ucenter_UBX-CFG-PRT.png)
 
 ```
 B5 62 06 00 14 00 01 00 00 00 D0 08 00 00 00
 C2 01 00 03 00 03 00 00 00 00 00 BC 5E 
-```
-
-***Please note:*** This setting must match the value of macro `GPS_STANDARD_BAUD_RATE` or otherwise the ESP32 won't be able to communicate with the GPS correctly during startup
-
-From `bonogps.cpp`:
-
-```
-#define GPS_STANDARD_BAUD_RATE 115200
 ```
 
 ### UBX-CFG-NAV5
@@ -150,6 +193,9 @@ From `bonogps.cpp`:
 The default configuration of these GPS receiver is optimized for pedestrian or slowly moving vehicles. We can suggest parameters that are a better fit for a fast vehicle
 
 * Dynamic model -> 4 Automotive
+
+![ucenter_UBX-CFG-NAV5](images/ucenter_UBX-CFG-NAV5.png)
+
 
 ```
 B5 62 06 24 24 00 FF FF 04 03 00 00 00 00 10
@@ -166,15 +212,26 @@ This is automatically set by the configuration portal, no need to set it. For 10
 * Time Source `0 - UTC Time` (not sure if `1 - GPS` is a better option)
 * Measurement Period `100 ms`
 
+![ucenter_UBX-CFG-RATE](images/ucenter_UBX-CFG-RATE.png)
+
 ```
 B5 62 06 08 06 00 64 00 01 00 00 00 79 10
 ```
+
+On BN220 and other devices that can handle > 10 Hz, you can use 18Hz (not supported by the configuration portal right now)
+
+```
+B5 62 06 08 06 00 37 00 01 00 00 00 4C 02
+```
+
 
 ### UBX-CFG-PMS
 
 This sets optimal performances, sacrificing battery life
 
 * Set `0 - Full Power`, and `Save Configuration`
+
+![ucenter_UBX-CFG-PMS](images/ucenter_UBX-CFG-PMS.png)
 
 ```
 B5 62 06 86 08 00 00 00 00 00 00 00 00 00 94 5A
@@ -190,38 +247,57 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00
 ### UBX-CFG-SBAS
 
 * Enable SBAS
-* Turn on Ranging, Correction Data, Integrity information
+* Turn on Ranging, Correction Data
+* If you are using GPS only, then you should enable Integrity information
 * Number of search channels = 3 is configured in the CFG-GNSS panel
 * Set SBAS specific to your region: use the PRN Codes WAAS for Americas, EGNOS for Europe. Auto-scan will identify them by itself at the cost of a longer startup time
 
+
+#### Without Integrity, WAAS for Americas
+
+![ucenter_UBX-CFG-SBAS](images/ucenter_UBX-CFG-SBAS.png)
+
+
 ```
-B5 62 06 16 08 00 01 07 03 00 00 E8 04 00 1B
-95
+B5 62 06 16 08 00 01 03 03 00 00 E8 04 00 17 79
+```
+
+#### With Integrity, WAAS for Americas
+
+```
+B5 62 06 16 08 00 01 07 03 00 00 E8 04 00 1B 95
 ```
 
 
 ### UBX-CFG-NAVX5
 
+* Message Version 2 (the default)
 * AssistNow Autonomous `Use AssistNow Autonomous`
-* Signal attenuation compensation Mode `1 - Automatic`
+
+![ucenter_UBX-CFG-NAVX5](images/ucenter_UBX-CFG-NAVX5.png)
 
 ```
-B5 62 06 23 28 00 02 00 4C 66 C0 00 00 00 00 00
-03 20 06 00 00 00 00 01 4B 07 FF 00 00 00 00 00
-00 01 00 00 64 00 00 00 00 00 00 00 00 00 A5 6E
+B5 62 06 23 28 00 02 00 4C 66 C0 00 00 00
+00 00 03 20 06 00 00 00 00 01 4B 07 00 00
+00 00 00 00 00 01 00 00 64 00 00 00 00 00
+00 00 00 00 A6 82
 ```
 
 ### UBX-CFG-ITFM
 
 * Enable jamming and interference
 
-With Active Antenna (BN-880)
+#### With Active Antenna (BN-880)
+
+![ucenter_UBX-CFG-ITFM_active](images/ucenter_UBX-CFG-ITFM_active.png)
 
 ```
 B5 62 06 39 08 00 F3 AC 62 AD 1E 63 00 00 76 A5
 ```
 
-With Passive Antenna (BN-220)
+#### With Passive Antenna (BN-220)
+
+![ucenter_UBX-CFG-ITFM_passive](images/ucenter_UBX-CFG-ITFM_passive.png)
 
 ```
 B5 62 06 39 08 00 F3 AC 62 AD 1E 53 00 00 66 75
@@ -243,6 +319,8 @@ B5 62 06 39 08 00 F3 AC 62 AD 1E 53 00 00 66 75
 
 * Open menu "Receiver > Action > Save config"
 
+![ucenter_save_configuration](images/ucenter_save_configuration.png)
+
 or issue
 
 ```
@@ -257,3 +335,4 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 * [Enable Galileo](https://github.com/iNavFlight/inav/wiki/Ublox-3.01-firmware-and-Galileo)
 * [UBX Tool](https://gpsd.io/ubxtool-examples.html)
 * Setting PORT, Frequency and save settings from [freematics](https://freematics.com/forum/viewtopic.php?t=1759)
+* [https://learn.sparkfun.com/tutorials/getting-started-with-u-center-for-u-blox/all](https://learn.sparkfun.com/tutorials/getting-started-with-u-center-for-u-blox/all)

@@ -10,11 +10,13 @@ Hardware is similar for both and it's mostly based on things I could easily find
 
 In one case, the unit is assembled within a left-over raspberry pi case (the transparent case helps in checking the light status).
 
-In a future iteration, I plan on using a board with more features such as [Wemos/LOLIN D32 Pro](https://www.wemos.cc/en/latest/d32/d32_pro.html)
+Another supported board is [Wemos/LOLIN D32 Pro](https://www.wemos.cc/en/latest/d32/d32_pro.html) which has some benefits
 
 - integrated LiPo charger 
 - more flash memory and PSRAM
 - SD slot builtin
+
+This software runs on it (be sure to select it within the Arduino IDE or to use the tasks named 'lolind32pro' within PlatformIO )
 
 
 ## Trasparent case (with BN220)
