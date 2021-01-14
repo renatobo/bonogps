@@ -6,8 +6,10 @@
 
 ******************************************************************************/
 
-// For PlatformIO or VS Code IDE
+// For PlatformIO we need to include the Arduino framework
 #include <Arduino.h>
+// load PINout definitions from this header file
+#include <bonogps_board_settings.h>
 
 // Enable or disable compiling features
 #define UPTIME       // add library to display for how long the device has been running
@@ -28,7 +30,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v0.6"
+#define BONOGPS_FIRMWARE_VER "v1.1beta"
 #endif
 // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
 #define BONOGPS_MDNS "bonogps"
@@ -52,9 +54,6 @@
 #define NBP_TCP_PORT 35000
 #endif
 
-// Which pin controls the button to switch to STA mode
-#define WIFI_MODE_BUTTON 0
-
 // Define configuration of Bluetooth Low Energy
 #define BLE_DEVICE_ID "BonoGPS"
 #define BLE_SERVICE_UUID (uint16_t)0x1819        // SERVICE_LOCATION_AND_NAVIGATION_UUID
@@ -70,8 +69,6 @@
 // Define the serial monitor port
 #define SerialMonitor Serial
 #define LOG_BAUD_RATE 115200
-// LED_BUILTIN is 2 on ESP32
-#define LED_BUILTIN 2
 
 /********************************
  * 
@@ -81,6 +78,16 @@
 
 #if !(defined(ESP32))
 #error This code is designed to run only on the ESP32 board
+#endif
+
+#if !(defined(LED_BUILTIN))
+#error "You are missing the definition of LED_BUILTIN for your board or in bonogps_board_settings.h"
+#endif
+#if !(defined(WIFI_MODE_BUTTON))
+#error "You are missing the definition of WIFI_MODE_BUTTON in bonogps_board_settings.h"
+#endif
+#if !(defined(RX2) && defined(TX2))
+#error "You are missing definitions of Serial 2 PINS: select a board that has them already defined or change bonogps_board_settings.h"
 #endif
 
 // Library to store desidered preferences in NVM
@@ -183,13 +190,19 @@ Scheduler ts;
 #include "BluetoothSerial.h"
 BluetoothSerial SerialBT;
 bool bt_deviceConnected = false;
-void bt_spp_stop();
+bool bt_spp_stop();
 void bt_spp_start();
 void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
 #endif
 
 #ifdef BLEENABLED
 // BLE stack
+// Only used from NimbleArduino librray > 1.0.2, commit https://github.com/h2zero/NimBLE-Arduino/commit/569eb8a188c78fe780f4c2a24cf9247532cf55ea
+#define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED
+#define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED
+#define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 2
+#define CONFIG_BT_NIMBLE_MAX_BONDS 2
+#define CONFIG_BT_NIMBLE_SVC_GAP_DEVICE_NAME BONOGPS_MDNS
 #include <NimBLEDevice.h>
 // ble runtime
 String ble_client = "";
@@ -225,6 +238,7 @@ void wifi_OFF();
 #ifdef ENABLE_OTA
 void handle_OTA();
 void OTA_start();
+void OTA_stop();
 #endif
 
 /********************************
@@ -403,11 +417,8 @@ void switch_baudrate(uint32_t newbaudrate)
   log_d("Flush UART");
   gpsPort.flush();
   delay(500);
-  log_d("end connection UART");
-  gpsPort.end();
-  delay(100);
-  log_d("Start new connection UART");
-  gpsPort.begin(newbaudrate);
+  log_d("Changing baud on UART2 from %u to %u , pins RX2=%d TX2=%d", gpsPort.baudRate(), newbaudrate, RX2, TX2);
+  gpsPort.updateBaudRate(newbaudrate);
   stored_preferences.gps_baud_rate = newbaudrate;
 }
 
@@ -748,9 +759,9 @@ void wifi_STA()
   wifi_connected = false;
 
   int times = 0;
-  while (WiFi.status() != WL_CONNECTED && times < 50)
+  while (WiFi.status() != WL_CONNECTED && times < 20)
   {
-    delay(100);
+    delay(250);
     log_i("Connecting to WiFi %s , trial %d", stored_preferences.wifi_ssid, times++);
   }
 
@@ -905,10 +916,6 @@ void wifi_OFF()
 
  * ******************************/
 #include <WebServer.h>
-/* UriBraces is available at https://github.com/espressif/arduino-esp32/tree/master/libraries/WebServer/src/uri
-Unfortunately, Nimble-Arduino is not compatible yet with the arduino framework here, so we won't use it
-#include <uri/UriBraces.h> // to parse /url/{} options
-*/
 WebServer webserver(80);
 
 const char html_text[] PROGMEM = "text/html";
@@ -924,14 +931,18 @@ const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size:
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: " BONO_GPS_VERSION "</footer>\n</body>\n</html>";
 #endif
 const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article>Disable<a href='/wifioff'>WiFi</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/savewificreds'>Set WiFi credentials</a></article>\n<article><a href='/restart'>Restart</a><br><br></article></details>";
+const char WEBPORTAL_OPTION_CHECKED[] PROGMEM = "' checked>";
+const char WEBPORTAL_OPTION_LABELCLASSBTN[] PROGMEM = "\n\t<label class='button' for='";
+const char WEBPORTAL_OPTION_ARTICLECLASS[] PROGMEM = "\n<article class='bg'>";
+const char WEBPORTAL_OPTION_SELECT_ONCHANGE[] PROGMEM = "onchange='Select(this.id)' name='";
 
 // Helpers to populate a page with style sheet
 String generate_html_header(bool add_menu = true)
 {
   String htmlbody((char *)0);
   htmlbody.reserve(500);
-  htmlbody += (add_menu ? "Back to <a href='/'>Main menu</a>" : ap_ssid);
-  htmlbody += (gps_powersave ? "<br><em>Powersave mode</em>" : "");
+  htmlbody += (add_menu ? F("Back to <a href='/'>Main menu</a>") : String(ap_ssid));
+  if (gps_powersave) htmlbody += F("<br><em>Powersave mode</em>") ;
   htmlbody += F("</header>\n");
   return htmlbody;
 }
@@ -955,25 +966,27 @@ String input_onoff(String divlabel, String parameter, bool parameter_status)
 {
   String message((char *)0);
   message.reserve(500);
-  message += F("\n<article class='bg'>");
+  message += String(WEBPORTAL_OPTION_ARTICLECLASS);
   message += divlabel;
   message += F("\n\t<input type='radio' id='");
   message += parameter;
-  message += F("/on' onchange='Select(this.id)' name='");
+  message += F("/on' ");
+  message += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   message += parameter;
   if (parameter_status)
   {
-    message += "' checked>";
+    message += String(WEBPORTAL_OPTION_CHECKED);
   }
   else
   {
     message += "'>";
   }
-  message += F("\n\t<label class='button' for='");
+  message += String(WEBPORTAL_OPTION_LABELCLASSBTN);
   message += parameter;
   message += F("/on'> On </label>\n\t<input type='radio' id='");
   message += parameter;
-  message += F("/off' onchange='Select(this.id)' name='");
+  message += F("/off' ");
+  message += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   message += parameter;
   if (parameter_status)
   {
@@ -981,9 +994,9 @@ String input_onoff(String divlabel, String parameter, bool parameter_status)
   }
   else
   {
-    message += "' checked>";
+    message += String(WEBPORTAL_OPTION_CHECKED);
   }
-  message += F("\n\t<label class='button' for='");
+  message += String(WEBPORTAL_OPTION_LABELCLASSBTN);
   message += parameter;
   message += F("/off'> Off </label>\n\t</article>");
   return message;
@@ -993,29 +1006,30 @@ String html_select(String divlabel, String parameters[], String parameters_names
 {
   String message((char *)0);
   message.reserve(500);
-  message += F("\n<article class='bg'>");
+  message += String(WEBPORTAL_OPTION_ARTICLECLASS);;
   message += divlabel;
   for (int i = 0; i < numberparams; i++)
   {
     message += F("\n\t<input type='radio' id='");
     message += groupname;
-    message += "/";
+    message += String("/");
     message += parameters[i];
-    message += F("' onchange='Select(this.id)' name='");
+    message += String("'");
+    message += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
     message += groupname;
     if (parameters_status[i])
     {
-      message += "' checked>";
+      message += String(WEBPORTAL_OPTION_CHECKED);
     }
     else
     {
-      message += "'>";
+      message += String("'>");
     }
-    message += F("\n\t<label class='button' for='");
+    message += String(WEBPORTAL_OPTION_LABELCLASSBTN);
     message += groupname;
-    message += "/";
+    message += String("/");
     message += parameters[i];
-    message += "'> ";
+    message += String("'>");
     message += parameters_names[i];
     message += F(" </label>");
   }
@@ -1054,13 +1068,19 @@ void handle_menu()
   String mainpage((char *)0);
   mainpage.reserve(3500);
   mainpage += generate_html_header(false);
-  mainpage += F("\n<details open><summary>GPS runtime settings</summary>\n<article class='bg'>Update\n<input type='radio' id='rate/1hz' onchange='Select(this.id)' name='rate'");
-  mainpage += ((stored_preferences.gps_rate == 1) ? "checked" : " ");
-  mainpage += F("><label class='button' for='rate/1hz'>1 Hz</label>\n<input type='radio' id='rate/5hz' onchange='Select(this.id)' name='rate' ");
-  mainpage += ((stored_preferences.gps_rate == 5) ? "checked" : " ");
-  mainpage += F("><label class='button' for='rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' onchange='Select(this.id)' name='rate' ");
-  mainpage += ((stored_preferences.gps_rate == 10) ? "checked" : " ");
-  mainpage += F("><label class='button' for='rate/10hz'>10 Hz</label></article>");
+  mainpage += F("\n<details open><summary>GPS runtime settings</summary>\n<article class='bg'>Update\n<input type='radio' id='rate/1hz' ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += ((stored_preferences.gps_rate == 1) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/1hz'>1 Hz</label>\n<input type='radio' id='rate/5hz' ");
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 5) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("'rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' ");
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 10) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/10hz'>10 Hz</label></article>");
   mainpage += input_onoff("Stream GxGBS", "gbs", stored_preferences.nmeaGBS);
   mainpage += input_onoff("Stream GxGSA", "gsa", stored_preferences.nmeaGSA);
   mainpage += input_onoff("Stream GxGSV", "gsv", stored_preferences.nmeaGSV);
@@ -1139,6 +1159,7 @@ void handle_ble()
     {
       stored_preferences.btspp_active = false;
       bt_spp_stop();
+      delay(250);
     }
 #endif
     if (!stored_preferences.ble_active)
@@ -1849,6 +1870,8 @@ void handle_status()
 #else
   message += F("<br>OTA n/a in this firmware ");
 #endif
+  message += F("<p>Board: ");
+  message += String(BOARD_NAME);
   message += F("<p>Total heap: ");
   message += String(ESP.getHeapSize());
   message += F("<br>Free heap: ");
@@ -2062,7 +2085,11 @@ void OTA_start()
           type = "filesystem";
 
         // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+        log_i("Stop GPS serial logger", type);
+        gpsPort.end();
+        tLedBlink.setInterval(50);
         log_i("Start updating %s", type);
+        
       })
       .onEnd([]() {
         log_i("\nEnd");
@@ -2085,6 +2112,11 @@ void OTA_start()
       });
   ArduinoOTA.begin();
   tOTA.enable();
+}
+
+void OTA_stop() {
+  ArduinoOTA.end();
+  tOTA.disable();
 }
 #endif
 
@@ -2228,9 +2260,40 @@ void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param)
     bt_deviceConnected = false;
   }
 }
-void bt_spp_stop()
+bool bt_spp_stop()
 {
-  SerialBT.end();
+  // Prior to version 1.1, this was
+  // SerialBT.end();
+  // The below procedure is more stable for restarts, yet not working 100% of the time still
+  if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_IDLE)
+  {
+    log_i("bt stopped");
+    return true;
+  }
+  if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_ENABLED)
+  {
+    log_i("bt is enabled");
+    if (esp_bt_controller_disable())
+    {
+      log_e("BT Disable failed");
+      return false;
+    }
+    while (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_ENABLED)
+      ;
+  }
+  if (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_INITED)
+  {
+    log_i("is inited");
+    if (esp_bt_controller_deinit())
+    {
+      log_e("BT deint failed");
+      return false;
+    }
+    while (esp_bt_controller_get_status() == ESP_BT_CONTROLLER_STATUS_INITED)
+      ;
+    return true;
+  }
+  return false;
 }
 #endif
 
@@ -2243,16 +2306,19 @@ void gps_initialize_settings()
 {
   // GPS Connection
   // if preferences have a value <> than the one stored in the GPS, connect+switch
-  if (GPS_STANDARD_BAUD_RATE == stored_preferences.gps_baud_rate)
-  {
-    log_i("Connecting to GPS at standard %d", stored_preferences.gps_baud_rate);
-    gpsPort.begin(stored_preferences.gps_baud_rate);
+  log_d("Start UART connection on RX pin %d TX pin %d and autobaudrate",RX2, TX2);
+  gpsPort.begin(0,SERIAL_8N1, RX2, TX2, false, 10000UL);
+  if (gpsPort.baudRate()>0) {
+    log_d("Connected with autobaudrate at %u on RX pin %d TX pin %d ",gpsPort.baudRate(), RX2, TX2);
+  } else {
+    log_e("Can't auto find BAUD rate on RX pin %d TX pin %d , forcing %u",RX2, TX2, GPS_STANDARD_BAUD_RATE);
+    // TODO: enable pulsing error on the LED to signal the user that something is bad
+    gpsPort.begin(GPS_STANDARD_BAUD_RATE,SERIAL_8N1, RX2, TX2);
   }
-  else
+   
+  if (gpsPort.baudRate() != stored_preferences.gps_baud_rate)
   {
-    log_i("Connecting to GPS at standard %d", GPS_STANDARD_BAUD_RATE);
-    gpsPort.begin(GPS_STANDARD_BAUD_RATE);
-    log_i("Re-Connecting to GPS at updated %d", stored_preferences.gps_baud_rate);
+    log_i("Re-Connecting to GPS at updated %u", stored_preferences.gps_baud_rate);
     switch_baudrate(stored_preferences.gps_baud_rate);
   }
 
@@ -2481,24 +2547,24 @@ void loop()
         if (gps_message_pointer > MAX_UART_BUFFER_SIZE - 3)
         {
           log_e("BLE Buffer saturated, resetting ");
-          gps_currentmessage[0] = '$';
-          gps_currentmessage[1] = '\0';
+          gps_currentmessage[0] = (uint8_t) '$';
+          gps_currentmessage[1] = (uint8_t) '\0';
           gps_message_pointer = 1;
         }
-        if (sbuf[i] == '$')
+        if (sbuf[i] == 36) // $ char
         {
-          gps_currentmessage[gps_message_pointer++] = '\r';
-          gps_currentmessage[gps_message_pointer++] = '\n';
-          gps_currentmessage[gps_message_pointer] = '\0';
+          gps_currentmessage[gps_message_pointer++] = (uint8_t) '\r';
+          gps_currentmessage[gps_message_pointer++] = (uint8_t) '\n';
+          gps_currentmessage[gps_message_pointer++] = (uint8_t) '\0';
           // There is a new message -> Notify BLE of the changed value if connected and size says it is likely to be valid
           if (gps_message_pointer > MIN_NMEA_MESSAGE_SIZE)
           {
-            pCharacteristic->setValue(gps_currentmessage);
+            pCharacteristic->setValue(gps_currentmessage, gps_message_pointer);
             pCharacteristic->notify();
             delay(1);
           }
-          gps_currentmessage[0] = '$';
-          gps_currentmessage[1] = '\0';
+          gps_currentmessage[0] = (uint8_t) '$';
+          gps_currentmessage[1] = (uint8_t) '\0';
           gps_message_pointer = 1;
         }
         else

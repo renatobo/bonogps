@@ -23,6 +23,22 @@ This project requires a receiver compatible with ublox M8, for the following rea
 #### Q: M8N, M8Q, M8U .. which one?
 **A:** According to the [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf), you should avoid NEO-M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three). NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
 
+# Comparison of performance vs precision
+
+A comparison in a static location with clear sky among performances (speed = navigation rate, intesity = SV CN0) and precision (HDOP) shows that
+
+* BN220, with a passive antenna, has the lower quality of signal: this means it might have difficulties when visibility is not great. It can handle 10Hz with GPS+GLONASS+Galileo, 18Hz with GPS Only. C/n0 is around 30 dBHz in all cases;
+* BN880, with an active antenna and same computing unit as BN220, improves SV CN0 significantly: between 30 and 35 dBHz;
+* M8N, with an active antenna and legitimate ublox chipset, has the best SV CN0 (between 35 dBHz and 40 dBHz) and precision, at the cost of a slow update rate: 10Hz with only GPS, 5Hz with GPS+another, even less with Galileo.
+
+As noted in several sources, Galileo is now proving to add better precision than GLONASS.
+
+##3 hours of measurements side by side
+
+![](gps_galileo_performances.png)
+
+
+
 # GPS modules setup
 
 _Note: these instructions are specific to a GPS module compatile with ublox 8 messages._
