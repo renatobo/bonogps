@@ -1,11 +1,16 @@
 # Comparison of complete PVT solutions
 
+- [NMEA standard messages `RMC`+`GGA`+`GSA`+`GSV`+`GBS`](#nmea-standard-messages-rmcggagsagsvgbs)
+- [PUBX format](#pubx-format)
+- [ublox Binary format](#ublox-binary-format)
+  - [Possible alternative to NAV-SAT: NAV-SVINFO (same size)](#possible-alternative-to-nav-sat-nav-svinfo-same-size)
+  - [Likely not needed as included in NAV-PVT](#likely-not-needed-as-included-in-nav-pvt)
+
 Right now we use `RMC`+`GGA`+`GBS` at high resolution, then `GSA`+`GSV` at lower resolution. Are there less expensive (in terms of bandwidth) options?
 
 ## NMEA standard messages `RMC`+`GGA`+`GSA`+`GSV`+`GBS`
 
-
-```
+```text
 22:23:20  R -> NMEA GNRMC,  Size  70,  'Recommended Minimum Specific GNSS Data'
 22:23:20  R -> NMEA GNGGA,  Size  79,  'Global Positioning System Fix Data'
 22:23:20  R -> NMEA GNGSA,  Size  66,  'GNSS DOP and Active Satellites'
@@ -29,7 +34,7 @@ Total of 912 bytes for a complete set
 
 This format is interpreted by some libraries, such as [NeoGPS](https://github.com/SlashDevin/NeoGPS), perhaps with the exception of `PUBX03` as it's not listed
 
-```
+```text
 22:25:53  R -> NMEA PUBX00,  Size 110,  'Position Data'
 22:25:53  R -> NMEA PUBX03,  Size 607,  'Satellite Data'
 22:25:53  R -> NMEA PUBX04,  Size  68,  'Time of Day'
@@ -41,7 +46,7 @@ Total of 785 bytes for a complete set
 
 This format is interpreted by some libraries, such as [NeoGPS](https://github.com/SlashDevin/NeoGPS), with the exception of `NAV-SAT` not listed
 
-```
+```text
 22:14:15  R -> UBX NAV-PVT,  Size 100,  'Navigation PVT Solution'
 22:14:15  R -> UBX NAV-SAT,  Size 388,  'Satellite Status and Information'
 ```
@@ -60,12 +65,9 @@ This is listed in [ublox support for NeoGPS](https://github.com/SlashDevin/NeoGP
 - [https://github.com/KumarRobotics/ublox/blob/master/ublox_msgs/msg/NavSVINFO_SV.msg](https://github.com/KumarRobotics/ublox/blob/master/ublox_msgs/msg/NavSVINFO_SV.msg)
 
 ### Likely not needed as included in NAV-PVT
-```
+
+```text
 22:27:15  R -> UBX NAV-TIMEUTC,  Size  28,  'Universal Time Coordinated'
 ```
 
 - [https://github.com/KumarRobotics/ublox/blob/master/ublox_msgs/msg/NavTIMEUTC.msg](https://github.com/KumarRobotics/ublox/blob/master/ublox_msgs/msg/NavTIMEUTC.msg)
-
-
-
-
