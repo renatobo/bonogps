@@ -17,6 +17,6 @@ repo = (
     .replace('.git','')
 )
 
-repolink = re.sub(r'(v[\d+\.]+)-.*',r"\1", revision)
+repolink = re.sub(r'(v[\d+\.a-zA-Z]+)-.*',r"\1", revision)
 
 print("-DGIT_REV='\"%s\"' -DGIT_REPO='\"%s/releases/tag/%s\"'" % (revision,repo,repolink))
