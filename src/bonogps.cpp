@@ -2061,12 +2061,12 @@ void WebConfig_stop()
 
 * ******************************/
 #ifdef ENABLE_OTA
-#ifndef OTA_AVAILABLE
-#define OTA_AVAILABLE 300 // 300 seconds of OTA running
+#ifndef OTA_AVAILABILITY_SECS
+#define OTA_AVAILABILITY_SECS 300 // 300 seconds of OTA running
 #endif
 
 #ifdef TASK_SCHEDULER
-Task tOTA(1000, OTA_AVAILABLE, &handle_OTA, &ts, false);
+Task tOTA(1000, OTA_AVAILABILITY_SECS, &handle_OTA, &ts, false);
 #endif
 
 void handle_OTA()

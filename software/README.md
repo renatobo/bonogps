@@ -1,18 +1,22 @@
 # Software development and build
 
 - [IDE options/suggestions: Arduino IDE or VS Code+Platformio](#ide-optionssuggestions-arduino-ide-or-vs-codeplatformio)
-  - [If you just starting I recommmend Arduino IDE](#if-you-just-starting-i-recommmend-arduino-ide)
+  - [Arduino IDE (recommended if you are new to the 'maker' approach)](#arduino-ide-recommended-if-you-are-new-to-the-maker-approach)
   - [PlatformIO](#platformio)
-- [External Libraries](#external-libraries)
-- [Optional external libraries](#optional-external-libraries)
-- [Built-in libraries](#built-in-libraries)
-- [Important: Partition size](#important-partition-size)
+  - [External Libraries](#external-libraries)
+  - [Optional external libraries](#optional-external-libraries)
+  - [Built-in libraries](#built-in-libraries)
+- [Build options](#build-options)
+  - [How to enable OTA build](#how-to-enable-ota-build)
+    - [OTA on Arduino IDE](#ota-on-arduino-ide)
+    - [OTA on PlatformIO](#ota-on-platformio)
+  - [Important: Partition size](#important-partition-size)
 
 ## IDE options/suggestions: Arduino IDE or VS Code+Platformio
 
 Development is active on the [VS Code + Platformio](https://platformio.org/install/ide?install=vscode) combination: you can download the complete repository and work directly.
 
-### If you just starting I recommmend Arduino IDE
+### Arduino IDE (recommended if you are new to the 'maker' approach)
 
 Code is written to be compatible with the Arduino IDE, there are a couple of steps required, starting from the assumption you have already installed and setup the Arduino IDE for ESP32 (if you have not, [here a nice tutorial](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/))
 
@@ -27,6 +31,8 @@ The rest is common to any other build on the Arduino IDE.
 
 IF you are unsure of what board you are running, [check this introductory tutorial](https://randomnerdtutorials.com/getting-started-with-esp32/).
 
+You can update software OTA, check a later paragraph here on how as it's not enabled by default.
+
 ### PlatformIO
 
 Beside install PlatformIO (on VS Code as a recommendation), the build system uses a custom **python** script to determine the current software release version: `git_rev_macro.py` and it expects the project folder to be downloaded from github directly to build up the `GIT_REV` and `GIT_REPO` macro variables correctly.
@@ -35,7 +41,7 @@ If you are having issues, you can remove the line that invokes `git_rev_macro.py
 
 If you would like to define custom targets for your build, I recommend using a `platformio_custom.ini` file (there is a template in `platformio_custom.ini.template`).
 
-## External Libraries
+### External Libraries
 
 - [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino): 1.0.2 or better latest github version directly (default in platformio from v1.1 of bonogps)
 - [Uptime Library](https://github.com/YiannisBourkelis/Uptime-Library) ^1.0.0
@@ -44,13 +50,13 @@ If you would like to define custom targets for your build, I recommend using a `
 
 From v1.1 of this code and using the latest code of NimBLE-Arduino (after this [commit](https://github.com/h2zero/NimBLE-Arduino/commit/569eb8a188c78fe780f4c2a24cf9247532cf55ea)), unnecessary BLE code is not compiled in. This reduces flash size by ~30kb of Nimble-Arduino disabling roles `CONFIG_BT_NIMBLE_ROLE_CENTRAL` and `CONFIG_BT_NIMBLE_ROLE_OBSERVER`. Up to version 1.0.2 of NimBLE-Arduino, you can manually uncomment those roles in `nimconfig.h` .
 
-## Optional external libraries
+### Optional external libraries
 
 Included via `#define` options
 
 - [NeoGPS](https://github.com/SlashDevin/NeoGPS)  [not included right now, but coded and available for some additional cases]
 
-## Built-in libraries
+### Built-in libraries
 
 Always included
 
@@ -67,7 +73,28 @@ Included via `#define`
 
 - ArduinoOTA: this really depends on how you prefer to update software on your device. It adds size to the flash and it uses some memory, so if you don't plan on using it, don't include it.
 
-## Important: Partition size
+## Build options
+
+### How to enable OTA build
+
+OTA libraries are not enabled by default, to keep the binary size smaller and to have less software running at all times (it's a miracle there are no RAM issues with all tasks running).
+
+Since updating via OTA is extremely convenient when you are testing, here is how to activate it via two preprocessing macro variables
+
+- `ENABLE_OTA` if defined, libraries and code is builtin, if undefined no OTA is included
+- `OTA_AVAILABILITY_SECS` defines for how long OTA is available after boot, either `-1` (forever) or a finite number of seconds. If undefined, it's `300`, to avoid any mistake on the field where you might mistakenly start flashing a firmare you are actually using
+
+#### OTA on Arduino IDE
+
+- uncomment `// #define ENABLE_OTA ` at the beginning of `src/bonogps.cpp` (which you might have renamed to `bonogps.ino`)
+- optionally, change for how long OTA is available definining `OTA_AVAILABILITY_SECS` 
+
+#### OTA on PlatformIO
+
+- There are a couple of build targets ending in `_ota` that contain the command line define statements. If you need more build targets, I recommend using a local `platformio_custom.ini` that is not sync'd with the git repository
+- you can also permanently enable it changing the source code as for the Arduino case (not recommended)
+
+### Important: Partition size
 
 You have to select a partitioning schema with 1.7 Mb of programming space (e.g. Minimal SPIFF with 1.9Mb), as the app with its libraries tend to be pretty large due to BT stacks.
 
