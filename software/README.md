@@ -3,6 +3,7 @@
 - [IDE options/suggestions: Arduino IDE or VS Code+Platformio](#ide-optionssuggestions-arduino-ide-or-vs-codeplatformio)
   - [Arduino IDE (recommended if you are new to the 'maker' approach)](#arduino-ide-recommended-if-you-are-new-to-the-maker-approach)
   - [PlatformIO](#platformio)
+- [Libraries](#libraries)
   - [External Libraries](#external-libraries)
   - [Optional external libraries](#optional-external-libraries)
   - [Built-in libraries](#built-in-libraries)
@@ -40,6 +41,8 @@ Beside install PlatformIO (on VS Code as a recommendation), the build system use
 If you are having issues, you can remove the line that invokes `git_rev_macro.py` and optionally set the 2 macro `GIT_REV` and `GIT_REPO` manually.
 
 If you would like to define custom targets for your build, I recommend using a `platformio_custom.ini` file (there is a template in `platformio_custom.ini.template`).
+
+## Libraries
 
 ### External Libraries
 
@@ -86,8 +89,8 @@ Since updating via OTA is extremely convenient when you are testing, here is how
 
 #### OTA on Arduino IDE
 
-- uncomment `// #define ENABLE_OTA ` at the beginning of `src/bonogps.cpp` (which you might have renamed to `bonogps.ino`)
-- optionally, change for how long OTA is available definining `OTA_AVAILABILITY_SECS` 
+- uncomment `// #define ENABLE_OTA` at the beginning of `src/bonogps.cpp` (which you might have renamed to `bonogps.ino`)
+- optionally, change for how long OTA is available definining `OTA_AVAILABILITY_SECS`
 
 #### OTA on PlatformIO
 
