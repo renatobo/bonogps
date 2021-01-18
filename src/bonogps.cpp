@@ -11,11 +11,17 @@
 // load PINout definitions from this header file
 #include <bonogps_board_settings.h>
 
-// Enable or disable compiling features
-#define UPTIME       // add library to display for how long the device has been running
+/*
+ Enable or disable compiling features
+ */
+
 #define BTSPPENABLED // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
 #define BLEENABLED   // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
-// #define ENABLE_OTA     // add code for OTA, to be enabled only when developing
+/* Enable here if you are using Arduino IDE, otherwise use -DENABLE_OTA in platformio
+#define ENABLE_OTA     // add code for OTA, to be enabled only when developing
+*/
+// you should not disable these unless there is a problem with the feature
+#define UPTIME       // add library to display for how long the device has been running
 #define MDNS_ENABLE    // Enable or disable mDNS - currently not working in all conditions. Small memory save to be worth removing
 #define TASK_SCHEDULER // enable adv task scheduler. Small memory save to be worth removing
 #define BUTTON         // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
@@ -24,9 +30,10 @@
 // Configure names and PIN's used for interfacing with external world
 #define DEVICE_MANUFACTURER "https://github.com/renatobo"
 #define DEVICE_NAME "Bono GPS"
-// BONOGPS_FIRMWARE_VER is used in BLE "Firmware" data and in the /status page of web configuration
 #define BONOGPS_BUILD_DATE __TIMESTAMP__
+// BONOGPS_FIRMWARE_VER is used in BLE "Firmware" data and in the /status page of web configuration
 #ifdef GIT_REV
+// if code is under Git revision and compiled from platformio using the additional git_rev_macro.py script, GIT_REV is set
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
@@ -62,6 +69,8 @@
 
 // GPS port on UART2
 #define gpsPort Serial2
+// How much time before autobauding times out
+#define GPS_UART_TIMEOUT 10000UL
 #define GPS_STANDARD_BAUD_RATE 115200
 // Min size of a NMEA message
 #define MIN_NMEA_MESSAGE_SIZE 6
@@ -223,6 +232,17 @@ char ble_device_id[MAX_AP_NAME_SIZE];
 EasyButton button(WIFI_MODE_BUTTON);
 #endif
 
+#if defined(ARDUINO_LOLIN_D32_PRO)
+// Enable reading battery level on LOLIN D32 Pro
+// check https://www.youtube.com/watch?t=88&v=yZjpYmWVLh8&feature=youtu.be for how
+
+#include "services/bas/ble_svc_bas.h"
+float ReadBatteryVoltage()
+{
+  return analogRead(GPIO_BATTERY) / 4096.0 * 7.445;
+}
+#endif
+
 /********************************
  * 
  * Declarations of prototypes required by VS Code or PlatformIO
@@ -289,7 +309,7 @@ const char UBLOX_INIT_CHANNEL_8[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00,
 // standard max SVs and extended digits for unsupported SVs
 const char UBLOX_INIT_CHANNEL_ALL[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x63};
 // use GP as Main talker and GSV Talker ID - this is needed for TrackAddict
-const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM =  {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
+const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
 // use GP as Main talker and GSV Talker ID and restrict to GPS SVs ony - this is needed for RaceChrono
 const char UBLOX_INIT_MAINTALKER_GP_GPSONLY[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x10, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0xB8};
 // set gps port BAUD rate
@@ -465,7 +485,7 @@ void ReadNVMPreferences()
     stored_preferences.wifi_mode = WIFI_OFF;
     log_d("Preference read as WIFI_OFF");
   }
-  else 
+  else
   {
     stored_preferences.wifi_mode = WIFI_AP;
     log_d("Error reading WiFi, Preference set as WIFI_AP");
@@ -541,7 +561,7 @@ void StoreNVMPreferences(bool savewifi = false)
   size_t_written = prefs.putBool("trackaddict", stored_preferences.trackaddict);
   size_t_written = prefs.putBool("racechrono", stored_preferences.racechrono);
   size_t_written = prefs.putBool("racetime", stored_preferences.racetime);
-  
+
   if (size_t_written > 0)
   {
     log_i("Preferences written");
@@ -695,7 +715,7 @@ void NMEACheckForConnections()
     else
     {
       NMEARemoteClient = NMEAServer.available();
-      // TODO not printing strings correctly
+      // TODO not printing strings correctly, try https://stackoverflow.com/questions/42355735/esp8266-send-client-remoteip-to-client
       log_d("NMEA TCP Connection accepted from client: %s", NMEARemoteClient.remoteIP().toString());
     }
   }
@@ -754,7 +774,7 @@ void wifi_STA()
   tLedBlink.enable();
 #endif
 
-  // TODO : add connection to STA mode with stored passwords here
+  // connect to STA mode with stored passwords here
   WiFi.begin(stored_preferences.wifi_ssid, stored_preferences.wifi_key);
   wifi_connected = false;
 
@@ -768,9 +788,9 @@ void wifi_STA()
   if (WiFi.status() == WL_CONNECTED)
   {
     log_i("Connected to SSID %s", stored_preferences.wifi_ssid);
-    #ifdef TASK_SCHEDULER
+#ifdef TASK_SCHEDULER
     tLedBlink.setInterval(250);
-    #endif
+#endif
     wifi_connected = true;
 #ifdef ENABLE_OTA
     log_i("Start OTA service");
@@ -805,7 +825,9 @@ void wifi_AP()
   // WiFi Access
   if (stored_preferences.nmeaTcpServer)
     stop_NMEA_server();
-  WiFi.mode(WIFI_AP); // explicitly set mode, esp defaults to STA+AP
+  
+  // explicitly set mode, esp defaults to STA+AP
+  WiFi.mode(WIFI_AP); 
   // Set WiFi options
   wifi_country_t country = {
       .cc = "US",
@@ -867,47 +889,46 @@ void wifi_AP()
 void wifi_OFF()
 {
 
-  #ifdef TASK_SCHEDULER
+#ifdef TASK_SCHEDULER
   log_d("Flash blinking");
   tLedBlink.setInterval(50);
-  #endif
+#endif
 
-  #ifdef ENABLE_OTA
-    log_i("Stop OTA service");
-    OTA_stop();
-  #endif
-  #ifdef NUMERICAL_BROADCAST_PROTOCOL
+#ifdef ENABLE_OTA
+  log_i("Stop OTA service");
+  OTA_stop();
+#endif
+#ifdef NUMERICAL_BROADCAST_PROTOCOL
   // WLAN Server for GNSS data
   stop_NBP_server();
-  #endif
+#endif
   // WiFi Access
   if (stored_preferences.nmeaTcpServer)
     stop_NMEA_server();
-  
+
   log_i("Stop Web Portal");
   WebConfig_stop();
-  
-  #ifdef MDNS_ENABLE
+
+#ifdef MDNS_ENABLE
   MDNS.end();
-  #endif
+#endif
 
   WiFi.mode(WIFI_OFF);
   log_i("Stopped WiFi service");
 
-  #ifdef TASK_SCHEDULER
+#ifdef TASK_SCHEDULER
   log_d("Stop blinking");
   tLedBlink.setInterval(0);
   tLedBlink.disable();
-  ledon=HIGH;
+  ledon = HIGH;
   led_blink();
-  #endif
+#endif
 
-  #ifdef BUTTON
+#ifdef BUTTON
   button.onPressed(wifi_AP);
-  #endif
+#endif
 
   stored_preferences.wifi_mode = WIFI_OFF;
-
 }
 
 /********************************
@@ -926,11 +947,12 @@ const char json_error[] PROGMEM = "{'status':'error'}";
 const char WEBPORTAL_CSS[] PROGMEM = "*{box-sizing:border-box;text-align:center;width:100%;font-weight:300}body{font-family:Roboto,system-ui,Arial,Helvetica,sans-serif;font-size:5vw;margin:0}header{background-color:#666;padding:.5vw;text-align:center;color:#fff}article{float:left;padding:10px;width:100%;height:auto}details{display:table;clear:both}summary{font-size:larger;font-weight:400;padding:10px;background-color:#f1f1f1}footer{background-color:#777;padding:.2vw;text-align:center;color:#fff;clear:both;position:fixed;bottom:0;font-size:small}@media (min-width:800px){article{width:50%}*{font-size:2.5vw}}a,input{color:#fff;border-radius:8pt;background:red;text-decoration:none;padding:5pt}.bg input{display:none}label{border:solid;border-radius:8pt;padding:5px;margin:2px;border-color:#bdbdbd;border-width:2px;color:#9e9e9e}.bg input:checked+label,.bg input:checked+label:active{background:red;color:#fff;border-color:red}";
 const char WEBPORTAL_HEADER[] PROGMEM = "<!DOCTYPE html>\n<html lang='en'>\n\t<head>\n\t\t<title>Bono GPS</title>\n\t\t<meta charset='utf-8'>\n\t\t<meta name='viewport' content='width=device-width, initial-scale=1'>\n\t\t<link rel='stylesheet' href='/css'>\n\t</head>\n<body>\n<script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script>\n<header>";
 #ifdef GIT_REPO
+// TODO fix the macro definition to avoid preprocessor warning. GIT_REPO should only contain the url path, not the address part, to comply with macros being alphanumeric only
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='" GIT_REPO "'>" BONO_GPS_VERSION "</a></footer>\n</body>\n</html>";
 #else
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: " BONO_GPS_VERSION "</footer>\n</body>\n</html>";
 #endif
-const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article>Disable<a href='/wifioff'>WiFi</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/savewificreds'>Set WiFi credentials</a></article>\n<article><a href='/restart'>Restart</a><br><br></article></details>";
+const char WEBPORTAL_ROOT_OPTIONS[] PROGMEM = "\n</details>\n<details><summary>Device</summary>\n<article>Suspend GPS for <a href='/powersave/1800'>30'</a> <a href='/powersave/3600'>1 hr</a></article>\n<article>Disable <a href='/wifioff'>WiFi</a></article>\n<article><a href='/preset'>Load Preset</a></article>\n<article><a href='/savecfg'>Save config</a></article>\n<article><a href='/status'>Information</a></article>\n<article><a href='/savewificreds'>Set WiFi credentials</a></article>\n<article><a href='/restart'>Restart</a><br><br></article></details>";
 const char WEBPORTAL_OPTION_CHECKED[] PROGMEM = "' checked>";
 const char WEBPORTAL_OPTION_LABELCLASSBTN[] PROGMEM = "\n\t<label class='button' for='";
 const char WEBPORTAL_OPTION_ARTICLECLASS[] PROGMEM = "\n<article class='bg'>";
@@ -942,7 +964,8 @@ String generate_html_header(bool add_menu = true)
   String htmlbody((char *)0);
   htmlbody.reserve(500);
   htmlbody += (add_menu ? F("Back to <a href='/'>Main menu</a>") : String(ap_ssid));
-  if (gps_powersave) htmlbody += F("<br><em>Powersave mode</em>") ;
+  if (gps_powersave)
+    htmlbody += F("<br><em>Powersave mode</em>");
   htmlbody += F("</header>\n");
   return htmlbody;
 }
@@ -1006,7 +1029,7 @@ String html_select(String divlabel, String parameters[], String parameters_names
 {
   String message((char *)0);
   message.reserve(500);
-  message += String(WEBPORTAL_OPTION_ARTICLECLASS);;
+  message += String(WEBPORTAL_OPTION_ARTICLECLASS);
   message += divlabel;
   for (int i = 0; i < numberparams; i++)
   {
@@ -1128,7 +1151,7 @@ void handle_preset()
   // racechrono main page
   mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GBS</li><li>GSA+GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
-// racetime main page
+  // racetime main page
   mainpage += F("<details open><summary>Racetime Lite <a target='_blank' href='https://www.racetimeapp.com/en/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>GLL+VTG+RMC+GGA Enabled</li><li>no GSA GSV GBS</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racetime/android'>Android: BT-SPP</a></p></article></details>");
 
   // trackaddict main page
@@ -1683,7 +1706,7 @@ void handle_hlt()
 #endif
   push_gps_message(UBLOX_GxGBS_ON, sizeof(UBLOX_GxGBS_ON));
   stored_preferences.nmeaGBS = true;
-    // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
+  // this also resets the Main Talker ID and GPS SV only options to the default (all talkers, all SV)
   push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   gps_disable_all();
   if (choice == "tcpip")
@@ -1842,9 +1865,9 @@ void handle_status()
   message += F("<br>Refresh rate: ");
   message += stored_preferences.gps_rate + String("Hz");
   message += F("<br>Main Talker ID: ");
-  message += ((stored_preferences.trackaddict || stored_preferences.racechrono || stored_preferences.racetime)? F("GPS ") : F("System Specific (default)"));
+  message += ((stored_preferences.trackaddict || stored_preferences.racechrono || stored_preferences.racetime) ? F("GPS ") : F("System Specific (default)"));
   message += F("<br>Restrict SV to GPS: ");
-  message += (stored_preferences.racechrono? F("Yes ") : F("No (default)"));
+  message += (stored_preferences.racechrono ? F("Yes ") : F("No (default)"));
   message += F("<br>NMEA GxGSV: ");
   message += (stored_preferences.nmeaGSV ? String("ON") : String("OFF"));
   message += F("<br>NMEA GxGSA: ");
@@ -1866,6 +1889,7 @@ void handle_status()
   message += F("<br>Build date: ");
   message += String(BONOGPS_BUILD_DATE);
 #ifdef ENABLE_OTA
+// TODO add if it still running or not
   message += F("<br>OTA Built-in");
 #else
   message += F("<br>OTA n/a in this firmware ");
@@ -1886,6 +1910,11 @@ void handle_status()
   message += String(ESP.getChipRevision());
   message += F("<br>CPU Freq: ");
   message += String(ESP.getCpuFreqMHz());
+#if defined(ARDUINO_LOLIN_D32_PRO)
+// TODO transform into percentage
+  message += F("<br>Battery Voltage: ");
+  message += String(ReadBatteryVoltage());
+#endif
 
   webserver.send(200, html_text, generate_html_body(message));
 }
@@ -1947,7 +1976,7 @@ void handle_saveconfig_wifi_creds_post()
   wifikey.toCharArray(stored_preferences.wifi_key, WIFI_KEY_MAXLEN);
   // TODO check if writes were ok
   StoreNVMPreferencesWiFiCreds();
-  // TODO check is storing went fine
+  // TODO check is storing value went fine
   webserver.send(200, html_text, generate_html_body(F("<article>New WiFi SSID and Key stored <p><a href='/wifi/sta'>Try them</a></article>")));
 }
 
@@ -2089,7 +2118,6 @@ void OTA_start()
         gpsPort.end();
         tLedBlink.setInterval(50);
         log_i("Start updating %s", type);
-        
       })
       .onEnd([]() {
         log_i("\nEnd");
@@ -2114,7 +2142,8 @@ void OTA_start()
   tOTA.enable();
 }
 
-void OTA_stop() {
+void OTA_stop()
+{
   ArduinoOTA.end();
   tOTA.disable();
 }
@@ -2134,12 +2163,11 @@ void OTA_stop() {
 #define DEVINFO_SERIAL_UUID (uint16_t)0x2a25       //0x2A25 SerialNum utf8s
 #define DEVINFO_FWREV_UUID (uint16_t)0x2a26        //0x2A26 FirmwareRev utf8s
 
-#define SERVICE_BATTERY_SERVICE_UUID (uint16_t)0x180F            // not used
-#define CHARACTERISTIC_BATTERY_LEVEL_UUID (uint16_t)0x2A19       // not used
-#define CHARACTERISTIC_BATTERY_LEVEL_STATE_UUID (uint16_t)0x2A1B // not used
-#define CHARACTERISTIC_BATTERY_POWER_STATE_UUID (uint16_t)0x2A1A // not used
-//#define HardwareRev "0001"    //0x2A27 utf8s
-//#define SystemID "000001"     //0x2A23 uint40
+// #define BATTERY_LEVEL_CHARACTERISTIC_UUID (uint16_t)0x2A19       // not used
+// #define CHARACTERISTIC_BATTERY_LEVEL_STATE_UUID (uint16_t)0x2A1B // not used
+// #define CHARACTERISTIC_BATTERY_POWER_STATE_UUID (uint16_t)0x2A1A // not used
+// #define HardwareRev "0001"    //0x2A27 utf8s
+// #define SystemID "000001"     //0x2A23 uint40
 
 NimBLEServer *pServer = NULL;
 NimBLECharacteristic *pCharacteristic = NULL;
@@ -2192,28 +2220,67 @@ void ble_start()
   pCharacteristic = pService->createCharacteristic(BLE_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
   // Start the service
   pService->start();
-  // other service with info
-  pService = pServer->createService(DEVINFO_UUID);
-  BLECharacteristic *pChar = pService->createCharacteristic(DEVINFO_MANUFACTURER_UUID, NIMBLE_PROPERTY::READ);
-  pChar->setValue(DEVICE_MANUFACTURER);
-  pChar = pService->createCharacteristic(DEVINFO_NAME_UUID, NIMBLE_PROPERTY::READ);
-  pChar->setValue(DEVICE_NAME);
-  pChar = pService->createCharacteristic(DEVINFO_SERIAL_UUID, NIMBLE_PROPERTY::READ);
-  pChar->setValue(chip);
-  pChar = pService->createCharacteristic(DEVINFO_FWREV_UUID, NIMBLE_PROPERTY::READ);
-  pChar->setValue(BONO_GPS_VERSION);
-  pService->start();
   // Start advertising
   NimBLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(pService->getUUID());
+
+  // Device info service
+  NimBLEService *pServiceInfo = pServer->createService(DEVINFO_UUID);
+  NimBLECharacteristic *pChar = pServiceInfo->createCharacteristic(DEVINFO_MANUFACTURER_UUID, NIMBLE_PROPERTY::READ);
+  pChar->setValue(DEVICE_MANUFACTURER);
+  pChar = pServiceInfo->createCharacteristic(DEVINFO_NAME_UUID, NIMBLE_PROPERTY::READ);
+  pChar->setValue(DEVICE_NAME);
+  pChar = pServiceInfo->createCharacteristic(DEVINFO_SERIAL_UUID, NIMBLE_PROPERTY::READ);
+  pChar->setValue(chip);
+  pChar = pServiceInfo->createCharacteristic(DEVINFO_FWREV_UUID, NIMBLE_PROPERTY::READ);
+  pChar->setValue(BONO_GPS_VERSION);
+  pServiceInfo->start();
+  pAdvertising->addServiceUUID(pServiceInfo->getUUID());
+
+#if defined(ARDUINO_LOLIN_D32_PRO)
+  // ble_svc_bas_init();
+  NimBLEService *pServiceBattery = pServer->getServiceByUUID("180F");
+  if (pServiceBattery)
+  {
+    log_d("pServiceBattery found");
+    NimBLECharacteristic *pCharBattery = pServiceBattery->getCharacteristic("2A19");
+    if (!pCharBattery)
+    {
+      pCharBattery = pServiceBattery->createCharacteristic("2A19");
+      log_d("pCharBattery NOT found");
+    }
+    pCharBattery->setValue((uint8_t)50);
+    log_d("pCharBattery to: %d", 50);
+  }
+  else
+  {
+    log_d("pServiceBattery NOT found");
+  }
+/* Supposedly, we can simply call this function - but libraries don't export it
+  // Set the battery level, fixed value
+  ble_svc_bas_battery_level_set((uint8_t) 50);
+  */
+
+/* This gives an exception and keeps resetting the device
+  // Create the BLE Service for the Battery service
+  pService = pServer->createService(BLE_SVC_BAS_UUID16);
+  NimBLEService *pServiceBattery = pServer->createService(BLE_SVC_BAS_CHR_UUID16_BATTERY_LEVEL);
+  // Create a BLE Characteristic for the battery level
+  NimBLECharacteristic *pCharBattery = pServiceBattery->createCharacteristic(BATTERY_LEVEL_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY); 
+  // the value is (to be validated) a uint8 
+  pCharBattery->setValue((uint8_t) ReadBatteryVoltage()*10);
+  pServiceBattery->start();
+  pAdvertising->addServiceUUID(pServiceBattery->getUUID());
+  */
+#endif
+
   // define appearance, from https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
   pAdvertising->setAppearance(5186);
+  /** If your device is battery powered you may consider setting scan response to false as it will extend battery life at the expense of less data sent.  */
   pAdvertising->setScanResponse(false);
-  // pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue -> not for NimBLE
-  /**This method is removed as it was no longer useful and consumed advertising space
-    pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
-  */
-  // NimBLEDevice::startAdvertising();
+  // pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue -> find out more at https://github.com/h2zero/NimBLE-Arduino/issues/129
+  // pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
+
   pAdvertising->start();
   log_i("Waiting a client connection to notify...");
 }
@@ -2306,16 +2373,19 @@ void gps_initialize_settings()
 {
   // GPS Connection
   // if preferences have a value <> than the one stored in the GPS, connect+switch
-  log_d("Start UART connection on RX pin %d TX pin %d and autobaudrate",RX2, TX2);
-  gpsPort.begin(0,SERIAL_8N1, RX2, TX2, false, 10000UL);
-  if (gpsPort.baudRate()>0) {
-    log_d("Connected with autobaudrate at %u on RX pin %d TX pin %d ",gpsPort.baudRate(), RX2, TX2);
-  } else {
-    log_e("Can't auto find BAUD rate on RX pin %d TX pin %d , forcing %u",RX2, TX2, GPS_STANDARD_BAUD_RATE);
-    // TODO: enable pulsing error on the LED to signal the user that something is bad
-    gpsPort.begin(GPS_STANDARD_BAUD_RATE,SERIAL_8N1, RX2, TX2);
+  log_d("Start UART connection on RX pin %d TX pin %d and autobaudrate", RX2, TX2);
+  gpsPort.begin(0, SERIAL_8N1, RX2, TX2, false, GPS_UART_TIMEOUT);
+  if (gpsPort.baudRate() > 0)
+  {
+    log_d("Connected with autobaudrate at %u on RX pin %d TX pin %d ", gpsPort.baudRate(), RX2, TX2);
   }
-   
+  else
+  {
+    log_e("Can't auto find BAUD rate on RX pin %d TX pin %d , forcing %u", RX2, TX2, GPS_STANDARD_BAUD_RATE);
+    // TODO: enable pulsing error on the LED to signal the user that something is bad
+    gpsPort.begin(GPS_STANDARD_BAUD_RATE, SERIAL_8N1, RX2, TX2);
+  }
+
   if (gpsPort.baudRate() != stored_preferences.gps_baud_rate)
   {
     log_i("Re-Connecting to GPS at updated %u", stored_preferences.gps_baud_rate);
@@ -2365,7 +2435,8 @@ void gps_initialize_settings()
   else if (stored_preferences.racetime)
   {
     gps_enable_racetime();
-  }  else
+  }
+  else
   {
     push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   }
@@ -2547,15 +2618,15 @@ void loop()
         if (gps_message_pointer > MAX_UART_BUFFER_SIZE - 3)
         {
           log_e("BLE Buffer saturated, resetting ");
-          gps_currentmessage[0] = (uint8_t) '$';
-          gps_currentmessage[1] = (uint8_t) '\0';
+          gps_currentmessage[0] = (uint8_t)'$';
+          gps_currentmessage[1] = (uint8_t)'\0';
           gps_message_pointer = 1;
         }
         if (sbuf[i] == 36) // $ char
         {
-          gps_currentmessage[gps_message_pointer++] = (uint8_t) '\r';
-          gps_currentmessage[gps_message_pointer++] = (uint8_t) '\n';
-          gps_currentmessage[gps_message_pointer++] = (uint8_t) '\0';
+          gps_currentmessage[gps_message_pointer++] = (uint8_t)'\r';
+          gps_currentmessage[gps_message_pointer++] = (uint8_t)'\n';
+          gps_currentmessage[gps_message_pointer++] = (uint8_t)'\0';
           // There is a new message -> Notify BLE of the changed value if connected and size says it is likely to be valid
           if (gps_message_pointer > MIN_NMEA_MESSAGE_SIZE)
           {
@@ -2563,8 +2634,8 @@ void loop()
             pCharacteristic->notify();
             delay(1);
           }
-          gps_currentmessage[0] = (uint8_t) '$';
-          gps_currentmessage[1] = (uint8_t) '\0';
+          gps_currentmessage[0] = (uint8_t)'$';
+          gps_currentmessage[1] = (uint8_t)'\0';
           gps_message_pointer = 1;
         }
         else

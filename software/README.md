@@ -8,6 +8,8 @@
   - [Optional external libraries](#optional-external-libraries)
   - [Built-in libraries](#built-in-libraries)
 - [Build options](#build-options)
+  - [Large use of preprocessing macro](#large-use-of-preprocessing-macro)
+  - [Logging facilities](#logging-facilities)
   - [How to enable OTA build](#how-to-enable-ota-build)
     - [OTA on Arduino IDE](#ota-on-arduino-ide)
     - [OTA on PlatformIO](#ota-on-platformio)
@@ -25,7 +27,7 @@ Code is written to be compatible with the Arduino IDE, there are a couple of ste
 - create an empty project
 - copy the content of `src/bonogps.cpp` in the `.ino` file just created
 - copy `include/bonogps_board_settings.h` in the same folder
-- choose your board: "ESP32 Dev Module" (the generic board that everyone has, often tagged DOIT) or "LOLIN D32 PRO" are supported, otherwise you might have to redefine your pins in `bonogps_board_settings.h`
+- choose your board: "ESP32 Dev Module" (the generic board that everyone has, often tagged DOIT) or ["LOLIN D32 PRO" are supported](hardware/esp32/lolin_d32_pro.md), otherwise you might have to redefine your pins in `bonogps_board_settings.h`
 - choose a partition schema with enough space (e.g. the Minimal SPIFSS with 1.9Mb of flash space)
 
 The rest is common to any other build on the Arduino IDE.
@@ -78,6 +80,22 @@ Included via `#define`
 
 ## Build options
 
+### Large use of preprocessing macro
+
+To keep flash size small and to avoid several versions of the software, almost all features are enabled/disabled via macro preprocessing
+
+For example, if you don't need BT-SPP or BLE, you can remove them. The most important ones are
+
+- `BTSPPENABLED` Include BT-SPP capabilities (default: enabled)
+- `BLEENABLED` Include BLE capabilities (default: enabled)
+- `ENABLE_OTA` Include OTA capabilities (default: disabled)
+
+### Logging facilities
+
+All logging on Serial Port is managed with `log_<i/d/e/w>()` functions (read more at [ESP32 Logging](https://thingpulse.com/esp32-logging/)). You can control how much logging is enabled within the Arduino IDE from the `Tools > Core Debug Level` menu.
+
+![arduino_ide_logging_level](building/arduino_ide_logging_level.png)
+
 ### How to enable OTA build
 
 OTA libraries are not enabled by default, to keep the binary size smaller and to have less software running at all times (it's a miracle there are no RAM issues with all tasks running).
@@ -103,7 +121,7 @@ You have to select a partitioning schema with 1.7 Mb of programming space (e.g. 
 
 Within PlatformIO, use the [platformio.ini](platformio.ini) available configuration
 
-```text
+```ini
 board_build.partitions = min_spiffs.csv
 ```
 

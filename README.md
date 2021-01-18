@@ -29,7 +29,7 @@ If you are not into the *maker* thing or if you don't know anyone that might be,
 
 ## For the SW Engineer / maker
 
-This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M8 (for example [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K), [BN220](https://www.amazon.com/Navigation-Raspberry-Betaflight-Geekstory-Shipping/dp/B07PRDY6DS), or [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W)) and repeats them back to a logger device, either
+This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M8 (for example  [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W), [BN220](https://www.amazon.com/Navigation-Raspberry-Betaflight-Geekstory-Shipping/dp/B07PRDY6DS), or [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) ) and repeats them back to a logger device, either
 
 1. a TCP/IP socket
 2. a Bluetooth Low Energy (BLE) service
@@ -61,15 +61,15 @@ Most runtime configurations are managed via its web-based interface: you can use
 
 ![Main page of web configuration panel from laptop](software/using/webinterface_root_laptop.png)
 
-* **GPS runtime settings:** GPS messages, rate of updates, serial port speed
-* **Connections:** List clients, enable BLE/BT-SPP connectivity, enable/disable the builtin TCP-IP messages repeater, switch between WiFi client to a well-known WiFi network or built-in Access Point
-* **Device:** Put GPS in powersaving for some time, Disable WiFi, load preset configurations, save current configuration, collect information about current status of the device, save WiFi credentials for client mode restart the ESP32
+- **GPS runtime settings:** GPS messages, rate of updates, serial port speed
+- **Connections:** List clients, enable BLE/BT-SPP connectivity, enable/disable the builtin TCP-IP messages repeater, switch between WiFi client to a well-known WiFi network or built-in Access Point
+- **Device:** Put GPS in powersaving for some time, Disable WiFi, load preset configurations, save current configuration, collect information about current status of the device, save WiFi credentials for client mode restart the ESP32
 
 The BOOT button allows you to loop between WiFi modes on the fly: WiFi Access Point -> WiFi client -> No WiFi.
 
-* WiFi Client (WiFi STA): the blue led light flashes rapidly (250 ms cycle) ([see it](hardware/esp32/wifi_client.webm))
-* WiFi Access Point (WiFi AP): the blue led light flashes slowly (500 ms cycle) ([see it](hardware/esp32/wifi_ap.webm))
-* No WiFi: the blue led light is off
+- WiFi Client (WiFi STA): the blue led light flashes rapidly (250 ms cycle) ([see it](hardware/esp32/wifi_client.webm))
+- WiFi Access Point (WiFi AP): the blue led light flashes slowly (500 ms cycle) ([see it](hardware/esp32/wifi_ap.webm))
+- No WiFi: the blue led light is off
 
 ![Fast blinking - Client](hardware/esp32/wifi_client.webm)
 ![Slow blinking - AP](hardware/esp32/wifi_ap.webm)
@@ -103,15 +103,15 @@ You can load a preset configuration from the configuration page selecting *Devic
 
 The minimum build is a ublox M8 series GPS receiver module connected to an ESP32:
 
-* TX/RX from the GPS to a Hardware serial port (default in the code is UART2/Serial2) on ESP32
-* the GPS power pins to ESP32: VCC to 3v3, GND to GND
+- TX/RX from the GPS to a Hardware serial port (default in the code is UART2/Serial2) on ESP32
+- the GPS power pins to ESP32: VCC to 3v3, GND to GND
 
 BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the IMU which are not used so you should leave them unconnected.
 
 Schematics are relatively simple
 
-* power the GPS module (3.3V on ESP32 to VCC on GPS receiver, GND on ESP32 to GND on GPS receiver)
-* connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX (RX and TX are switched: GPS transmits, ESP32 receives)
+- power the GPS module (3.3V on ESP32 to VCC on GPS receiver, GND on ESP32 to GND on GPS receiver)
+- connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX (RX and TX are switched: GPS transmits, ESP32 receives)
 
 ![Schematics](hardware/esp32/esp32_to_gps_schem.png)
 
@@ -133,9 +133,9 @@ See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q
 
 ## Credits and tools
 
-* Very valuable information from the mobile apps developers: [Harry's Lap Timer forum](http://forum.gps-laptimer.de/viewforum.php?f=2), [HP Tuner Track Adict forum](https://forum.hptuners.com/forumdisplay.php?74-TrackAddict), [RaceChrono forum](https://racechrono.com/forum/categories/diy-builds)
-* Email conversations with Harald Schlangmann (Harry's Lap Timer) and Roberto Morini (Racetime) who I thank for the time and effort in developing and supporting their apps
-* There are several other similar projects on github, a few from which I learned a lot: [RaceChronoDYI-TBeam](https://github.com/0x8008135/RaceChronoDYI-TBeam) [RaceChrono BLE DIY device (GPS and CAN-Bus)](https://github.com/aollin/racechrono-ble-diy-device) [DAWA](https://github.com/quichedood/DAWA-6.x)
-* Screenshot framing by [Mockuphone](https://mockuphone.com/) and [Android developers marketing tools
+- Very valuable information from the mobile apps developers: [Harry's Lap Timer forum](http://forum.gps-laptimer.de/viewforum.php?f=2), [HP Tuner Track Adict forum](https://forum.hptuners.com/forumdisplay.php?74-TrackAddict), [RaceChrono forum](https://racechrono.com/forum/categories/diy-builds)
+- Email conversations with Harald Schlangmann (Harry's Lap Timer) and Roberto Morini (Racetime) who I thank for the time and effort in developing and supporting their apps
+- There are several other similar projects on github, a few from which I learned a lot: [RaceChronoDYI-TBeam](https://github.com/0x8008135/RaceChronoDYI-TBeam) [RaceChrono BLE DIY device (GPS and CAN-Bus)](https://github.com/aollin/racechrono-ble-diy-device) [DAWA](https://github.com/quichedood/DAWA-6.x)
+- Screenshot framing by [Mockuphone](https://mockuphone.com/) and [Android developers marketing tools
 ](https://developer.android.com/distribute/marketing-tools/device-art-generator)
-* [The GPS Dictionary](https://www.u-blox.com/sites/default/files/the_gps_dictionary.pdf)
+- [The GPS Dictionary](https://www.u-blox.com/sites/default/files/the_gps_dictionary.pdf)

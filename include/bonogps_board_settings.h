@@ -22,12 +22,14 @@
 // until https://github.com/espressif/arduino-esp32/pull/4520 is in place, we need to manually define it 
 #define RX2 GPIO_NUM_4 // 12
 #define TX2 GPIO_NUM_2 // 14
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 5
-#endif
 // Which pin controls the button to switch to STA mode
 // You need to attach a button to this pin
 #define WIFI_MODE_BUTTON GPIO_NUM_25
+
+#ifndef LED_BUILTIN
+#define LED_BUILTIN 5
+#define GPIO_BATTERY GPIO_NUM_35 // Read Battery status from PIN 25
+#endif
 
 #elif defined(ARDUINO_ESP32_DEV)
 
