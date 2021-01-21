@@ -1,0 +1,30 @@
+.bat {
+    position: relative;
+    width: 8vw;
+    height: 3vw;
+    border: 1px solid #fff;
+    border-radius: 2px;
+    position: relative;
+    padding: 1px;
+    display: inline-block
+}
+
+.bat:before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 50%;
+    right: -5.1px;
+    margin-top: -3px;
+    width: 6px;
+    height: 6px;
+    background: #fff;
+    clip: rect(0,6px,6px,3.9px);
+    border-radius: 50%
+}
+
+.bat .lvl {
+    height: 100%;
+    background: #fff;
+    border-radius: 1px
+}

@@ -17,11 +17,11 @@ board_build.f_flash = 80000000L
 lib_deps = ${devconfig.lib_deps}
 build_flags = 
 	${env.build_flags}
-	-D LOG_LOCAL_LEVEL=ESP_LOG_NONE
-	-D CORE_DEBUG_LEVEL=0
-	-D ENABLE_OTA
-	-D OTA_AVAILABILITY_SECS=-1
-	-D BUILD_ENV_NAME='"Prod build - OTA"'
+	-DLOG_LOCAL_LEVEL=ESP_LOG_NONE
+	-DCORE_DEBUG_LEVEL=0
+	-DENABLE_OTA
+	-DOTA_AVAILABILITY_SECS=-1
+	-DBUILD_ENV_NAME='"Prod build - OTA"'
 
 ; update device 8409 via OTA and its local IP
 [env:8409]
@@ -35,7 +35,7 @@ build_flags =
 	-DLOG_LOCAL_LEVEL=ESP_LOG_NONE
 	-DCORE_DEBUG_LEVEL=0
 	-DBUILD_ENV_NAME='"Prod build - OTA"'
-	-D ENABLE_OTA
+	-DENABLE_OTA
 	-DOTA_AVAILABILITY_SECS=-1
 	-DARDUINO_LOLIN_D32_PRO
 

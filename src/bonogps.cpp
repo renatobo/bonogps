@@ -241,6 +241,27 @@ float ReadBatteryVoltage()
 {
   return analogRead(GPIO_BATTERY) / 4096.0 * 7.445;
 }
+
+uint8_t LiPoChargePercentage(float voltage)
+{
+  // use as LiPoChargePercentage(ReadBatteryVoltage())
+  // LOLIN D32 PRO uses a TP4054 so max V should be 4.2V https://datasheetspdf.com/pdf/1090540/NanJingTopPower/TP4054/1
+  // 0% <= 3.3
+  // 100% > 4.2
+  uint8_t returnvalue;
+  float normalizedcharge = ( voltage - 3.3 ) / (4.2 - 3.3) * 100;
+  if (normalizedcharge > 100) 
+  {
+    returnvalue = 100;
+  } else if (normalizedcharge <0)
+  {
+    returnvalue = 0;
+  } else
+  {
+    returnvalue = (uint8_t) normalizedcharge;
+  }
+  return returnvalue;
+}
 #endif
 
 /********************************
@@ -944,7 +965,14 @@ const char html_css[] PROGMEM = "text/css";
 const char text_json[] PROGMEM = "application/json";
 const char json_ok[] PROGMEM = "{'status':'ok'}";
 const char json_error[] PROGMEM = "{'status':'error'}";
-const char WEBPORTAL_CSS[] PROGMEM = "*{box-sizing:border-box;text-align:center;width:100%;font-weight:300}body{font-family:Roboto,system-ui,Arial,Helvetica,sans-serif;font-size:5vw;margin:0}header{background-color:#666;padding:.5vw;text-align:center;color:#fff}article{float:left;padding:10px;width:100%;height:auto}details{display:table;clear:both}summary{font-size:larger;font-weight:400;padding:10px;background-color:#f1f1f1}footer{background-color:#777;padding:.2vw;text-align:center;color:#fff;clear:both;position:fixed;bottom:0;font-size:small}@media (min-width:800px){article{width:50%}*{font-size:2.5vw}}a,input{color:#fff;border-radius:8pt;background:red;text-decoration:none;padding:5pt}.bg input{display:none}label{border:solid;border-radius:8pt;padding:5px;margin:2px;border-color:#bdbdbd;border-width:2px;color:#9e9e9e}.bg input:checked+label,.bg input:checked+label:active{background:red;color:#fff;border-color:red}";
+// The following variable is in a separate file generated from its source but stored in minified format
+// run generate_css.sh 
+#ifdef SHOWBATTERY
+// add the css portion for the battery gauge
+#include "bonogps_css_base_battery.h"
+#else 
+#include "bonogps_css_base.h"
+#endif
 const char WEBPORTAL_HEADER[] PROGMEM = "<!DOCTYPE html>\n<html lang='en'>\n\t<head>\n\t\t<title>Bono GPS</title>\n\t\t<meta charset='utf-8'>\n\t\t<meta name='viewport' content='width=device-width, initial-scale=1'>\n\t\t<link rel='stylesheet' href='/css'>\n\t</head>\n<body>\n<script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script>\n<header>";
 #ifdef GIT_REPO
 // TODO fix the macro definition to avoid preprocessor warning. GIT_REPO should only contain the url path, not the address part, to comply with macros being alphanumeric only
@@ -963,7 +991,19 @@ String generate_html_header(bool add_menu = true)
 {
   String htmlbody((char *)0);
   htmlbody.reserve(500);
-  htmlbody += (add_menu ? F("Back to <a href='/'>Main menu</a>") : String(ap_ssid));
+
+  if (add_menu) {
+    htmlbody +=  F("Back to <a href='/'>Main menu</a>") ;
+  } else {
+    // this assumes the battery icon is 25 pixels
+    htmlbody += String(ap_ssid);
+    #ifdef SHOWBATTERY
+    htmlbody += "&nbsp;\n<div inline class=\"bat\">\n<div class=\"lvl\" style=\"width: ";
+    htmlbody += String(+LiPoChargePercentage(ReadBatteryVoltage()));
+    htmlbody += "%;\"></div></div>";
+    #endif
+  }
+
   if (gps_powersave)
     htmlbody += F("<br><em>Powersave mode</em>");
   htmlbody += F("</header>\n");
@@ -1099,7 +1139,7 @@ void handle_menu()
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 5) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("'rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' ");
+  mainpage += F("rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' ");
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 10) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
@@ -1912,8 +1952,11 @@ void handle_status()
   message += String(ESP.getCpuFreqMHz());
 #if defined(ARDUINO_LOLIN_D32_PRO)
 // TODO transform into percentage
+  float voltage = ReadBatteryVoltage();
   message += F("<br>Battery Voltage: ");
-  message += String(ReadBatteryVoltage());
+  message += String(voltage);
+  message += F("<br>Battery %: ");
+  message += String(LiPoChargePercentage(voltage));
 #endif
 
   webserver.send(200, html_text, generate_html_body(message));
