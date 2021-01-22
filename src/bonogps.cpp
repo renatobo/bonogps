@@ -58,12 +58,6 @@
 
 // TCP Port for NMEA sentences repeater, used for Harry's LapTimer mostly, but also for proxying with uBlox
 #define NMEA_TCP_PORT 1818
-// Disabling GPS over NBP as it does not override phone data within TrackAddict right now, so kind of useless mostly
-// #define NUMERICAL_BROADCAST_PROTOCOL
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-#define NEED_NEOGPS
-#define NBP_TCP_PORT 35000
-#endif
 
 // Define configuration of Bluetooth Low Energy
 #define BLE_DEVICE_ID "BonoGPS"
@@ -151,7 +145,6 @@ bool gps_powersave = false;
 
 // The next section is used to parse the content of messages locally instead of proxying them
 // This can be used for
-// - NBP: unused right now
 // - Creating a custom binary packed format
 #ifdef NEED_NEOGPS
 // add libraries to parse GPS responses
@@ -718,13 +711,7 @@ void gps_enable_racechrono()
   stored_preferences.nmeaGSAGSVpolling = 0;
 #endif
   stored_preferences.racechrono = true;
-}
-
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-const uint NBPServerPort = NBP_TCP_PORT;
-WiFiServer NBPServer(NBPServerPort);
-WiFiClient NBPRemoteClient;
-#endif
+}  
 
 const uint NMEAServerPort = NMEA_TCP_PORT;
 WiFiServer NMEAServer(NMEAServerPort);
@@ -780,33 +767,6 @@ void stop_NMEA_server()
   NMEAServer.stop();
 }
 
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-unsigned long nbptimer = 0;
-void NBPCheckForConnections()
-{
-  if (NBPServer.hasClient())
-  {
-    // If we are already connected to another computer, then reject the new connection. Otherwise accept the connection.
-    if (NBPRemoteClient.connected())
-    {
-      log_w("NBP TCP Connection rejected");
-      NBPServer.available().stop();
-    }
-    else
-    {
-      NBPRemoteClient = NBPServer.available();
-      log_i("NBP TCP Connection accepted from client: %s", NBPRemoteClient.remoteIP().toString());
-    }
-  }
-}
-void start_NBP_server()
-{
-  log_i("Start NBP TCP/IP Service");
-  NBPServer.begin();
-  NBPServer.setNoDelay(true);
-}
-#endif
-
 // Start STATION mode to connect to a well-known Access Point
 void wifi_STA()
 {
@@ -852,10 +812,6 @@ void wifi_STA()
     // WLAN Server for GNSS data
     if (stored_preferences.nmeaTcpServer)
       start_NMEA_server();
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-    // WLAN Server for GNSS data
-    start_NBP_server();
-#endif
     MyIP = WiFi.localIP();
 #ifdef BUTTON
     button.onPressed(wifi_OFF);
@@ -927,10 +883,6 @@ void wifi_AP()
   // WLAN Server for GNSS data
   if (stored_preferences.nmeaTcpServer)
     start_NMEA_server();
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-  // WLAN Server for GNSS data
-  start_NBP_server();
-#endif
 
 #ifdef BUTTON
   button.onPressed(wifi_STA);
@@ -950,10 +902,7 @@ void wifi_OFF()
   log_i("Stop OTA service");
   OTA_stop();
 #endif
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-  // WLAN Server for GNSS data
-  stop_NBP_server();
-#endif
+
   // WiFi Access
   if (stored_preferences.nmeaTcpServer)
     stop_NMEA_server();
@@ -1937,7 +1886,7 @@ void handle_status()
   message += details_stop_start;
   if (stored_preferences.nmeaTcpServer)
     message += F(" open");
-  message += F("><summary>WiFi NMEA repeater: ");
+  message += F("><summary>WiFi/TCP-IP Service: ");
   message += (stored_preferences.nmeaTcpServer ? F("ON") : F("OFF"));
   message += F("</summary><article>TCP/IP NMEA repeater on Port:");
   message += String(NMEAServerPort);
@@ -1946,17 +1895,12 @@ void handle_status()
   message += MyIP.toString();
   message += String(":");
   message += String(NMEAServerPort);
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-  message += details_stop_start;
-  message += F("><summary>Port for NBP: ") + String(NBPServerPort);
-  message += F("</summary></details>");
-#else
-  message += details_stop_start;
-  message += F("><summary>NBP n/a in this firmware</summary></details>");
-#endif
 #ifdef BLEENABLED
   message += details_stop_start;
-  message += (stored_preferences.ble_active ? F(" open><summary>BLE Enabled") : F("><summary>BLE Not Enabled"));
+  if (stored_preferences.ble_active)
+    message += F(" open");
+  message += F("><summary>BLE Service: ");
+  message += (stored_preferences.ble_active ? F("ON") : F("OFF"));
   message += F("</summary>\n\t<article>BLE Name: ");
   message += ble_device_id;
   message += article_stop_start; message += F("BLE Service: ");
@@ -1969,7 +1913,10 @@ void handle_status()
 #endif
 #ifdef BTSPPENABLED
   message += details_stop_start;
-  message += (stored_preferences.btspp_active ? F(" open><summary>BT-SPP Enabled") : F("><summary>BT-SPP Not Enabled"));
+  if (stored_preferences.btspp_active)
+    message += F(" open");
+  message += F("><summary>BT-SPP Service: ");
+  message += (stored_preferences.btspp_active ? F("ON") : F("OFF"));
   message += F("</summary>\n\t<article>BT Name: ");
   message += ble_device_id;
 #else
@@ -2067,17 +2014,6 @@ void handle_clients()
     message += "not ";
   }
 
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-  message += F(" connected<br>NBP TCP/IP client ");
-  if (NBPRemoteClient.connected())
-  {
-    message += NBPRemoteClient.remoteIP().toString().c_str();
-  }
-  else
-  {
-    message += "not ";
-  }
-#endif
 #ifdef BLEENABLED
   message += F(" connected<br>BLE device ");
   if (ble_deviceConnected)
@@ -2759,53 +2695,6 @@ void loop()
       //push UART data to the TCP client
       NMEARemoteClient.write(sbuf, len);
     }
-
-#ifdef NUMERICAL_BROADCAST_PROTOCOL
-    if (wifi_connected && NBPRemoteClient && NBPRemoteClient.connected())
-    {
-      // send GPS data to NeoGPS processor for parsing
-      for (int i = 0; i < len; i++)
-      {
-        if (gps.decode((char)sbuf[i]) == NMEAGPS::DECODE_COMPLETED)
-        {
-          log_d("Fix available, size: %d", sizeof(gps.fix()));
-          my_fix = gps.fix();
-
-          NBPRemoteClient.print("*NBP1,ALLUPDATE,");
-          NBPRemoteClient.print(my_fix.dateTime);
-          NBPRemoteClient.print(".");
-          NBPRemoteClient.println(my_fix.dateTime_ms());
-          if (my_fix.valid.location)
-          {
-            NBPRemoteClient.print("\"Latitude\",\"deg\":");
-            NBPRemoteClient.println(my_fix.latitude(), 12);
-            NBPRemoteClient.print("\"Longitude\",\"deg\":");
-            NBPRemoteClient.println(my_fix.longitude(), 12);
-            NBPRemoteClient.print("\"Altitude\",\"m\":");
-            NBPRemoteClient.println(my_fix.altitude());
-          }
-          if (my_fix.valid.heading)
-          {
-            NBPRemoteClient.print("\"Heading\",\"deg\":");
-            NBPRemoteClient.println(my_fix.heading());
-          }
-          if (my_fix.valid.speed)
-          {
-            NBPRemoteClient.print("\"Speed\",\"kmh\":");
-            NBPRemoteClient.println(my_fix.speed_kph());
-          }
-          // NBPRemoteClient.print("\"Accuracy\",\"m\":");
-          NBPRemoteClient.println("#");
-          NBPRemoteClient.print("@NAME:");
-          NBPRemoteClient.println(ap_ssid);
-        }
-      }
-    }
-    else
-    {
-      NBPCheckForConnections();
-    }
-#endif
 
 #ifdef BTSPPENABLED
     if (bt_deviceConnected && stored_preferences.btspp_active)
