@@ -1,4 +1,4 @@
-# LOLIN D32 PRO 
+# LOLIN D32 PRO
 
 - [No BOOT Button](#no-boot-button)
 - [Serial2 PINs need to be assigned](#serial2-pins-need-to-be-assigned)
@@ -31,3 +31,5 @@ analogRead(GPIO_BATTERY) / 4096.0 * 7.445
 ```
 
 Percentage is based on the common LiPo values as charged by its [TP4054](https://datasheetspdf.com/pdf/1090540/NanJingTopPower/TP4054/1): linear scale from 3.3V (0%) to 4.2V (100%).
+
+These are enabled by the preprocessing macro `SHOWBATTERY`
