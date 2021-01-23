@@ -1,6 +1,6 @@
 # Setup and configuration of mobile apps
 
 - [Harry Lap Timer](harrylaptimer)
-- [TrackAddict](trackaddit)
+- [TrackAddict](trackaddict)
 - [RaceChrono](racechrono)
 - [Racetime](racetime)
