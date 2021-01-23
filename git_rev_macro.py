@@ -18,6 +18,7 @@ repo = (
     .strip()
     .decode("utf-8")
     .replace('.git', '')
+    .replace('https://github.com/','')
 )
 
 repolink = re.sub(r'(v[\d+\.a-zA-Z]+)-.*', r"\1", revision)

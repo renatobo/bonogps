@@ -34,8 +34,7 @@ build_flags =
 	${env.build_flags}
 	-DLOG_LOCAL_LEVEL=ESP_LOG_NONE
 	-DCORE_DEBUG_LEVEL=0
-	-DBUILD_ENV_NAME='"Prod build - OTA"'
 	-DENABLE_OTA
 	-DOTA_AVAILABILITY_SECS=-1
-	-DARDUINO_LOLIN_D32_PRO
+	-DBUILD_ENV_NAME='"Prod build - OTA"'
 

@@ -1,5 +1,6 @@
 # Connecting to Harry's LapTimer
 
+- [Features](#features)
 - [iOS Bluetooth Low Energy setup](#ios-bluetooth-low-energy-setup)
 - [iOS and Android TCP/IP setup](#ios-and-android-tcpip-setup)
 - [Android BT-SPP Setup](#android-bt-spp-setup)
@@ -9,18 +10,19 @@ More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where
 
 ![Example](hlt_lagunaseca.png)
 
-Features:
+## Features
 
 - NMEA parsing offered by HLT directly: `GxRMC`+`GxGGA`+`GxGBS` messages
 - Enable or Disable `GxGSV`+`GxGSA` as needed, with a lower update frequency selectable for 1, 2, or 5 sec (as [instructed by Harry](http://forum.gps-laptimer.de/viewtopic.php?t=4359))
 - tested with v24
+- from v1.2 of BonoGPS, battery information on certain ESP32 boards (for example LOLIN D32 PRO) is available so that HLT can provide it back to you while using the app
 
 Connections
- 
-- iOS and Android: TCP/IP port 8118. This is the easier option, yet it prevents connecting other devices to your mobile phone (e.g. an action camera or an ODBII device)
-- iOS: BLE atested on iPhone (tested with 7). BLE handles 5Hz and 10Hz GPS update rates when `GSV`/`GSA` streaming disabled, ok with polling at low frequencies (e.g. every few seconds)
-- Android: BT-SPP tested on Android
- 
+
+- iOS and Android: TCP/IP port 8118. This is the easier option, yet it prevents connecting other devices to your mobile phone (e.g. an action camera or an ODBII device) so it's not recommended
+- iOS: BLE tested on iPhone (tested with 7). BLE nicely handles up to 10Hz GPS update rates when `GSV`/`GSA` streaming is disabled or polled at low frequencies (e.g. every few seconds)
+- Android: BT-SPP tested on Android, 10Hz and  `GSV`/`GSA` at higher polling frequency (streaming saturates the UART connection on the GPS itself)
+
 After configuring the connection, your unit shows up in the Sensors List as 'Custom [BTLE/TCP-IP] GNSS' device
 
 ![Configured](hlt-ble-configured.png)
@@ -43,6 +45,11 @@ Go to *Administration > Settings > Expert Settings* and
 - within 'custom btle gps adapter', set 'Read Characteristic UUID' **2A67** (standard for `CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID`)
 
 ![BLE](hlt-ble.jpeg)
+
+Click on the (i) to see more information about what HLT collects
+![BLE with battery](hlt-ble-check.png)
+
+If your ESP32 board has a battery and you have enabled the `SHOWBATTERY` feature, it will be reported as battery %.
 
 ## iOS and Android TCP/IP setup
 

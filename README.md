@@ -52,7 +52,7 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 ### Daily Usage
 
 1. Turn on the ESP32 and wait a few minutes for the GPS to get a fix on position (on BN devices, the red led will blink every second)
-2. Open your preferred mobile app and connect it to your BonoGPS-*ABCD* device
+2. Open your preferred mobile app and connect it to your BonoGPS-*ABCD* device (ABCD is a combination of 4 letters and numbers unique to your ESP32 device)
 3. Enjoy your ride!
 
 Most runtime configurations are managed via its web-based interface: you can use your phone or any device with a web browser which is able to connect to either the built-in Access Point the BonoGPS provides or (if you are home and on you have configured the WiFi Client credentials) [http://bonogps.local](http://bonogps.local)
@@ -93,7 +93,7 @@ There are many mobile apps to log lap times, few accept custom devices, in parti
 | iOS     | **BLE**, TCP-IP    |             |            |
 | Android | **BT-SPP**, TCP-IP | BT-SPP      | BT-SPP     | BT-SPP   |
 
-See more info in each subfolder of **connecting**.
+See more info in each subfolder of **[connecting](software/connecting)**.
 
 You can load a preset configuration from the configuration page selecting *Device > Load Preset* and then choosing your mobile phone device and app combination (when there are alternatives, the recommended option is in bold)
 
@@ -121,11 +121,11 @@ Examples are in [hardware/assembled](hardware/assembled)
 
 Thanks to needs of a very active drone community, there are a lot of inexpensive GPS receivers: some considerations on performance/accuracy/cost are reported [in the hardware/GPS folder](hardware/GPS).
 
-What you need to configure is documented [in the hardware/GPS folder](hardware/GPS). You can restore a pre-saved configuration from the same page.
+What you need to configure is documented [in the hardware/GPS folder](hardware/GPS): this is **important**, the performances of your GPS won't be optimal until you do.
 
 ## Software build instructions
 
-This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE (1.8.13)](https://www.arduino.cc/en/software). More information on what libraries are needed and software organization [in the software folder](software).
+This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE (1.8.13)](https://www.arduino.cc/en/software). More information on what libraries are needed and software organization [in the software/building folder](software/building).
 
 ## Possible enhancements and ideas
 

@@ -17,7 +17,6 @@
 
 #if defined(ARDUINO_LOLIN_D32_PRO)
 
-#define BOARD_NAME "Lolin D32 PRO" // Display in information page
 // Where is Serial2 connected - for Lolin we reconfigure to 2 free pins
 // until https://github.com/espressif/arduino-esp32/pull/4520 is in place, we need to manually define it 
 #define RX2 GPIO_NUM_4 // 12
@@ -34,7 +33,6 @@
 
 #elif defined(ARDUINO_ESP32_DEV)
 
-#define BOARD_NAME "esp32-devkit" // Display in information page
 #define RX2 16 // Standard label Rx2 on board
 #define TX2 17 // Standard label Tx2 on board
 #define WIFI_MODE_BUTTON 0 // default is: use the boot button to switch wifi modes
@@ -42,7 +40,6 @@
 
 #else
 
-#define BOARD_NAME "esp32-custom" // Display in information page
 // #define RX2 GPIO_NUM_17 // Serial2 standard location on devkit
 // #define TX2 GPIO_NUM_16 // Serial2 standard location on devkit
 #define LED_BUILTIN 2 // usually 2 or 5
