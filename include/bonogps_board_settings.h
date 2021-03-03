@@ -24,7 +24,11 @@
 // Which pin controls the button to switch to STA mode
 // You need to attach a button to this pin
 #define WIFI_MODE_BUTTON GPIO_NUM_25
+// Use external led on GPIO_NUM_12 to show signs of life
+// #define LED_ACTIVE_EXTERNAL GPIO_NUM_12
 
+// Use external led on GPIO_NUM_14 to show status of WiFi
+// #define LED_WIFI GPIO_NUM_14
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 5
 #define GPIO_BATTERY GPIO_NUM_35 // Read Battery status from PIN 25

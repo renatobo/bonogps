@@ -89,6 +89,10 @@
 
 #if !(defined(LED_BUILTIN))
 #error "You are missing the definition of LED_BUILTIN for your board or in bonogps_board_settings.h"
+#else
+#ifndef LED_WIFI
+#define LED_WIFI LED_BUILTIN
+#endif // #ifndef LED_WIFI
 #endif
 #if !(defined(WIFI_MODE_BUTTON))
 #error "You are missing the definition of WIFI_MODE_BUTTON in bonogps_board_settings.h"
@@ -717,16 +721,35 @@ const uint NMEAServerPort = NMEA_TCP_PORT;
 WiFiServer NMEAServer(NMEAServerPort);
 WiFiClient NMEARemoteClient;
 
-bool ledon;
-void led_blink()
+bool wifi_ledon;
+void wifiled_blink()
 {
   //toggle state
-  ledon = !ledon;
-  digitalWrite(LED_BUILTIN, (ledon ? HIGH : LOW)); // set pin to the opposite state
+  wifi_ledon = !wifi_ledon;
+  digitalWrite(LED_WIFI, (wifi_ledon ? HIGH : LOW)); // set pin to the opposite state
 }
 
 #ifdef TASK_SCHEDULER
-Task tLedBlink(0, TASK_FOREVER, &led_blink, &ts, false);
+Task tLedWiFiBlink(0, TASK_FOREVER, &wifiled_blink, &ts, false);
+#ifdef LED_ACTIVE_EXTERNAL
+bool active_ledon;
+#define LEDPWMFREQ  5000
+#define LEDCHANNEL (uint8_t) 0
+#define LEDPWMRESOLUTION (uint8_t ) 8
+void activeled_blink()
+{
+  //toggle state
+  active_ledon = !active_ledon;
+  uint8_t highvalue=30;
+  if (gps_powersave) {
+    highvalue=0;
+  }
+  ledcWrite(LEDCHANNEL, (active_ledon ? highvalue : 5));
+  // digitalWrite(LED_ACTIVE_EXTERNAL, (active_ledon ? HIGH : LOW)); // set pin to the opposite state
+}
+// if we need an external led to show status, use a timer
+Task tLedActiveBlink(0, TASK_FOREVER, &activeled_blink, &ts, false);
+#endif
 #endif
 
 /********************************
@@ -781,8 +804,8 @@ void wifi_STA()
   // start ticker_wifi with 50 ms because we start in STA mode and try to connect
 #ifdef TASK_SCHEDULER
   log_d("Start rapid blinking");
-  tLedBlink.setInterval(50);
-  tLedBlink.enable();
+  tLedWiFiBlink.setInterval(50);
+  tLedWiFiBlink.enable();
 #endif
 
   // connect to STA mode with stored passwords here
@@ -800,7 +823,7 @@ void wifi_STA()
   {
     log_i("Connected to SSID %s", stored_preferences.wifi_ssid);
 #ifdef TASK_SCHEDULER
-    tLedBlink.setInterval(250);
+    tLedWiFiBlink.setInterval(250);
 #endif
     wifi_connected = true;
 #ifdef ENABLE_OTA
@@ -876,8 +899,8 @@ void wifi_AP()
 
 #ifdef TASK_SCHEDULER
   log_d("Start blinking slowly 1sec frequency");
-  tLedBlink.setInterval(1000);
-  tLedBlink.enable();
+  tLedWiFiBlink.setInterval(1000);
+  tLedWiFiBlink.enable();
 #endif
 
   // WLAN Server for GNSS data
@@ -895,7 +918,7 @@ void wifi_OFF()
 
 #ifdef TASK_SCHEDULER
   log_d("Flash blinking");
-  tLedBlink.setInterval(50);
+  tLedWiFiBlink.setInterval(50);
 #endif
 
 #ifdef ENABLE_OTA
@@ -919,10 +942,10 @@ void wifi_OFF()
 
 #ifdef TASK_SCHEDULER
   log_d("Stop blinking");
-  tLedBlink.setInterval(0);
-  tLedBlink.disable();
-  ledon = HIGH;
-  led_blink();
+  tLedWiFiBlink.setInterval(0);
+  tLedWiFiBlink.disable();
+  wifi_ledon = HIGH;
+  wifiled_blink();
 #endif
 
 #ifdef BUTTON
@@ -2215,7 +2238,7 @@ void OTA_start()
           stop_NMEA_server();
         }
         #ifdef TASK_SCHEDULER
-        tLedBlink.setInterval(50);
+        tLedWiFiBlink.setInterval(50);
         #endif
         log_i("Start updating %s", type);
       })
@@ -2611,12 +2634,24 @@ void setup()
   log_d("Compiled on: %s", __DATE__);
 
   //set led pin as output
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_WIFI, OUTPUT);
   #ifdef TASK_SCHEDULER
-  tLedBlink.setInterval(100);
-  tLedBlink.enable();
+  tLedWiFiBlink.setInterval(100);
+  tLedWiFiBlink.enable();
   #endif
 
+  #ifdef LED_ACTIVE_EXTERNAL
+  // Use LED_ACTIVE_EXTERNAL to show status of device
+  pinMode(LED_ACTIVE_EXTERNAL, OUTPUT);
+  #ifdef TASK_SCHEDULER
+  // configure LED PWM functionalitites
+  ledcSetup(LEDCHANNEL, LEDPWMFREQ, LEDPWMRESOLUTION);
+  // attach the channel to the GPIO to be controlled
+  ledcAttachPin(LED_ACTIVE_EXTERNAL, LEDCHANNEL);
+  tLedActiveBlink.setInterval(1000);
+  tLedActiveBlink.enable();
+  #endif
+  #endif
   // Generate device name
   chip = (uint16_t)((uint64_t)ESP.getEfuseMac() >> 32);
   sprintf(ap_ssid, "%s-%04X", BONOGPS_AP, chip);
