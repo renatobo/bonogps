@@ -37,7 +37,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v1.2"
+#define BONOGPS_FIRMWARE_VER "v1.2.1"
 #endif
 // GIT_REPO is used to build links to online software release notes and documentation
 #ifndef GIT_REPO
@@ -963,6 +963,7 @@ void wifi_OFF()
 // change from standard 1436 to a minimal 100
 // #define HTTP_UPLOAD_BUFLEN 100
 #include <WebServer.h>
+#include <uri/UriBraces.h>
 WebServer webserver(80);
 
 const char html_text[] PROGMEM = "text/html";
@@ -2143,14 +2144,14 @@ void WebConfig_start()
   webserver.onNotFound(handle_NotFound);
   webserver.on("/", handle_menu);
   webserver.on("/css", handle_css);
-  webserver.on("/rate/{}hz", handle_rate);
-  webserver.on("/gsa/{}", handle_gsa);
-  webserver.on("/gsv/{}", handle_gsv);
-  webserver.on("/gbs/{}", handle_gbs);
-  webserver.on("/sv/{}", handle_svchannel);
-  webserver.on("/tcpserver/{}", handle_tcpserver);
-  webserver.on("/hlt/{}", handle_hlt);
-  webserver.on("/wifi/{}", handle_wifi_mode);
+  webserver.on(UriBraces("/rate/{}hz"), handle_rate);
+  webserver.on(UriBraces("/gsa/{}"), handle_gsa);
+  webserver.on(UriBraces("/gsv/{}"), handle_gsv);
+  webserver.on(UriBraces("/gbs/{}"), handle_gbs);
+  webserver.on(UriBraces("/sv/{}"), handle_svchannel);
+  webserver.on(UriBraces("/tcpserver/{}"), handle_tcpserver);
+  webserver.on(UriBraces("/hlt/{}"), handle_hlt);
+  webserver.on(UriBraces("/wifi/{}"), handle_wifi_mode);
   webserver.on("/restart", HTTP_GET, handle_restart);
   webserver.on("/restart", HTTP_POST, handle_restart_execute);
   webserver.on("/poweroff", HTTP_GET, handle_deepsleep);
@@ -2158,26 +2159,26 @@ void WebConfig_start()
   webserver.on("/wifioff", HTTP_GET, handle_wifioff);
   webserver.on("/wifioff", HTTP_POST, handle_wifioff_post);
   webserver.on("/savecfg", handle_saveconfig);
-  webserver.on("/savecfg/{}", handle_saveconfig_wifi);
-  webserver.on("/savewifi/{}", handle_saveconfig_wifimode);
+  webserver.on(UriBraces("/savecfg/{}"), handle_saveconfig_wifi);
+  webserver.on(UriBraces("/savewifi/{}"), handle_saveconfig_wifimode);
   webserver.on("/savewificreds", HTTP_GET, handle_saveconfig_wifi_creds);
   webserver.on("/savewificreds", HTTP_POST, handle_saveconfig_wifi_creds_post);
   webserver.on("/preset", handle_preset);
   webserver.on("/status", handle_status);
   webserver.on("/clients", handle_clients);
-  webserver.on("/baud/{}", handle_baudrate);
+  webserver.on(UriBraces("/baud/{}"), handle_baudrate);
 #ifdef BTSPPENABLED
-  webserver.on("/btspp/{}", handle_btspp);
-  webserver.on("/trackaddict/{}", handle_trackaddict);
+  webserver.on(UriBraces("/btspp/{}"), handle_btspp);
+  webserver.on(UriBraces("/trackaddict/{}"), handle_trackaddict);
   webserver.on("/racechrono/android", handle_racechrono_android);
   webserver.on("/racetime/android", handle_racetime_android);
 #endif
 #ifdef BLEENABLED
-  webserver.on("/ble/{}", handle_ble);
+  webserver.on(UriBraces("/ble/{}"), handle_ble);
 #endif
 #ifdef TASK_SCHEDULER
-  webserver.on("/powersave/{}", handle_powersave);
-  webserver.on("/poll/gsagsv/{}", handle_pollgsagsv);
+  webserver.on(UriBraces("/powersave/{}"), handle_powersave);
+  webserver.on(UriBraces("/poll/gsagsv/{}"), handle_pollgsagsv);
 #endif
   webserver.begin();
 #ifdef MDNS_ENABLE
