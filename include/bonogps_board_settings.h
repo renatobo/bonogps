@@ -31,9 +31,9 @@
 // #define LED_WIFI GPIO_NUM_14
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 5
+#endif
 #define GPIO_BATTERY GPIO_NUM_35 // Read Battery status from PIN 25
 #define SHOWBATTERY // Show the battery charge indicator on the top menu of the web configuration panel
-#endif
 
 #elif defined(ARDUINO_ESP32_DEV)
 
