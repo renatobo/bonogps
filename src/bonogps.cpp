@@ -235,6 +235,7 @@ char ble_device_id[MAX_AP_NAME_SIZE];
 #ifdef BUTTON
 // remove unneeded feature to trim down library size
 #define EASYBUTTON_DO_NOT_USE_SEQUENCES
+#define WIFI_OFF_DURATION 2000
 #include <EasyButton.h>
 // Instance of the button to switch wifi mode
 EasyButton button(WIFI_MODE_BUTTON);
@@ -813,10 +814,18 @@ void wifi_STA()
   wifi_connected = false;
 
   int times = 0;
-  while (WiFi.status() != WL_CONNECTED && times < 20)
+  // Another press will move to wifi_OFF
+  #ifdef BUTTON
+    button.onPressed(wifi_OFF);
+  #endif
+  while (WiFi.status() != WL_CONNECTED && times < 50)
   {
-    delay(250);
+    delay(50);
     log_i("Connecting to WiFi %s , trial %d", stored_preferences.wifi_ssid, times++);
+    #ifdef BUTTON
+    // If we see WiFi failing and we want to change mode on the fly, we need to read button status here
+    button.read();
+    #endif
   }
 
   if (WiFi.status() == WL_CONNECTED)
@@ -836,15 +845,16 @@ void wifi_STA()
     if (stored_preferences.nmeaTcpServer)
       start_NMEA_server();
     MyIP = WiFi.localIP();
-#ifdef BUTTON
-    button.onPressed(wifi_OFF);
-#endif
     stored_preferences.wifi_mode = WIFI_STA;
   }
   else
   {
     log_e("Could not connect to SSID %s, reverting to AP mode", stored_preferences.wifi_ssid);
-    wifi_AP();
+      // Recover to wifi_STA when button is pressed
+      #ifdef BUTTON
+      button.onPressed(wifi_STA);
+      #endif
+      wifi_AP();
   }
 }
 
@@ -2682,6 +2692,7 @@ void setup()
 
 #ifdef BUTTON
   button.begin();
+  button.onPressedFor(WIFI_OFF_DURATION,wifi_OFF);
 #endif
 
   // Start WiFi
