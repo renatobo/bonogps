@@ -1,7 +1,10 @@
-# A couple of working prototypes that don't look fancy but get the job done.
+# A couple of working prototypes that don't look fancy but get the job done
 
+- [Integrated in seat cowl (with BN880) of a Ducati Panigale 959 with 3d printed base](#integrated-in-seat-cowl-with-bn880-of-a-ducati-panigale-959-with-3d-printed-base)
+  - [Rendering of 3d model](#rendering-of-3d-model)
+  - [Picture of installed model](#picture-of-installed-model)
+  - [3d printing](#3d-printing)
 - [Trasparent case (with BN220)](#trasparent-case-with-bn220)
-- [Integrated in seat cowl (with BN880)](#integrated-in-seat-cowl-with-bn880)
 
 Hardware is similar for both and it's mostly based on things I could easily find:
 
@@ -21,6 +24,57 @@ Another supported board is [Wemos/LOLIN D32 Pro](https://www.wemos.cc/en/latest/
 
 This software runs on it (be sure to select it within the Arduino IDE or to use the tasks named 'lolind32pro' within PlatformIO or to select the right definition in [include/bonogps_board_settings.h](include/bonogps_board_settings.h))
 
+## Integrated in seat cowl (with BN880) of a Ducati Panigale 959 with 3d printed base
+
+The GPS antenna is underneath the very end of the tail, with minimal plastic over it and with the best clear line of sight of any other location on the bike.
+
+A simple 3d printed board is used to hold all components in place
+
+- GPS: BN880
+- ESP32: Lolin d32pro
+- LiPo Battery (2000 mAh will last a full day of riding)
+- A small on/off button
+- A momentary button to serve as WiFi mode selection button (equivalent to BOOT on other ESP32 models)
+
+### Rendering of 3d model
+
+![959 rendering](959_under_tail_2021-Mar-15_02-52-02AM-000_CustomizedView27542732125.png)
+
+### Picture of installed model
+
+![959 3d printed base](bonogps_bn880_ducati_panigale_959_bottom.jpeg)
+
+### 3d printing
+
+- [base board](bonogps_panigale_baseboard.stl)
+- [battery slider](bonogps_panigale_battery_slider.stl)
+
+If you have different components, [source files for Fusion3d are also available](BonoGPS%20-%20Panigale%20899%201199%20959%201299.f3d).
+
+Schematics are simple:
+
+- a GPS serial connection TX+RX and its power
+- a on/off switch that disables power to the internal Lolin D32 Pro regulator
+- a momentary switch to act as WiFi mode selector, in lieu of a Boot button
+
+![schematic](../esp32/lolin_d32_pro_schem_noextleds.png)
+
+Steps - [here a video of how all pieces fit together](959%20under%20tail%20v11.mp4)
+
+- print the base board
+- print the battery slider
+- connect/solder the connector cables between esp32 and GPS (4 wires): VCC to 3V, RX to pin 0, TX to pin 4, GND to GND
+- connect/solder micro on/off switch and momentary button cables (leave cables open on the end towards esp32) (3 wires). The on/off connects GND to EN pin or it leaves it open, the momentary button connects pin 25 to GND
+- connect/solder the open end of cables for switches to esp32
+- mount the esp32 in place with 3 small screws (I suggest M1.7)
+- slide in BN880
+- connect the BN880 with its connector
+- use a zip tie or double sided tape or strong velcro to hold the battery on the battery slider
+- carefully slide in the battery slider and make sure it holds its place: this is delicate so make sure you don't break the support structures
+- connect the LiPo JST battery
+
+.. and you are done! Don'f forget you need to store a base configuration on your GPS before it's ready for use (check [GPS configuration](../GPS/README.md))
+
 ## Trasparent case (with BN220)
 
 A small 650mAh battery gives ~ 4 hrs of autonomy, I repurposed one that was supposed to be used for a digital camera
@@ -34,15 +88,3 @@ A small 650mAh battery gives ~ 4 hrs of autonomy, I repurposed one that was supp
 I used double sided tape to attach this on top of a back seat/seat cowl or to secure it inside the fairing: an example for a Ducati Panigale 959/1299 here below:
 
 ![Inside](bonogps_bn220_underseat.jpg)
-
-## Integrated in seat cowl (with BN880)
-
-Velcro was my friend here, all elements are removable and locked into the top part of the seat cowl so that they don't interfere.
-the GPS antenna is underneath the very end of the tail, with minimal plastic over it and with the best clear line of sight of any other location on the bike
-
-While this is a convenient and compact setup, the device is very exposed when you take the seat cowl off.
-An example for the Ducati Panigale 899/1199 seat cowl here below:
-
-![View from outside](bonogps_bn880_ducati_top.jpg)
-
-![View from the inside/bottom](bonogps_bn880_ducati_bottom.jpg)
