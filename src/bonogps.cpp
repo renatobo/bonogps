@@ -37,7 +37,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v1.2.2"
+#define BONOGPS_FIRMWARE_VER "v1.3"
 #endif
 // GIT_REPO is used to build links to online software release notes and documentation
 #ifndef GIT_REPO
@@ -235,6 +235,7 @@ char ble_device_id[MAX_AP_NAME_SIZE];
 #ifdef BUTTON
 // remove unneeded feature to trim down library size
 #define EASYBUTTON_DO_NOT_USE_SEQUENCES
+#define WIFI_ENABLE_STA_DURATION 2000
 #include <EasyButton.h>
 // Instance of the button to switch wifi mode
 EasyButton button(WIFI_MODE_BUTTON);
@@ -506,7 +507,7 @@ void ReadNVMPreferences()
     string_wifi_mode = "WIFI_OFF";
     break;
   default:
-    string_wifi_mode = "WIFI_STA";
+    string_wifi_mode = "WIFI_OFF";
     break;
   }
 
@@ -584,7 +585,7 @@ void StoreNVMPreferences(bool savewifi = false)
       string_wifi_mode = "WIFI_OFF";
       break;
     default:
-      string_wifi_mode = "WIFI_STA";
+      string_wifi_mode = "WIFI_OFF";
       break;
     }
     size_t_written = prefs.putString("wifi", string_wifi_mode);
@@ -813,10 +814,18 @@ void wifi_STA()
   wifi_connected = false;
 
   int times = 0;
-  while (WiFi.status() != WL_CONNECTED && times < 20)
+  // Another press will move to wifi_OFF
+  #ifdef BUTTON
+    button.onPressed(wifi_OFF);
+  #endif
+  while (WiFi.status() != WL_CONNECTED && times < 50)
   {
-    delay(250);
+    delay(50);
     log_i("Connecting to WiFi %s , trial %d", stored_preferences.wifi_ssid, times++);
+    #ifdef BUTTON
+    // If we see WiFi failing and we want to change mode on the fly, we need to read button status here
+    button.read();
+    #endif
   }
 
   if (WiFi.status() == WL_CONNECTED)
@@ -836,15 +845,16 @@ void wifi_STA()
     if (stored_preferences.nmeaTcpServer)
       start_NMEA_server();
     MyIP = WiFi.localIP();
-#ifdef BUTTON
-    button.onPressed(wifi_OFF);
-#endif
     stored_preferences.wifi_mode = WIFI_STA;
   }
   else
   {
     log_e("Could not connect to SSID %s, reverting to AP mode", stored_preferences.wifi_ssid);
-    wifi_AP();
+      // Recover to wifi_STA when button is pressed
+      #ifdef BUTTON
+      button.onPressed(wifi_OFF);
+      #endif
+      wifi_AP();
   }
 }
 
@@ -908,7 +918,7 @@ void wifi_AP()
     start_NMEA_server();
 
 #ifdef BUTTON
-  button.onPressed(wifi_STA);
+  button.onPressed(wifi_OFF);
 #endif
   stored_preferences.wifi_mode = WIFI_AP;
 }
@@ -2100,7 +2110,7 @@ void handle_saveconfig()
   {
     message += "STA";
   }
-  message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/savewifi/sta'>WiFi client mode WiFi-STA </a></p><p>Save <a href='/savewifi/ap'>WiFi Access Point mode WiFi-AP</a></p>");
+  message += F(" mode</a></p>\n<h1>Save only a specific WiFi mode</h1><p>Save <a href='/savewifi/off'>No WiFi (suggested on the field)</a><p>Save <a href='/savewifi/sta'>WiFi client mode WiFi-STA </a></p><p>Save <a href='/savewifi/ap'>WiFi Access Point mode WiFi-AP</a></p>");
   webserver.send(200, html_text, generate_html_body(message));
 }
 void handle_saveconfig_wifi()
@@ -2125,10 +2135,14 @@ void handle_saveconfig_wifimode()
 {
   String strwifimode = webserver.pathArg(0);
   log_i("Save WiFi  %s mode", strwifimode);
-  if (strwifimode == "sta")
+  if (strwifimode == "sta") {
     StoreNVMPreferencesWiFi("WIFI_STA");
-  if (strwifimode == "ap")
+  } else if (strwifimode == "ap") {
     StoreNVMPreferencesWiFi("WIFI_AP");
+  } else {
+    StoreNVMPreferencesWiFi("WIFI_OFF");
+  }
+    
   String message = F("Stored preference for wifi: ");
   strwifimode.toUpperCase();
   message += strwifimode;
@@ -2296,11 +2310,16 @@ void OTA_stop()
 #define BAT_LVL_SERVICE_UUID (uint16_t)0x180F       // used when SHOWBATTERY enabled
 #define BAT_LVL_CHAR_UUID (uint16_t)0x2A19       // used when SHOWBATTERY enabled
 #define BATTERY_NOTIFICATION_PERIOD_MS 60000 // battery updated once a minute
+
+// write commands to the device
+#define BLE_RECONFIG_CHARACTERISTIC_UUID (uint16_t)0x2A05
+
 // #define HardwareRev "0001"    //0x2A27 utf8s
 // #define SystemID "000001"     //0x2A23 uint40
 
 NimBLEServer *pServer = NULL;
 NimBLECharacteristic *pCharacteristicGPS = NULL;
+NimBLECharacteristic *pCharacteristicCommand = NULL;
 #if defined(SHOWBATTERY)
 NimBLECharacteristic *pCharBattery = NULL;
 
@@ -2347,6 +2366,42 @@ class MyServerCallbacks : public BLEServerCallbacks
   }
 };
 
+class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks
+{
+  void onWrite(NimBLECharacteristic *pCharacteristic,ble_gap_conn_desc * 	desc ) {
+    log_i("Characteristic %s, written value: %d",pCharacteristic->getUUID().toString().c_str(), pCharacteristic->getValue().c_str());
+    if (pCharacteristic->getUUID() == pCharacteristicCommand->getUUID())
+    {
+      String command = String(pCharacteristic->getUUID().toString().c_str());
+      if (command.equalsIgnoreCase("reboot")) {
+        log_e("reboot");
+        //TODO: this should be handled gently, not simply stop and reboot 
+        NimBLEDevice::getServer()->disconnect(desc->conn_handle);
+        ESP.restart();  
+      } else if (command.equalsIgnoreCase("wifista"))
+      {
+        wifi_STA();
+      }
+    }
+  }
+  void onWrite(NimBLECharacteristic *pCharacteristic) {
+    log_i("Characteristic %s, written value: %d",pCharacteristic->getUUID().toString().c_str(), pCharacteristic->getValue().c_str());
+    if (pCharacteristic->getUUID() == pCharacteristicCommand->getUUID())
+    {
+      String command = String(pCharacteristic->getUUID().toString().c_str());
+      if (command.equalsIgnoreCase("reboot")) {
+        log_e("reboot");
+        //TODO: this should be handled gently, not simply stop and reboot 
+        ESP.restart();  
+      } else if (command.equalsIgnoreCase("wifista"))
+      {
+        wifi_STA();
+      }
+    }
+  }
+};
+static MyCharacteristicCallbacks chrCommandCallbacks;
+
 void ble_start()
 {
 #ifdef BTSPPENABLED
@@ -2373,7 +2428,7 @@ void ble_start()
   // Create the BLE Service for GPS - Service and Location
   NimBLEService *pServiceGPS = pServer->createService(BLE_SERVICE_UUID);
   // Create a BLE Characteristic for the GPS - Speed and Location characteristic
-  pCharacteristicGPS = pServiceGPS->createCharacteristic(BLE_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  pCharacteristicGPS = pServiceGPS->createCharacteristic(BLE_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);  
   // Start the service
   pServiceGPS->start();
   // Start advertising
@@ -2392,6 +2447,9 @@ void ble_start()
   pChar->setValue(serialnumber);
   pChar = pServiceInfo->createCharacteristic(DEVINFO_FWREV_UUID, NIMBLE_PROPERTY::READ);
   pChar->setValue(BONO_GPS_VERSION);
+  // Add a write characteristic to handle commands via BLE - reserved for commands "reboot" and "wifista"
+  pCharacteristicCommand = pServiceInfo->createCharacteristic(BLE_RECONFIG_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR);
+  pCharacteristicCommand->setCallbacks(&chrCommandCallbacks);
   pServiceInfo->start();
   pAdvertising->addServiceUUID(pServiceInfo->getUUID());
 
@@ -2682,6 +2740,7 @@ void setup()
 
 #ifdef BUTTON
   button.begin();
+  button.onPressedFor(WIFI_ENABLE_STA_DURATION,wifi_STA);
 #endif
 
   // Start WiFi
@@ -2697,10 +2756,8 @@ void setup()
   case WIFI_STA:
     wifi_STA();
     break;
-  case WIFI_OFF:
-    break;
   default:
-    wifi_AP();
+    wifi_OFF();
     break;
   }
 

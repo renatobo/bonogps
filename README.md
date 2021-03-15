@@ -57,6 +57,8 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 
 Most runtime configurations are managed via its web-based interface: you can use your phone or any device with a web browser which is able to connect to either the built-in Access Point the BonoGPS provides or (if you are home and on you have configured the WiFi Client credentials) [http://bonogps.local](http://bonogps.local)
 
+The local built-in access point will be named BonoGPS-*ABCD* device (ABCD is a combination of 4 letters and numbers unique to your ESP32 device) and the password to it is in the source code (you can change it to your discretion - it's simply meant to avoid anyone connecting by mistake)
+
 ![Main page of web configuration panel from mobile device](software/using/webinterface_root_mobile.png)
 
 ![Main page of web configuration panel from laptop](software/using/webinterface_root_laptop.png)
@@ -65,11 +67,10 @@ Most runtime configurations are managed via its web-based interface: you can use
 - **Connections:** List clients, enable BLE/BT-SPP connectivity, enable/disable the builtin TCP-IP messages repeater, switch between WiFi client to a well-known WiFi network or built-in Access Point
 - **Device:** Put GPS in powersaving for some time, Disable WiFi, load preset configurations, save current configuration, collect information about current status of the device, save WiFi credentials for client mode restart the ESP32
 
-The BOOT button allows you to loop between WiFi modes on the fly: WiFi Access Point -> WiFi client -> No WiFi.
+The BOOT button (or another button of your choice) allows you to loop between WiFi modes on the fly:
 
-- WiFi Client (WiFi STA): the blue led light flashes rapidly (250 ms cycle) ([see it](hardware/esp32/wifi_client.webm))
-- WiFi Access Point (WiFi AP): the blue led light flashes slowly (500 ms cycle) ([see it](hardware/esp32/wifi_ap.webm))
-- No WiFi: the blue led light is off
+- short press: toggle between WiFi Access Point (built in led, usually blue, slowly blinking 500 ms cycle [see it](hardware/esp32/wifi_ap.webm)) and no WiFi (built in led off)
+- long press (at least 2 seconds): enable WiFi Client so that you can reach the unit from your preferred WiFi network (internal led/blue led light flashes rapidly 250 ms cycle [see it](hardware/esp32/wifi_client.webm))
 
 ![Fast blinking - Client](hardware/esp32/wifi_client.webm)
 ![Slow blinking - AP](hardware/esp32/wifi_ap.webm)
@@ -103,7 +104,7 @@ You can load a preset configuration from the configuration page selecting *Devic
 
 The minimum build is a ublox M8 series GPS receiver module connected to an ESP32:
 
-- TX/RX from the GPS to a Hardware serial port (default in the code is UART2/Serial2) on ESP32
+- TX/RX from the GPS to a serial port (default in the code is UART2/Serial2) on ESP32. Remember: you need to connect RX on one device to TX on the other and viceversa
 - the GPS power pins to ESP32: VCC to 3v3, GND to GND
 
 BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the IMU which are not used so you should leave them unconnected.
@@ -115,7 +116,7 @@ Schematics are relatively simple
 
 ![Schematics](hardware/esp32/esp32_to_gps_schem.png)
 
-Examples are in [hardware/assembled](hardware/assembled)
+Examples are in [hardware/assembled](hardware/assembled) including an example with more options using an ESP32 device type Lolin D32 Pro which has an internal battery charger [hardware/esp32/lolin_d32_pro.md](hardware/esp32/lolin_d32_pro.md)
 
 ### GPS Choice and setup preconfiguration
 
