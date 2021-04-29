@@ -100,7 +100,7 @@ The procedure is
 
 at this point the configuration is stored on your device in its flash memory. Please note some cheap GPS receiver modules do not have flash memory and they will not work for this project.
 
-The example configuration offered in this repo configures the default baudrate of GPS receiver at 115200 (which is expected baudrate by bongogps software), but sometimes GPS receiver has factory 9600 baudrate. This will lead to connection errors when as soon as U-Center applies the baudrate setting. So, once you'll start receiving connection errors, configure baudrate to 115200 via (Reciever -> Baudrate). After that, the flashing should continue normally.
+The example configuration offered in this repo configures the default baudrate of GPS receiver at 115200 (which is expected baudrate by bongogps software), but sometimes GPS receiver has factory 9600 baudrate. This will lead to connection errors as soon as U-Center applies the baudrate setting. So, once you'll start receiving connection errors, configure baudrate to 115200 via (Reciever -> Baudrate). After that, the flashing should continue normally.
 
 Save configuration is notably (as is - several sources say so and I find it as well) unreliable, so please run it more than a few times and check that settins have actually been saved across resets/power downs.
 
