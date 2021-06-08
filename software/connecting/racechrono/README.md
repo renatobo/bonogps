@@ -23,6 +23,40 @@ When you click on the lower left green "swipe up" icon, you'll be able to see fu
 
 ![Information](racechrono_information.png)
 
+
+## Setup for RaceChrono over Wifi on iOS
+
+Make sure you have connected your iPhone to the AP on the BonoGPS device as you would to perfrom the setup
+
+Open settings from the gear icon in the main page, then add an Internal sensor
+
+![Information](RC-settings.png)
+
+Under the "Add other device" select TCP/IP 
+
+![Information](RC-IP.png)
+
+Select "RaceChrono DIY" as the next option 
+
+![Information](RC-IP.png)
+
+This next section requires several selections, step 1, enable the "NMEA 0183" slider 
+
+![Information](RC-NMEA.png)
+
+On the same page as above now set you target IP address and port, the default is show below but if you have changed the network and the port in the code please put the updated values in. 
+
+![Information](RT-TCP.png)
+
+When you start recording (the round big "start" button) if everything goes well you'll be able to see the constellations of satellites in the dashboard view
+
+![Display](racechrono_display.png)
+
+When you click on the lower left green "swipe up" icon, you'll be able to see further information about the GPS status
+
+![Information](racechrono_information.png)
+
+
 ## GPS configuration for NMEA messages
 
 Instructions directly from the SW Developer of RaceChrono in the support forum point out [here](https://racechrono.com/forum/discussion/comment/11252/#Comment_11252) and [here](https://racechrono.com/forum/discussion/1421/best-settings-for-qstarz818xt)
