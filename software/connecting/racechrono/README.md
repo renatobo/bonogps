@@ -32,11 +32,11 @@ Open settings from the gear icon in the main page, then add an Internal sensor
 
 ![Information](RC-settings.png)
 
-Under the "Add other device" select TCP/IP 
-
-![Information](RC-IP.png)
-
 Select "RaceChrono DIY" as the next option 
+
+![Information](RT-RCDIY.png)
+
+Under the "Add other device" select TCP/IP 
 
 ![Information](RC-IP.png)
 
@@ -46,7 +46,7 @@ This next section requires several selections, step 1, enable the "NMEA 0183" sl
 
 On the same page as above now set you target IP address and port, the default is show below but if you have changed the network and the port in the code please put the updated values in. 
 
-![Information](RT-TCP.png)
+![Information](RC-IP.png)
 
 When you start recording (the round big "start" button) if everything goes well you'll be able to see the constellations of satellites in the dashboard view
 
