@@ -38,7 +38,7 @@ Select "RaceChrono DIY" as the next option
 
 Under the "Add other device" select TCP/IP 
 
-![Information](RC-IP.png)
+![Information](RT-TCP.png)
 
 This next section requires several selections, step 1, enable the "NMEA 0183" slider 
 
