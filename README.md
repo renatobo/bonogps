@@ -91,7 +91,7 @@ There are many mobile apps to log lap times, few accept custom devices, in parti
 
 |         | Harry Lap Timer    | TrackAddict | RaceChrono | Racetime |
 | ------- | ------------------ | ----------- | ---------- | -------- |
-| iOS     | **BLE**, TCP-IP    |             |            |
+| iOS     | **BLE**, TCP-IP    |             | TCP-IP     |
 | Android | **BT-SPP**, TCP-IP | BT-SPP      | BT-SPP     | BT-SPP   |
 
 See more info in each subfolder of **[connecting](software/connecting)**.
