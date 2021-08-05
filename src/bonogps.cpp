@@ -2503,7 +2503,7 @@ void ble_stop()
     NimBLEDevice::stopAdvertising();
     NimBLEDevice::deinit(true);
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
-
+    tBLEBatteryNotify.disable();
     #endif
   }
 }
