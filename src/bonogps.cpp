@@ -37,7 +37,7 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v1.3"
+#define BONOGPS_FIRMWARE_VER "v1.3.1"
 #endif
 // GIT_REPO is used to build links to online software release notes and documentation
 #ifndef GIT_REPO
