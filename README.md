@@ -25,7 +25,7 @@ Currently these apps are supported
 3. [RaceChrono](https://racechrono.com/) >> details [here](software/connecting/racechrono)
 4. [RaceTime](https://www.racetimeapp.com/en/) >> details [here](software/connecting/racetime)
 
-If you are not into the *maker* thing or if you don't know anyone that might be, [invest 150$ and buy a XGPS160](https://gps.dualav.com/explore-by-product/xgps160) - it's effective and it works very well with a large number of supported platforms and apps.
+If you are not into the maker thing or if you don't know anyone who might be, [look into RaceBox products like mini/miniS](https://www.racebox.pro/) or [a XGPS160](https://gps.dualav.com/explore-by-product/xgps160).
 
 ## For the SW Engineer / maker
 
