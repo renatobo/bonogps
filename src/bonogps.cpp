@@ -35,7 +35,9 @@
 #define BUTTON         // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
 #define SHORT_API      // URLs for commands such as enable/disable/change rate respond with a short json answer instead of a full web page
 
-// Configure names and PIN's used for interfacing with external world
+/*
+  Configure names and PIN's used for interfacing with external world
+*/ 
 #define DEVICE_MANUFACTURER "https://github.com/renatobo"
 #define DEVICE_NAME "Bono GPS"
 #define BONOGPS_BUILD_DATE __TIMESTAMP__
@@ -79,7 +81,6 @@
 #define BLE_CHARACTERISTIC_UUID (uint16_t)0x2A67 // CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID
 #define BLE_MTU 185                              // Maximum Transmission Unit for BLE. 185 is a safe tested value
 
-
 /* 
  Monitor UART settings
  */
@@ -102,7 +103,7 @@
 #ifndef LED_WIFI
 #define LED_WIFI LED_BUILTIN
 #endif // #ifndef LED_WIFI
-#endif
+#endif // #if !(defined(LED_BUILTIN))
 #if !(defined(WIFI_MODE_BUTTON))
 #error "You are missing the definition of WIFI_MODE_BUTTON in bonogps_board_settings.h"
 #endif
@@ -113,6 +114,7 @@
 // Library to store desidered preferences in NVM
 #include <Preferences.h>
 Preferences prefs;
+
 // data to be stored
 #include "esp_bt.h"
 #include "esp_wifi.h"
@@ -124,22 +126,22 @@ Preferences prefs;
 typedef struct
 {
   unsigned long gps_baud_rate = GPS_STANDARD_BAUD_RATE; // initial or current baud rate
-  uint8_t gps_rate = 5;
-  WiFiMode_t wifi_mode = WIFI_AP;
-  bool nmeaGSA = false;
-  bool nmeaGSV = false;
-  bool nmeaVTG = false;
-  bool nmeaGLL = false;
-  bool nmeaGBS = true;
-  bool nmeaTcpServer = false;
-  bool ble_active = true;
-  bool btspp_active = false;
-  bool trackaddict = false;
-  bool racechrono = false;
-  bool racetime = false;
-  uint8_t nmeaGSAGSVpolling = 0;
-  char wifi_ssid[WIFI_SSID_MAXLEN];
-  char wifi_key[WIFI_KEY_MAXLEN];
+  uint8_t gps_rate = 5;                                 // Rate in Hz
+  WiFiMode_t wifi_mode = WIFI_AP;                       // WiFi mode: WIFI_AP, WIFI_STA, WIFI_OFF
+  bool nmeaGSA = false;   // Enable GSA sentence
+  bool nmeaGSV = false;   // Enable GSV sentence
+  bool nmeaVTG = false;   // Enable VTG sentence
+  bool nmeaGLL = false;   // Enable GLL sentence
+  bool nmeaGBS = true;    // Enable GBS sentence
+  bool nmeaTcpServer = false;   // Enable TCP server for NMEA sentences
+  bool ble_active = true;       // Enable BLE Server
+  bool btspp_active = false;    // Enable BT-SPP Server
+  bool trackaddict = false;     // Enable predefined TrackAddict mode
+  bool racechrono = false;      // Enable predefined RaceChrono mode
+  bool racetime = false;        // Enable predefined RaceTime mode
+  uint8_t nmeaGSAGSVpolling = 0;  // Poll GSA and GSV info every n seconds
+  char wifi_ssid[WIFI_SSID_MAXLEN];   // SSID of the WiFi network in WIFI_AP mode
+  char wifi_key[WIFI_KEY_MAXLEN];     // Key of the WiFi network in WIFI_AP mode
 } stored_preference_t;
 
 stored_preference_t stored_preferences;
@@ -149,10 +151,9 @@ stored_preference_t stored_preferences;
 */
 
 uint16_t chip; // hold the device id to be used in broadcasting unit identifier strings
-// WiFi runtime variables
-char ap_ssid[MAX_AP_NAME_SIZE];
-const char ap_password[] = BONOGPS_PWD;
-int max_buffer = 0;
+char ap_ssid[MAX_AP_NAME_SIZE];         // hold the AP name to be used in WIFI_AP
+const char ap_password[] = BONOGPS_PWD; // hold the AP password to be used in WIFI_AP
+int max_buffer = 0;                     // hold the maximum buffer size for the GPS copy buffer
 
 /*
   For status page and to enable powersaving mode
@@ -161,37 +162,6 @@ int max_buffer = 0;
 #include "uptime_formatter.h"
 #endif
 bool gps_powersave = false;
-
-// The next section is used to parse the content of messages locally instead of proxying them
-// This can be used for
-// - Creating a custom binary packed format
-#ifdef NEED_NEOGPS
-// add libraries to parse GPS responses
-//#define NMEAGPS_KEEP_NEWEST_FIXES true
-//#define NMEAGPS_PARSING_SCRATCHPAD
-//#define NMEAGPS_TIMESTAMP_FROM_INTERVAL
-//#define NMEAGPS_DERIVED_TYPES
-//#define NMEAGPS_PARSE_PROPRIETARY
-//#define NMEAGPS_PARSE_MFR_ID
-#define TIME_EPOCH_MODIFIABLE
-#undef NEOGPS_PACKED_DATA
-#include <GPSfix_cfg.h>
-#include <NMEAGPS.h>
-#if !defined(GPS_FIX_TIME)
-#error You must define GPS_FIX_TIME in GPSfix_cfg.h!
-#endif
-#if !defined(GPS_FIX_LOCATION)
-#error You must uncomment GPS_FIX_LOCATION in GPSfix_cfg.h!
-#endif
-#if !defined(GPS_FIX_SPEED)
-#error You must uncomment GPS_FIX_SPEED in GPSfix_cfg.h!
-#endif
-#if !defined(GPS_FIX_ALTITUDE)
-#error You must uncomment GPS_FIX_ALTITUDE in GPSfix_cfg.h!
-#endif
-NMEAGPS gps;
-gps_fix my_fix;
-#endif
 
 #ifdef MDNS_ENABLE
 #include <ESPmDNS.h>
@@ -232,11 +202,12 @@ void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
   BLE stack (iOS)
 */
 #ifdef BLEENABLED
-#define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED
-#define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED
+#define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED // No BLE client
+#define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED // No BLE Scan
 #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 2
 #define CONFIG_BT_NIMBLE_MAX_BONDS 2
 #define CONFIG_BT_NIMBLE_SVC_GAP_DEVICE_NAME BONOGPS_MDNS
+#define CONFIG_NIMBLE_STACK_USE_MEM_POOLS 1 // Enable the use of memory pools for stack operations. This will use slightly more RAM but may provide more stability.
 #include <NimBLEDevice.h>
 // ble runtime
 bool ble_deviceConnected = false;
