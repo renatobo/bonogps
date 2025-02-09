@@ -2385,29 +2385,34 @@ uint8_t gps_currentmessage[MAX_UART_BUFFER_SIZE]; // hold current buffer
 uint8_t gps_currentchar = '$';                    // hold current char
 int gps_message_pointer = 0;                      //pointer
 
-class MyServerCallbacks : public BLEServerCallbacks
+class MyServerCallbacks : public NimBLEServerCallbacks
 {
-  void onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc)
+  void onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) override
   {
     ble_deviceConnected = true;
-    ble_client_address = NimBLEAddress(desc->peer_id_addr).toString().c_str();
-    log_i("BLE Client address: %s", ble_client_address.c_str());
+    ble_client_address = connInfo.getAddress().toString().c_str();
+    log_i("BLE Client address: %s", ble_client_address);
 
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
     tBLEBatteryNotify.enable();
     #endif
 
   };
-  void onDisconnect(NimBLEServer *pServer)
+  void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override 
   {
     ble_deviceConnected = false;
     ble_client_address = "";
 
+    log_i("BLE Advertisting restarted");
+
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
     tBLEBatteryNotify.disable();
     #endif
+
+    // v2 of NimBLE: Advertising is no longer automatically restarted when a peer disconnects, so we need to enable it
+    NimBLEDevice::startAdvertising();
   }
-};
+} MyServerCallbacks;
 
 class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks
 {
@@ -2442,8 +2447,7 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks
       }
     }
   }
-};
-static MyCharacteristicCallbacks chrCommandCallbacks;
+} MyCommandCharacteristicCallbacks;
 
 void ble_start()
 {
@@ -2467,7 +2471,7 @@ void ble_start()
   NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
   // Create the BLE Server
   pServer = NimBLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
+  pServer->setCallbacks(&MyServerCallbacks);
   // Create the BLE Service for GPS - Service and Location
   NimBLEService *pServiceGPS = pServer->createService(BLE_SERVICE_UUID);
   // Create a BLE Characteristic for the GPS - Speed and Location characteristic
@@ -2492,7 +2496,7 @@ void ble_start()
   pChar->setValue(BONO_GPS_VERSION);
   // Add a write characteristic to handle commands via BLE - reserved for commands "reboot" and "wifista"
   pCharacteristicCommand = pServiceInfo->createCharacteristic(BLE_RECONFIG_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR);
-  pCharacteristicCommand->setCallbacks(&chrCommandCallbacks);
+  pCharacteristicCommand->setCallbacks(&MyCommandCharacteristicCallbacks);
   pServiceInfo->start();
   pAdvertising->addServiceUUID(pServiceInfo->getUUID());
 
@@ -2908,4 +2912,5 @@ void loop()
   ArduinoOTA.handle();
   #endif // #ifdef ENABLE_OTA
 #endif // #ifdef TASK_SCHEDULER
+
 }
