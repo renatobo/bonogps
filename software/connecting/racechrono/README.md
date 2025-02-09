@@ -1,15 +1,18 @@
 # RaceChrono
 
-- [Setup](#setup)
-- [GPS configuration for NMEA messages](#gps-configuration-for-nmea-messages)
+- [RaceChrono](#racechrono)
+  - [Setup over BT-SPP on Android](#setup-over-bt-spp-on-android)
+  - [Setup over Wifi on iOS](#setup-over-wifi-on-ios)
+  - [GPS configuration for NMEA messages](#gps-configuration-for-nmea-messages)
 
 The lap timer with the cleanest UX currently supported: [https://racechrono.com/](https://racechrono.com/)
 
 - tested with v7.0.10 free (thus satellites view untested) on Android
-- BT-SPP is the only option
+- BT-SPP on Android
+- TCP-IP for iOS
 - GSA+GSV polling at 5 sec
 
-## Setup
+## Setup over BT-SPP on Android
 
 Open settings from the gear icon in the main page, then add a bluetooth receiver selecting your BonoGPS unit
 
@@ -24,7 +27,7 @@ When you click on the lower left green "swipe up" icon, you'll be able to see fu
 ![Information](racechrono_information.png)
 
 
-## Setup for RaceChrono over Wifi on iOS
+## Setup over Wifi on iOS
 
 Make sure you have connected your iPhone to the AP on the BonoGPS device as you would to perfrom the setup
 
