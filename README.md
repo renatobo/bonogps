@@ -1,20 +1,21 @@
 # What is BonoGPS?
 
-- [For the track day enthusiast](#for-the-track-day-enthusiast)
-- [For the SW Engineer / maker](#for-the-sw-engineer--maker)
-- [HowTo](#howto)
-  - [Daily Usage](#daily-usage)
-    - [Save a configuration](#save-a-configuration)
-  - [Connecting to an app](#connecting-to-an-app)
-- [Hardware build instructions](#hardware-build-instructions)
-  - [GPS Choice and setup preconfiguration](#gps-choice-and-setup-preconfiguration)
-- [Software build instructions](#software-build-instructions)
-- [Possible enhancements and ideas](#possible-enhancements-and-ideas)
-- [Credits and tools](#credits-and-tools)
+- [What is BonoGPS?](#what-is-bonogps)
+  - [For the track day enthusiast](#for-the-track-day-enthusiast)
+  - [For the SW Engineer / maker](#for-the-sw-engineer--maker)
+  - [HowTo](#howto)
+    - [Daily Usage](#daily-usage)
+      - [Save a configuration](#save-a-configuration)
+    - [Connecting to an app](#connecting-to-an-app)
+  - [Hardware build instructions](#hardware-build-instructions)
+    - [GPS Choice and setup preconfiguration](#gps-choice-and-setup-preconfiguration)
+  - [Software build instructions](#software-build-instructions)
+  - [Possible enhancements and ideas](#possible-enhancements-and-ideas)
+  - [Credits and tools](#credits-and-tools)
 
 ## For the track day enthusiast
 
-The main goal of this device is to **make GPS data (speed, location) available to mobile apps that can record data, for example for track riding**. While there are many good (and not even too expensive) solutions out there, COVID-19 happened and this was a great way to spend some time building something myself.
+The main goal of this device is to **make GPS data (speed, location) available to mobile apps that can record data, for example for track riding**. While there are many good (and not even too expensive) solutions out there, building one for yourself is a great experience.
 
 ![Map of Buttonwillow lateral acceleration](software/using/buttonwillow_map.png)
 
@@ -25,15 +26,15 @@ Currently these apps are supported
 3. [RaceChrono](https://racechrono.com/) >> details [here](software/connecting/racechrono)
 4. [RaceTime](https://www.racetimeapp.com/en/) >> details [here](software/connecting/racetime)
 
-If you are not into the maker thing or if you don't know anyone who might be, [look into RaceBox products like mini/miniS](https://www.racebox.pro/) or [a XGPS160](https://gps.dualav.com/explore-by-product/xgps160).
+If you are not into the maker thing or if you don't know anyone who might be, [look into RaceBox products like mini/miniS](https://www.racebox.pro/) and even [a 25Hz kit](https://www.racebox.pro/products/racebox-micro), or [a XGPS160](https://gps.dualav.com/explore-by-product/xgps160).
 
 ## For the SW Engineer / maker
 
 This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M8 (for example  [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W), [BN220](https://www.amazon.com/Navigation-Raspberry-Betaflight-Geekstory-Shipping/dp/B07PRDY6DS), or [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) ) and repeats them back to a logger device, either
 
-1. a TCP/IP socket
-2. a Bluetooth Low Energy (BLE) service
-3. a BT Classic (BT-SPP) stream
+1. a Bluetooth Low Energy (BLE) service
+2. a BT Classic (BT-SPP) stream
+3. a TCP/IP socket
 
 The logger device is likely going to be one of the *Track Lap time apps* listed above running on your phone.
 
@@ -69,11 +70,8 @@ The local built-in access point will be named BonoGPS-*ABCD* device (ABCD is a c
 
 The BOOT button (or another button of your choice) allows you to loop between WiFi modes on the fly:
 
-- short press: toggle between WiFi Access Point (built in led, usually blue, slowly blinking 500 ms cycle [see it](hardware/esp32/wifi_ap.webm)) and no WiFi (built in led off)
-- long press (at least 2 seconds): enable WiFi Client so that you can reach the unit from your preferred WiFi network (internal led/blue led light flashes rapidly 250 ms cycle [see it](hardware/esp32/wifi_client.webm))
-
-![Fast blinking - Client](hardware/esp32/wifi_client.webm)
-![Slow blinking - AP](hardware/esp32/wifi_ap.webm)
+- short press: toggle between WiFi Access Point (built in led, usually blue, slowly blinking 500 ms cycle and no WiFi (built in led off)
+- long press (at least 2 seconds): enable WiFi Client so that you can reach the unit from your preferred WiFi network (internal led/blue led light flashes rapidly with a 250 ms cycle) a
 
 #### Save a configuration
 
@@ -126,7 +124,7 @@ What you need to configure is documented [in the hardware/GPS folder](hardware/G
 
 ## Software build instructions
 
-This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE (1.8.13)](https://www.arduino.cc/en/software). More information on what libraries are needed and software organization [in the software/building folder](software/building).
+This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE version 2 (2.3.4)](https://www.arduino.cc/en/software). More information on what libraries are needed and software organization [in the software/building folder](software/building).
 
 ## Possible enhancements and ideas
 

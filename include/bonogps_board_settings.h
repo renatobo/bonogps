@@ -19,6 +19,8 @@
 
 // Where is Serial2 connected - for Lolin we reconfigure to 2 free pins
 // until https://github.com/espressif/arduino-esp32/pull/4520 is in place, we need to manually define it 
+#undef RX2
+#undef TX2
 #define RX2 GPIO_NUM_4 // 12
 #define TX2 GPIO_NUM_2 // 14
 // Which pin controls the button to switch to STA mode
@@ -36,7 +38,8 @@
 #define SHOWBATTERY // Show the battery charge indicator on the top menu of the web configuration panel
 
 #elif defined(ARDUINO_ESP32_DEV)
-
+#undef RX2
+#undef TX2
 #define RX2 16 // Standard label Rx2 on board
 #define TX2 17 // Standard label Tx2 on board
 #define WIFI_MODE_BUTTON 0 // default is: use the boot button to switch wifi modes

@@ -1,19 +1,20 @@
 # Software development and build
 
-- [IDE options/suggestions: Arduino IDE or VS Code+Platformio](#ide-optionssuggestions-arduino-ide-or-vs-codeplatformio)
-  - [Arduino IDE (recommended if you are new to the 'maker' approach)](#arduino-ide-recommended-if-you-are-new-to-the-maker-approach)
-  - [PlatformIO](#platformio)
-- [Libraries](#libraries)
-  - [External Libraries](#external-libraries)
-  - [Optional external libraries](#optional-external-libraries)
-  - [Built-in libraries](#built-in-libraries)
-- [Build options](#build-options)
-  - [Large use of preprocessing macro](#large-use-of-preprocessing-macro)
-  - [Logging facilities](#logging-facilities)
-  - [How to enable OTA build](#how-to-enable-ota-build)
-    - [OTA on Arduino IDE](#ota-on-arduino-ide)
-    - [OTA on PlatformIO](#ota-on-platformio)
-  - [Important: Partition size](#important-partition-size)
+- [Software development and build](#software-development-and-build)
+  - [IDE options/suggestions: Arduino IDE or VS Code+Platformio](#ide-optionssuggestions-arduino-ide-or-vs-codeplatformio)
+    - [Arduino IDE (recommended if you are new to the 'maker' approach)](#arduino-ide-recommended-if-you-are-new-to-the-maker-approach)
+    - [PlatformIO](#platformio)
+  - [Libraries](#libraries)
+    - [External Libraries](#external-libraries)
+    - [Optional external libraries](#optional-external-libraries)
+    - [Built-in libraries](#built-in-libraries)
+  - [Build options](#build-options)
+    - [Large use of preprocessing macro](#large-use-of-preprocessing-macro)
+    - [Logging facilities](#logging-facilities)
+    - [How to enable OTA build](#how-to-enable-ota-build)
+      - [OTA on Arduino IDE](#ota-on-arduino-ide)
+      - [OTA on PlatformIO](#ota-on-platformio)
+    - [Important: Partition size](#important-partition-size)
 
 ## IDE options/suggestions: Arduino IDE or VS Code+Platformio
 
@@ -21,12 +22,10 @@ Development is active on the [VS Code + Platformio](https://platformio.org/insta
 
 ### Arduino IDE (recommended if you are new to the 'maker' approach)
 
-Code is written to be compatible with the Arduino IDE, there are a couple of steps required, starting from the assumption you have already installed and setup the Arduino IDE for ESP32 (if you have not, [here a nice tutorial](https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/))
+Code is written to be compatible with the Arduino IDE, there are a couple of steps required, starting from the assumption you have already installed and setup the Arduino IDE for ESP32
 
-- install 'External libraries' listed below
-- create an empty project
-- copy the content of `src/bonogps.cpp` in the `.ino` file just created
-- copy all the header files `include/*.h` in the same folder
+- install the 'External libraries' listed in the section [deps] entry `lib_deps` of `platform.ini`. See below an example of how and when to select a specific version
+- open the `bonogps.ino` file: it's empty as all in the code is somewhere else
 - choose your board: "ESP32 Dev Module" (the generic board that everyone has, often tagged DOIT) or ["LOLIN D32 PRO" are supported](hardware/esp32/lolin_d32_pro.md), otherwise you might have to redefine your pins in `bonogps_board_settings.h`
 - choose a partition schema with enough space (e.g. the Minimal SPIFSS with 1.9Mb of flash space)
 
@@ -35,8 +34,6 @@ The rest is common to any other build on the Arduino IDE.
 IF you are unsure of what board you are running, [check this introductory tutorial](https://randomnerdtutorials.com/getting-started-with-esp32/).
 
 You can update software OTA, check a later paragraph here on how as it's not enabled by default.
-
-Please note that you will receive several warnings about redefined macros when building the NimBLE-Arduino library if you are not using the latest as of Jan 21, 2021 version 1.1.1: they are harmless.
 
 ### PlatformIO
 
@@ -50,12 +47,14 @@ If you would like to define custom targets for your build, I recommend using a `
 
 ### External Libraries
 
-- [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino): 1.0.2 or better latest github version directly (default in platformio from v1.1 of bonogps)
-- [Uptime Library](https://github.com/YiannisBourkelis/Uptime-Library) ^1.0.0
-- [EasyButton](https://easybtn.earias.me/) ^2.0.1
-- [Task Scheduler](https://github.com/arkhipenko/TaskScheduler) ^3.2.0
+- [NimBLE-Arduino](https://github.com/h2zero/NimBLE-Arduino): ^1.4.3 which means  *any minor update but within 1.X major*
+- [Uptime Library](https://github.com/YiannisBourkelis/Uptime-Library) ^1.0.0 which means *any minor update but within 1.X major*
+- [EasyButton](https://easybtn.earias.me/) specifically version 2.0.1: do not use any other version. This feature will be migrated to another library as EasyButton is no longer developed and the latest version is not working
+- [Task Scheduler](https://github.com/arkhipenko/TaskScheduler) ^3.2.0 which means *any minor update but within 3.X major*
 
-From v1.1 of this code and using the latest code of NimBLE-Arduino (after this [commit](https://github.com/h2zero/NimBLE-Arduino/commit/569eb8a188c78fe780f4c2a24cf9247532cf55ea)), unnecessary BLE code is not compiled in. This reduces flash size by ~30kb of Nimble-Arduino disabling roles `CONFIG_BT_NIMBLE_ROLE_CENTRAL` and `CONFIG_BT_NIMBLE_ROLE_OBSERVER`. Up to version 1.0.2 of NimBLE-Arduino, you can manually uncomment those roles in `nimconfig.h` .
+On Arduino this would look like ![arduino_libraries](arduino_libraries.png)
+
+
 
 ### Optional external libraries
 
@@ -76,7 +75,7 @@ Always included
 - Update
 - BluetoothSerial
 
-Included via `#define`
+Included via `#define` statements or compile macros
 
 - ArduinoOTA: this really depends on how you prefer to update software on your device. It adds size to the flash and it uses some memory, so if you don't plan on using it, don't include it.
 

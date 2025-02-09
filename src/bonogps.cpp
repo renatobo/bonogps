@@ -8,20 +8,28 @@
 
 // For PlatformIO we need to include the Arduino framework
 #include <Arduino.h>
+
 // load PINout definitions from this header file
+#if __has_include("bonogps_board_settings.h")
 #include "bonogps_board_settings.h"
+#elif __has_include("include/bonogps_board_settings.h")
+#include "include/bonogps_board_settings.h"
+#else
+#error "cannot find 'bonogps_board_settings.h'"
+#endif
 
 /*
- Enable or disable compiling features
+ Enable or disable features
  */
 
 #define BTSPPENABLED // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
 #define BLEENABLED   // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
-/* Enable here if you are using Arduino IDE, otherwise use -DENABLE_OTA in platformio
-#define ENABLE_OTA     // add code for OTA, to be enabled only when developing
-*/
-// you should not disable these unless there is a problem with the feature
-#define UPTIME       // add library to display for how long the device has been running
+// #define ENABLE_OTA     // add OTA Enable here if you are using Arduino IDE, otherwise use -DENABLE_OTA in platformio
+
+/*
+ You should not disable these unless there is a problem with the specific feature
+*/ 
+#define UPTIME         // add library to display for how long the device has been running
 #define MDNS_ENABLE    // Enable or disable mDNS - currently not working in all conditions. Small memory save to be worth removing
 #define TASK_SCHEDULER // enable adv task scheduler. Small memory save to be worth removing
 #define BUTTON         // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
@@ -37,43 +45,44 @@
 #define BONOGPS_FIRMWARE_VER GIT_REV
 #else
 // the following define is needed to display version when building this with the Arduino IDE
-#define BONOGPS_FIRMWARE_VER "v1.3"
+#define BONOGPS_FIRMWARE_VER "v1.4"
 #endif
 // GIT_REPO is used to build links to online software release notes and documentation
 #ifndef GIT_REPO
 #define GIT_REPO "renatobo/bonogps"
 #endif
-// Bonjour DNS name, access the GPS configuration page by appending .local as DNS
-#define BONOGPS_MDNS "bonogps"
-// Prefix for the AP name, followed by 4 digits device id
-#define BONOGPS_AP "BonoGPS"
-#define BONOGPS_PWD "bono5678"
-// the AP name is generated on the fly, this is its maximum size
-#define MAX_AP_NAME_SIZE 20
 
-// How large should the RX buffer for the GPS port - more than 512 creates issues
-#define UART_BUFFER_SIZE_RX 256
-// Size of the intermediate buffer where we are storing the current sentence
-#define MAX_UART_BUFFER_SIZE 256
+/* 
+ WiFi and TCIP-IP settings
+ */
+#define BONOGPS_MDNS "bonogps"   // Bonjour DNS name, access the GPS configuration page by appending .local as DNS
+#define BONOGPS_AP "BonoGPS"     // Prefix for the AP name, followed by 4 digits device id
+#define BONOGPS_PWD "bono5678"   // the AP password to avoid random people connecting to the device
+#define MAX_AP_NAME_SIZE 20      // the AP name is generated on the fly, this is its maximum size
+#define NMEA_TCP_PORT 1818       // TCP Port for NMEA sentences repeater, used for Harry's LapTimer mostly, but also for proxying with uBlox
 
-// TCP Port for NMEA sentences repeater, used for Harry's LapTimer mostly, but also for proxying with uBlox
-#define NMEA_TCP_PORT 1818
+/* 
+ GPS UART settings
+ */
+#define gpsPort Serial2               // The serial port where the GPS is connected
+#define GPS_STANDARD_BAUD_RATE 115200 // The default baud rate for the GPS. You might want to make sure this is set via u-center ahead of time
+#define UART_BUFFER_SIZE_RX 256       // How large should the RX buffer for the GPS port - more than 512 creates issues
+#define MAX_UART_BUFFER_SIZE 256      // Size of the intermediate buffer where we are storing the current sentence
+#define GPS_UART_TIMEOUT 10000UL      // How much time before autobauding times out
+#define MIN_NMEA_MESSAGE_SIZE 6       // Minimum size of a NMEA message
 
-// Define configuration of Bluetooth Low Energy
-#define BLE_DEVICE_ID "BonoGPS"
+/* 
+ Define configuration of Bluetooth Low Energy
+ */
+#define BLE_DEVICE_ID "BonoGPS"                  // The name of the BLE device
 #define BLE_SERVICE_UUID (uint16_t)0x1819        // SERVICE_LOCATION_AND_NAVIGATION_UUID
 #define BLE_CHARACTERISTIC_UUID (uint16_t)0x2A67 // CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID
-#define BLE_MTU 185
+#define BLE_MTU 185                              // Maximum Transmission Unit for BLE. 185 is a safe tested value
 
-// GPS port on UART2
-#define gpsPort Serial2
-// How much time before autobauding times out
-#define GPS_UART_TIMEOUT 10000UL
-#define GPS_STANDARD_BAUD_RATE 115200
-// Min size of a NMEA message
-#define MIN_NMEA_MESSAGE_SIZE 6
 
-// Define the serial monitor port
+/* 
+ Monitor UART settings
+ */
 #define SerialMonitor Serial
 #define LOG_BAUD_RATE 115200
 
@@ -105,6 +114,7 @@
 #include <Preferences.h>
 Preferences prefs;
 // data to be stored
+#include "esp_bt.h"
 #include "esp_wifi.h"
 #include <WiFi.h>
 
@@ -134,14 +144,19 @@ typedef struct
 
 stored_preference_t stored_preferences;
 
-// esp32 and GPS runtime variables
+/*
+  esp32 and GPS runtime variables
+*/
+
 uint16_t chip; // hold the device id to be used in broadcasting unit identifier strings
 // WiFi runtime variables
 char ap_ssid[MAX_AP_NAME_SIZE];
 const char ap_password[] = BONOGPS_PWD;
 int max_buffer = 0;
 
-// for status
+/*
+  For status page and to enable powersaving mode
+*/
 #ifdef UPTIME
 #include "uptime_formatter.h"
 #endif
@@ -195,13 +210,15 @@ gps_fix my_fix;
 Scheduler ts;
 #endif
 
-// if we have both, we can define a task to check period OTA requests
+// if we have both, we can define a task to check periodic OTA requests
 #if defined(ENABLE_OTA) && defined(TASK_SCHEDULER)
 // we will define its charateristics later
 Task tOTA;
 #endif
 
-// BLueTooth classic stack (Android)
+/*
+  BLueTooth classic stack (Android)
+*/
 #ifdef BTSPPENABLED
 #include "BluetoothSerial.h"
 BluetoothSerial SerialBT;
@@ -211,9 +228,10 @@ void bt_spp_start();
 void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
 #endif
 
+/*
+  BLE stack (iOS)
+*/
 #ifdef BLEENABLED
-// BLE stack
-// Only used from NimbleArduino librray > 1.0.2, commit https://github.com/h2zero/NimBLE-Arduino/commit/569eb8a188c78fe780f4c2a24cf9247532cf55ea
 #define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED
 #define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED
 #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 2
@@ -231,7 +249,9 @@ String ble_client_address;
 char ble_device_id[MAX_AP_NAME_SIZE];
 #endif
 
-// Respond to button
+/*
+  Use Button
+*/
 #ifdef BUTTON
 // remove unneeded feature to trim down library size
 #define EASYBUTTON_DO_NOT_USE_SEQUENCES
@@ -364,8 +384,7 @@ const char UBLOX_INIT_MAINTALKER_GP_GPSONLY[] PROGMEM = {0xB5, 0x62, 0x06, 0x17,
 const char UBLOX_BAUD_57600[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDA, 0xA9};
 const char UBLOX_BAUD_38400[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8F, 0x70};
 const char UBLOX_BAUD_115200[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBC, 0x5E};
-// power saving
-// enable power saving mode for 1800 or 3600 seconds
+// power saving : enable power saving mode for 1800 or 3600 seconds
 // UBX-RXM-PMREQ request
 const char UBLOX_PWR_SAVE_30MIN[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x77, 0x1B, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x0F, 0xF6};
 const char UBLOX_PWR_SAVE_1HR[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xEE, 0x36, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0xE1, 0x21};
@@ -385,6 +404,9 @@ const char UBLOX_GPGSA_POLL[] PROGMEM = "$EIGPQ,GSA*33\r\n";
 const char UBLOX_GPGSV_POLL[] PROGMEM = "$EIGPQ,GSV*24\r\n";
 bool gsaorgsv_turn = true;
 
+/* 
+  Send a binary message to the GPS, optionally turning it on if it is in power saving mode
+*/
 void push_gps_message(const char message[], int message_size = 0)
 {
   if (gps_powersave)
@@ -403,6 +425,9 @@ void push_gps_message(const char message[], int message_size = 0)
 }
 
 #ifdef TASK_SCHEDULER
+/* 
+  Periodically poll GSA and GSV info (details on satellites) with a scheduled task, instead of streaming with the usual frequency
+*/
 void poll_GSA_GSV_info()
 {
   if (gsaorgsv_turn)
@@ -449,7 +474,9 @@ void control_poll_GSA_GSV(int frequency)
   }
 }
 
-// handle restart when config is lost
+/* 
+  handle restart when config is lost
+*/
 Task trestart_after_sleep(0, 1, restart_after_sleep, &ts, false);
 void restart_after_sleep()
 {
@@ -461,6 +488,9 @@ void restart_after_sleep()
 }
 #endif
 
+/* 
+  Switch baudrate of GPS, without interrupting the serial device, and storing the new value
+*/
 void switch_baudrate(uint32_t newbaudrate)
 {
   // stored_preferences assumed global
@@ -488,7 +518,9 @@ void switch_baudrate(uint32_t newbaudrate)
   stored_preferences.gps_baud_rate = newbaudrate;
 }
 
-// read from NVM via preferences library
+/* 
+  Read stored preferences from NVM via preferences library
+*/
 void ReadNVMPreferences()
 {
   // prefs assumed global
@@ -563,7 +595,9 @@ void ReadNVMPreferences()
   }
 }
 
-// write to preferences
+/* 
+  Write preferences from NVM via preferences library
+*/
 void StoreNVMPreferences(bool savewifi = false)
 {
   // prefs assumed global
@@ -618,6 +652,9 @@ void StoreNVMPreferences(bool savewifi = false)
   }
 }
 
+/* 
+  Write preferences from NVM via preferences library: only WiFi status
+*/
 void StoreNVMPreferencesWiFi(String string_wifi_mode)
 {
   // prefs assumed global
@@ -633,6 +670,9 @@ void StoreNVMPreferencesWiFi(String string_wifi_mode)
   }
 }
 
+/* 
+  Write preferences from NVM via preferences library: only WiFi credentials
+*/
 void StoreNVMPreferencesWiFiCreds()
 {
   // prefs assumed global
@@ -657,6 +697,9 @@ void StoreNVMPreferencesWiFiCreds()
   }
 }
 
+/* 
+  Set preferences for predefined settings
+*/
 void gps_disable_all()
 {
   stored_preferences.trackaddict = false;
@@ -716,8 +759,11 @@ void gps_enable_racechrono()
   stored_preferences.nmeaGSAGSVpolling = 0;
 #endif
   stored_preferences.racechrono = true;
-}  
+}
 
+/*
+  WiFi connections (server, client, status led)
+ */
 const uint NMEAServerPort = NMEA_TCP_PORT;
 WiFiServer NMEAServer(NMEAServerPort);
 WiFiClient NMEARemoteClient;
@@ -753,14 +799,10 @@ Task tLedActiveBlink(0, TASK_FOREVER, &activeled_blink, &ts, false);
 #endif
 #endif
 
-/********************************
-
-    WiFi connection
-
- * ******************************/
 bool wifi_connected = false;
 IPAddress MyIP;
 
+/* TCP-IP NMEA client */
 void NMEACheckForConnections()
 {
   if (NMEAServer.hasClient())
@@ -784,14 +826,13 @@ void start_NMEA_server()
   NMEAServer.begin();
   NMEAServer.setNoDelay(true);
 }
-
 void stop_NMEA_server()
 {
   log_i("Stop GNSS TCP/IP Service");
   NMEAServer.stop();
 }
 
-// Start STATION mode to connect to a well-known Access Point
+/* Start STATION mode to connect to a well-known Access Point */
 void wifi_STA()
 {
   if (stored_preferences.nmeaTcpServer)
@@ -965,13 +1006,11 @@ void wifi_OFF()
   stored_preferences.wifi_mode = WIFI_OFF;
 }
 
-/********************************
+/*
+ Web Configuration portal
+ */
 
-   Web Configuration portal
-
- * ******************************/
-// change from standard 1436 to a minimal 100
-// #define HTTP_UPLOAD_BUFLEN 100
+// #define HTTP_UPLOAD_BUFLEN 100 // change from standard 1436 to a minimal 100
 #include <WebServer.h>
 #include <uri/UriBraces.h>
 WebServer webserver(80);
@@ -981,13 +1020,26 @@ const char html_css[] PROGMEM = "text/css";
 const char text_json[] PROGMEM = "application/json";
 const char json_ok[] PROGMEM = "{'status':'ok'}";
 const char json_error[] PROGMEM = "{'status':'error'}";
+
 // The following variable is in a separate file generated from its source but stored in minified format
 // run generate_css.sh 
 #ifdef SHOWBATTERY
 // add the css portion for the battery gauge
+#if __has_include("bonogps_css_base_battery.h")
 #include "bonogps_css_base_battery.h"
-#else 
+#elif __has_include("include/bonogps_css_base_battery.h")
+#include "include/bonogps_css_base_battery.h"
+#else
+#error "cannot find 'bonogps_css_base_battery.h'"
+#endif
+#else
+#if __has_include("bonogps_css_base.h")
 #include "bonogps_css_base.h"
+#elif __has_include("include/bonogps_css_base.h")
+#include "include/bonogps_css_base.h"
+#else
+#error "cannot find 'bonogps_css_base.h'"
+#endif
 #endif
 const char WEBPORTAL_HEADER[] PROGMEM = "<!DOCTYPE html>\n<html lang='en'>\n\t<head>\n\t\t<title>Bono GPS</title>\n\t\t<meta charset='utf-8'>\n\t\t<meta name='viewport' content='width=device-width, initial-scale=1'>\n\t\t<link rel='stylesheet' href='/css'>\n\t</head>\n<body>\n<script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script>\n<header>";
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='https://github.com/" GIT_REPO "'>" BONO_GPS_VERSION "</a></footer>\n</body>\n</html>";
@@ -1038,7 +1090,6 @@ String generate_html_body(String input, bool add_menu = true)
   htmlbody += String(WEBPORTAL_FOOTER);
   return htmlbody;
 }
-
 String input_onoff(String divlabel, String parameter, bool parameter_status)
 {
   String message((char *)0);
@@ -1078,7 +1129,6 @@ String input_onoff(String divlabel, String parameter, bool parameter_status)
   message += F("/off'> Off </label>\n\t</article>");
   return message;
 }
-
 String html_select(String divlabel, String parameters[], String parameters_names[], const bool parameters_status[], String groupname, int numberparams)
 {
   String message((char *)0);
@@ -1113,7 +1163,6 @@ String html_select(String divlabel, String parameters[], String parameters_names
   message += "\n</article>";
   return message;
 }
-
 void handle_css()
 {
   log_i("Handle CSS response");
@@ -1187,7 +1236,6 @@ void handle_menu()
   webserver.sendContent_P(WEBPORTAL_ROOT_OPTIONS);
   webserver.sendContent_P(WEBPORTAL_FOOTER);
 }
-
 void handle_preset()
 {
   String mainpage((char *)0);
@@ -1387,7 +1435,6 @@ void handle_rate()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-
 void handle_baudrate()
 {
   String baudrate = webserver.pathArg(0);
@@ -1404,7 +1451,6 @@ void handle_baudrate()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-
 void handle_tcpserver()
 {
   // stored_preferences.nmeaTcpServer
@@ -1485,7 +1531,6 @@ void handle_gsv()
   webserver.send(200, html_text, generate_html_body(message));
 #endif
 }
-
 void handle_gsa()
 {
   String onoff = webserver.pathArg(0);
@@ -1816,7 +1861,9 @@ void handle_hlt()
 #endif
     if (stored_preferences.ble_active == false)
     {
-      ble_start();
+      #ifdef BLEENABLED
+        ble_start();
+      #endif
       stored_preferences.ble_active = true;
     }
   }
@@ -1866,7 +1913,6 @@ void handle_restart()
 {
   webserver.send(200, html_text, generate_html_body(F("Please confirm <form action='/restart' method='post'><input type='submit' value='Restart'></form>")));
 }
-
 
 void handle_restart_execute()
 {
@@ -2205,11 +2251,9 @@ void WebConfig_stop()
   webserver.close();
 }
 
-/********************************
-
-  OTA
-
-* ******************************/
+/*
+ OTA
+*/
 #ifdef ENABLE_OTA
 #ifndef OTA_AVAILABILITY_SECS
 #define OTA_AVAILABILITY_SECS 300 // 300 seconds of OTA running
@@ -2291,13 +2335,11 @@ void OTA_stop()
   tOTA.disable();
   #endif
 }
-#endif
+#endif //ENABLE_OTA
 
-/********************************
-
-  BLE
-
-* ******************************/
+/*
+ BLE
+*/
 
 #ifdef BLEENABLED
 
@@ -2307,12 +2349,11 @@ void OTA_stop()
 #define DEVINFO_SERIAL_UUID (uint16_t)0x2a25       //0x2A25 SerialNum utf8s
 #define DEVINFO_FWREV_UUID (uint16_t)0x2a26        //0x2A26 FirmwareRev utf8s
 
-#define BAT_LVL_SERVICE_UUID (uint16_t)0x180F       // used when SHOWBATTERY enabled
-#define BAT_LVL_CHAR_UUID (uint16_t)0x2A19       // used when SHOWBATTERY enabled
-#define BATTERY_NOTIFICATION_PERIOD_MS 60000 // battery updated once a minute
+#define BAT_LVL_SERVICE_UUID (uint16_t)0x180F      // used when SHOWBATTERY enabled
+#define BAT_LVL_CHAR_UUID (uint16_t)0x2A19         // used when SHOWBATTERY enabled
+#define BATTERY_NOTIFICATION_PERIOD_MS 60000       // battery updated once a minute
 
-// write commands to the device
-#define BLE_RECONFIG_CHARACTERISTIC_UUID (uint16_t)0x2A05
+#define BLE_RECONFIG_CHARACTERISTIC_UUID (uint16_t)0x2A05 // write commands to the device
 
 // #define HardwareRev "0001"    //0x2A27 utf8s
 // #define SystemID "000001"     //0x2A23 uint40
@@ -2324,7 +2365,9 @@ NimBLECharacteristic *pCharacteristicCommand = NULL;
 NimBLECharacteristic *pCharBattery = NULL;
 
 #if defined(TASK_SCHEDULER)
-// Create the period task to notify BLE of battery status
+/*
+  Create the period task to notify BLE of battery status
+*/ 
 void BLEBatteryNotify() {
   if (pCharBattery) {
     pCharBattery->setValue(LiPoChargePercentage(ReadBatteryVoltage()));
@@ -2334,7 +2377,7 @@ void BLEBatteryNotify() {
 Task tBLEBatteryNotify(BATTERY_NOTIFICATION_PERIOD_MS, TASK_FOREVER, BLEBatteryNotify, &ts, false);
 #endif //#if defined(TASK_SCHEDULER)
 
-#endif
+#endif //#if defined(SHOWBATTERY)
 uint16_t ble_mtu;
 
 // Build BTLE messages here
@@ -2482,8 +2525,7 @@ void ble_start()
   {
     log_e("BLE pServiceBattery NOT created");
   }
-
-#endif
+#endif //#if defined(SHOWBATTERY)
 
   // define appearance, from https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
   pAdvertising->setAppearance(5186);
@@ -2503,11 +2545,11 @@ void ble_stop()
     NimBLEDevice::stopAdvertising();
     NimBLEDevice::deinit(true);
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
-
+    tBLEBatteryNotify.disable();
     #endif
   }
 }
-#endif
+#endif // BLEENABLED
 
 #ifdef BTSPPENABLED
 /*********************************************************************
@@ -2576,7 +2618,7 @@ bool bt_spp_stop()
   }
   return false;
 }
-#endif
+#endif // BTSPPENABLED
 
 /*********************************************************************
 
@@ -2585,17 +2627,18 @@ bool bt_spp_stop()
 *******************************************************************/
 void gps_initialize_settings()
 {
-  // GPS Connection
-  log_d("Send a ping to start the GPS if it was powersaved");
-  // BAUD matters almost nothing, we just need some data on UART
-  gpsPort.begin(GPS_STANDARD_BAUD_RATE, SERIAL_8N1, RX2, TX2);
+  log_d("Send a ping to start the GPS if it was powersaved"); // GPS Connection
+  gpsPort.begin(GPS_STANDARD_BAUD_RATE, SERIAL_8N1, RX2, TX2); // BAUD matters almost nothing, we just need some data on UART
   push_gps_message(UBLOX_WARMSTART, sizeof(UBLOX_WARMSTART));
   gpsPort.flush();
   delay(250);
   gpsPort.end();
   delay(250);
+
   // if preferences have a value <> than the one stored in the GPS, connect+switch
   log_d("Start UART connection on RX pin %d TX pin %d and autobaudrate", RX2, TX2);
+  gpsPort.setRxBufferSize(UART_BUFFER_SIZE_RX);
+  delay(50);
   gpsPort.begin(0, SERIAL_8N1, RX2, TX2, false, GPS_UART_TIMEOUT);
   if (gpsPort.baudRate() > 0)
   {
@@ -2604,6 +2647,9 @@ void gps_initialize_settings()
   else
   {
     log_e("Can't auto find BAUD rate on RX pin %d TX pin %d , forcing %u", RX2, TX2, GPS_STANDARD_BAUD_RATE);
+    gpsPort.end();
+    delay(250);
+    gpsPort.setRxBufferSize(UART_BUFFER_SIZE_RX);
     // TODO: enable pulsing error on the LED to signal the user that something is bad
     gpsPort.begin(GPS_STANDARD_BAUD_RATE, SERIAL_8N1, RX2, TX2);
   }
@@ -2613,9 +2659,6 @@ void gps_initialize_settings()
     log_i("Re-Connecting to GPS at updated %u", stored_preferences.gps_baud_rate);
     switch_baudrate(stored_preferences.gps_baud_rate);
   }
-
-  gpsPort.setRxBufferSize(UART_BUFFER_SIZE_RX);
-  delay(50);
 
   if (stored_preferences.nmeaGSV)
   {
