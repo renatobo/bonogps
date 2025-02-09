@@ -25,7 +25,7 @@ Currently these apps are supported
 3. [RaceChrono](https://racechrono.com/) >> details [here](software/connecting/racechrono)
 4. [RaceTime](https://www.racetimeapp.com/en/) >> details [here](software/connecting/racetime)
 
-If you are not into the *maker* thing or if you don't know anyone that might be, [invest 150$ and buy a XGPS160](https://gps.dualav.com/explore-by-product/xgps160) - it's effective and it works very well with a large number of supported platforms and apps.
+If you are not into the maker thing or if you don't know anyone who might be, [look into RaceBox products like mini/miniS](https://www.racebox.pro/) or [a XGPS160](https://gps.dualav.com/explore-by-product/xgps160).
 
 ## For the SW Engineer / maker
 
@@ -91,7 +91,7 @@ There are many mobile apps to log lap times, few accept custom devices, in parti
 
 |         | Harry Lap Timer    | TrackAddict | RaceChrono | Racetime |
 | ------- | ------------------ | ----------- | ---------- | -------- |
-| iOS     | **BLE**, TCP-IP    |             |            |
+| iOS     | **BLE**, TCP-IP    |             | TCP-IP     |
 | Android | **BT-SPP**, TCP-IP | BT-SPP      | BT-SPP     | BT-SPP   |
 
 See more info in each subfolder of **[connecting](software/connecting)**.

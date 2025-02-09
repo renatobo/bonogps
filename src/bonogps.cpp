@@ -9,7 +9,13 @@
 // For PlatformIO we need to include the Arduino framework
 #include <Arduino.h>
 // load PINout definitions from this header file
+#if __has_include("bonogps_board_settings.h")
 #include "bonogps_board_settings.h"
+#elif __has_include("include/bonogps_board_settings.h")
+#include "include/bonogps_board_settings.h"
+#else
+#error "cannot find 'bonogps_board_settings.h'"
+#endif
 
 /*
  Enable or disable compiling features
@@ -105,6 +111,7 @@
 #include <Preferences.h>
 Preferences prefs;
 // data to be stored
+#include "esp_bt.h"
 #include "esp_wifi.h"
 #include <WiFi.h>
 
@@ -213,7 +220,7 @@ void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
 
 #ifdef BLEENABLED
 // BLE stack
-// Only used from NimbleArduino librray > 1.0.2, commit https://github.com/h2zero/NimBLE-Arduino/commit/569eb8a188c78fe780f4c2a24cf9247532cf55ea
+// Only used from NimbleArduino library > 1.0.2, commit https://github.com/h2zero/NimBLE-Arduino/commit/569eb8a188c78fe780f4c2a24cf9247532cf55ea
 #define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED
 #define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED
 #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 2
@@ -985,9 +992,21 @@ const char json_error[] PROGMEM = "{'status':'error'}";
 // run generate_css.sh 
 #ifdef SHOWBATTERY
 // add the css portion for the battery gauge
+#if __has_include("bonogps_css_base_battery.h")
 #include "bonogps_css_base_battery.h"
-#else 
+#elif __has_include("include/bonogps_css_base_battery.h")
+#include "include/bonogps_css_base_battery.h"
+#else
+#error "cannot find 'bonogps_css_base_battery.h'"
+#endif
+#else
+#if __has_include("bonogps_css_base.h")
 #include "bonogps_css_base.h"
+#elif __has_include("include/bonogps_css_base.h")
+#include "include/bonogps_css_base.h"
+#else
+#error "cannot find 'bonogps_css_base.h'"
+#endif
 #endif
 const char WEBPORTAL_HEADER[] PROGMEM = "<!DOCTYPE html>\n<html lang='en'>\n\t<head>\n\t\t<title>Bono GPS</title>\n\t\t<meta charset='utf-8'>\n\t\t<meta name='viewport' content='width=device-width, initial-scale=1'>\n\t\t<link rel='stylesheet' href='/css'>\n\t</head>\n<body>\n<script>function Select(e){fetch('/'+e).then(e=>e.text()).then(t=>console.log(e))}</script>\n<header>";
 const char WEBPORTAL_FOOTER[] PROGMEM = "\n<footer>Version: <a style='font-size: small;background: none;text-decoration: underline;' target='_blank' href='https://github.com/" GIT_REPO "'>" BONO_GPS_VERSION "</a></footer>\n</body>\n</html>";
@@ -1816,7 +1835,9 @@ void handle_hlt()
 #endif
     if (stored_preferences.ble_active == false)
     {
-      ble_start();
+      #ifdef BLEENABLED
+        ble_start();
+      #endif
       stored_preferences.ble_active = true;
     }
   }

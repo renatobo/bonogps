@@ -9,14 +9,13 @@
 Hardware is similar for both and it's mostly based on things I could easily find:
 
 - basic [ESP32 DEVKIT](https://www.amazon.com/D-FLIFE-Development-Dual-Mode-Microcontroller-Integrated/dp/B08DR31G4G) board
-- seedstudio [LiPo Rider Plus](https://wiki.seeedstudio.com/Lipo-Rider-Plus/) charger (Why? The first LiPo charger I bumped into at MicroCenter while shopping with a couple of nice features such as fuel gauge)
-- [BN220](https://www.amazon.com/Beitian-Navigation-Raspberry-Betaflight-Aircraft/dp/B07WM1GFY8) or [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W) (better as it has an active antenna) GPS
+- [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W) (better as it has an active antenna) GPS or [BN220](https://www.amazon.com/Beitian-Navigation-Raspberry-Betaflight-Aircraft/dp/B07WM1GFY8) (cheaper)
 - Li-Ion battery
 - [JST2.0 cables](https://www.amazon.com/gp/product/B07NWD5NTN/ref=ppx_yo_dt_b_asin_title_o05_s00?ie=UTF8&psc=1) to connect battery to LiPo charger and LiPo charger to ESP32 power inputs (Vin, GND)
 
-In one case, the unit is assembled within a left-over raspberry pi case (the transparent case helps in checking the light status).
+In one case, the unit is assembled within a left-over raspberry pi case (the transparent case helps in checking the light status) and a LiPo charger ( seedstudio [LiPo Rider Plus](https://wiki.seeedstudio.com/Lipo-Rider-Plus/) charger (Why? The first LiPo charger I bumped into at MicroCenter while shopping with a couple of nice features such as fuel gauge) )
 
-Another supported board is [Wemos/LOLIN D32 Pro](https://www.wemos.cc/en/latest/d32/d32_pro.html) which has some benefits
+A recommended and supported ESP32 board is [Wemos/LOLIN D32 Pro](https://www.wemos.cc/en/latest/d32/d32_pro.html) which has some benefits
 
 - integrated LiPo charger
 - more flash memory and PSRAM
@@ -35,6 +34,8 @@ A simple 3d printed board is used to hold all components in place
 - LiPo Battery (2000 mAh will last a full day of riding)
 - A small on/off button
 - A momentary button to serve as WiFi mode selection button (equivalent to BOOT on other ESP32 models)
+
+Please note the battery holder is not stable, after several months of use it started randomly coming loose. A redesign of that part would be best.
 
 ### Rendering of 3d model
 
