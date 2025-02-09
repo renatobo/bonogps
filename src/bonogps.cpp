@@ -2454,11 +2454,11 @@ void ble_start()
   NimBLEDevice::init(ble_device_id);
   // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM);
   /** Optional: set the transmit power, default is 3db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9);                             /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_ADV);       /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL0); /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL1); /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL2); /** +9db */
+  NimBLEDevice::setPower(9);                             /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::ADV);       /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::CONN_HDL0); /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::CONN_HDL1); /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::CONN_HDL2); /** +9db */
   // Set the MTU to a larger value than standard 23
   NimBLEDevice::setMTU(BLE_MTU);
   ble_mtu = NimBLEDevice::getMTU();
@@ -2530,7 +2530,7 @@ void ble_start()
   // define appearance, from https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
   pAdvertising->setAppearance(5186);
   /** If your device is battery powered you may consider setting scan response to false as it will extend battery life at the expense of less data sent.  */
-  pAdvertising->setScanResponse(false);
+  pAdvertising->enableScanResponse(false);
   // pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue -> find out more at https://github.com/h2zero/NimBLE-Arduino/issues/129
   // pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
 
@@ -2540,7 +2540,7 @@ void ble_start()
 
 void ble_stop()
 {
-  if (NimBLEDevice::getInitialized())
+  if (NimBLEDevice::isInitialized())
   {
     NimBLEDevice::stopAdvertising();
     NimBLEDevice::deinit(true);
@@ -2903,7 +2903,7 @@ void loop()
   // run all periodic tasks
   ts.execute();
 #else
-  // if scheduler is not available, we need to check for OTA (if builtin)
+  // if the scheduler is not available, we need to check for OTA (if builtin)
   #ifdef ENABLE_OTA
   ArduinoOTA.handle();
   #endif // #ifdef ENABLE_OTA
