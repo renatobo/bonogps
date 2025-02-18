@@ -25,6 +25,7 @@
 #define BTSPPENABLED // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
 #define BLEENABLED   // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
 // #define ENABLE_OTA     // add OTA Enable here if you are using Arduino IDE, otherwise use -DENABLE_OTA in platformio
+#define HIGHER_GPS_RATES // enable 20Hz and 25Hz GPS rates, not all GPS support these rates
 
 /*
  You should not disable these unless there is a problem with the specific feature
@@ -324,6 +325,12 @@ const char UBLOX_INIT_10HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64
 const char UBLOX_INIT_1HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
 // set rate of GPS to 1Hz
 const char UBLOX_INIT_16HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
+#ifdef HIGHER_GPS_RATES
+// set rate of GPS to 20Hz
+const char UBLOX_INIT_20HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x32, 0x00, 0x01, 0x00, 0x01, 0x00, 0x48, 0xE6};
+// set rate of GPS to 25Hz
+const char UBLOX_INIT_25HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x28, 0x00, 0x01, 0x00, 0x01, 0x00, 0x3E, 0xAA};
+#endif
 
 // GLL_ON
 const char UBLOX_GxGLL_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2F};
@@ -1181,7 +1188,22 @@ void handle_menu()
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 10) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  #ifdef HIGHER_GPS_RATES
+  mainpage += F("rate/10hz'>10 Hz</label>\n<input type='radio' id='rate/20hz' ");
+
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 20) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/20hz'>20 Hz</label>\n<input type='radio' id='rate/25hz' ");
+
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 25) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/25hz'>25 Hz</label></article>");
+
+  #else
   mainpage += F("rate/10hz'>10 Hz</label></article>");
+  #endif
   
   mainpage += input_onoff("Stream GxGBS", "gbs", stored_preferences.nmeaGBS);
   mainpage += input_onoff("Stream GxGSA", "gsa", stored_preferences.nmeaGSA);
@@ -1385,6 +1407,14 @@ void handle_rate()
   stored_preferences.gps_rate = rate;
   switch (rate)
   {
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
   case 10:
     push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
     break;
@@ -2693,6 +2723,14 @@ void gps_initialize_settings()
   case 10:
     push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
     break;
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
   default:
     push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
     break;
