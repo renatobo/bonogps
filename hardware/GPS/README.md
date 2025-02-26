@@ -2,20 +2,19 @@
 
 - [Which GPS receiver?](#which-gps-receiver)
   - [FAQ](#faq)
-    - [Q: Can I use a M10 module?](#q-can-i-use-a-m10-module)
     - [Q: Can I use a cheaper Neo-6M module?](#q-can-i-use-a-cheaper-neo-6m-module)
     - [Q: Can I use a newer Neo-9M module?](#q-can-i-use-a-newer-neo-9m-module)
     - [Q: What modules are recommended?](#q-what-modules-are-recommended)
     - [Q: No data is made available to my apps, what's wrong?](#q-no-data-is-made-available-to-my-apps-whats-wrong)
-    - [Q: M10, M8N, M8Q, M8U .. which one?](#q-m10-m8n-m8q-m8u--which-one)
+    - [Q: M8N, M8Q, M8U .. which one?](#q-m8n-m8q-m8u--which-one)
   - [Comparison of performance vs precision](#comparison-of-performance-vs-precision)
     - [3 hours of measurements side by side](#3-hours-of-measurements-side-by-side)
   - [GPS modules setup via presaved configuration](#gps-modules-setup-via-presaved-configuration)
   - [Setup on your own, step by step](#setup-on-your-own-step-by-step)
     - [Settings that are required](#settings-that-are-required)
       - [UBX-CFG-GNSS](#ubx-cfg-gnss)
-        - [GPS, SBAS](#gps-sbas)
         - [GPS, SBAS, Galileo, GLONASS](#gps-sbas-galileo-glonass)
+        - [GPS, SBAS](#gps-sbas)
       - [UBX-CFG-MSG](#ubx-cfg-msg)
       - [UBX-CFG-NMEA](#ubx-cfg-nmea)
       - [UBX-CFG-PRT](#ubx-cfg-prt)
@@ -34,18 +33,14 @@
     - [Save Configuration](#save-configuration)
   - [References](#references)
 
-This project requires a receiver compatible with ublox M8, for the following reasons
+This project requires a receiver compatible with ublox M8 or M10, for the following reasons
 
 - it's widely available as it's used in avionics (drones) projects
 - it's cost effective
-- it allows 10Hz refresh rate
+- it allows 10Hz (M8) to 25Hz (M10) refresh rate
 - it allows granular configuration of NMEA messages
 
 ## FAQ
-
-### Q: Can I use a M10 module?
-
-**A:** yes they are tested and recommended for performances
 
 ### Q: Can I use a cheaper Neo-6M module?
 
@@ -53,7 +48,7 @@ This project requires a receiver compatible with ublox M8, for the following rea
 
 ### Q: Can I use a newer Neo-9M module?
 
-**A:** the M9 series is designed for low power so not optimal, not recommended
+**A:** It could work, but this project is not tested for it yet.
 
 ### Q: What modules are recommended?
 
@@ -61,13 +56,11 @@ This project requires a receiver compatible with ublox M8, for the following rea
 
 ### Q: No data is made available to my apps, what's wrong?
 
-**A:** First thing to check is: is the PORT RATE stored in your GPS (see below paragraph **UBX-CFG-PRT**) matching the one expected by the bonogps.cpp code in macro `GPS_STANDARD_BAUD_RATE` ? It should be 115200. Open an issue otherwise so that we can work out troubleshooting. There is a primitive auto-bauding sequence that tries to guess what speed your GPS is using.
+**A:** First thing to check is: is the PORT RATE stored in your GPS (see below paragraph **UBX-CFG-PRT**) matching the one expected by the bonogps.cpp code in macro `GPS_STANDARD_BAUD_RATE` ? It should be 115200. Open an issue otherwise so that we can work out troubleshooting
 
-### Q: M10, M8N, M8Q, M8U .. which one?
+### Q: M8N, M8Q, M8U .. which one?
 
-**A:** Avoid M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three), see [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf).
-NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
-M10 devices support 25 Hz and are now (as of version 2) recommended.
+**A:** According to the [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf), you should avoid NEO-M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three). NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
 
 ## Comparison of performance vs precision
 
@@ -100,9 +93,7 @@ _Note: these instructions are specific to a GPS module compatile with ublox 8 me
 You can setup an out of the box M8 module restoring one of these saved configurations:
 
 - passive antenna [BN220](gps-bn220-config.txt)
-- active antenna [BN880](gps-bn880-config.txt)
-
-No configuration saved yet for BK280 or BK880
+- active antenna [BN820](gps-bn880-config.txt)
 
 The procedure is
 
@@ -138,21 +129,46 @@ More satellites and constellations (GPS, Galileo, GLONASS) does not necessarily 
 
 There is plenty of information online on drone GPS solutions that explain the optimal update rate for each hardware (e.g. [ArduPilot](https://github.com/ArduPilot/ardupilot/issues/13053)).
 
-Configurations tested, optimized for Americas:
+Configurations tested, optimized for NAMER:
+
+- BK280, BK880 or other 10 series capable of 20Hz or 25Hz with 2+ constellations and tracking 42 channels: Enable GPS, SBAS, Galileo, Glonass
+![All constellations M10 series](images/ucenter_UBX-CFG-GNSS_all_m10series.png)
+
 
 - BN-880, BN220, NEO-M8Q, NEO-M8M and other devices capable of 10Hz with 2+ constellations: Enable GPS, SBAS, Galileo, Glonass
-
 ![All constellations](images/ucenter_UBX-CFG-GNSS_all.png)
 
 - NEO-M8N: GPS, SBAS (unless you are happy with 5Hz, then you can enable additional ones)
-
 ![GPS and SBAS only](images/ucenter_UBX-CFG-GNSS_GPS.png)
 
-Common
+Common for NAMER users
 
-- BeiDou has good coverage in APAC, so disabled for NAMER to use Galileo+Glonass
+- GPS, Galileo, Glonass: enabled
+- SBAS: enabled
+- BeiDou has good coverage in APAC => disabled 
 - IMES disabled as ineffective for this use
-- QZSS disabled as it is specific for APAC
+- QZSS is used to improve coverage in East Asia and Oceania => disabled
+
+##### GPS, SBAS, Galileo, GLONASS
+
+BK-880, BK-280, M10 and other devices at 25Hz with multiple constellations up to 42 satellites
+
+```text
+B5 62 06 3E 34 00 00 00 2A 06 00 08 10 00 01
+00 01 01 01 03 03 00 01 00 01 01 02 08 0C 00
+01 00 01 01 03 02 05 00 00 00 01 01 05 03 04
+00 00 00 05 01 06 08 0C 00 01 00 01 01 21 DE
+```
+
+BN-880, BN-220, M8Q and other devices at 10Hz with multiple constellations
+
+```text
+B5 62 06 3E 3C 00 00 20 20 07 00 08 10 00 01
+00 01 01 01 01 03 00 01 00 01 01 02 04 08 00
+01 00 01 01 03 08 10 00 00 00 01 01 04 00 08
+00 00 00 01 03 05 00 03 00 00 00 01 05 06 08
+0E 00 01 00 01 01
+```
 
 ##### GPS, SBAS
 
@@ -164,18 +180,6 @@ B5 62 06 3E 3C 00 00 00 20 07 00 08 10 00 01
 00 00 01 01 03 08 10 00 00 00 01 01 04 00 08
 00 00 00 01 01 05 00 03 00 00 00 01 01 06 08
 0E 00 00 00 01 01 2D 79
-```
-
-##### GPS, SBAS, Galileo, GLONASS
-
-BN-880, BN-220, M8Q and other devices at 10Hz with multiple constellations
-
-```text
-B5 62 06 3E 3C 00 00 20 20 07 00 08 10 00 01
-00 01 01 01 01 03 00 01 00 01 01 02 04 08 00
-01 00 01 01 03 08 10 00 00 00 01 01 04 00 08
-00 00 00 01 03 05 00 03 00 00 00 01 05 06 08
-0E 00 01 00 01 01
 ```
 
 #### UBX-CFG-MSG
