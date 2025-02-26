@@ -1,10 +1,11 @@
 # A couple of working prototypes that don't look fancy but get the job done
 
-- [Integrated in seat cowl (with BN880) of a Ducati Panigale 959 with 3d printed base](#integrated-in-seat-cowl-with-bn880-of-a-ducati-panigale-959-with-3d-printed-base)
-  - [Rendering of 3d model](#rendering-of-3d-model)
-  - [Picture of installed model](#picture-of-installed-model)
-  - [3d printing](#3d-printing)
-- [Trasparent case (with BN220)](#trasparent-case-with-bn220)
+- [A couple of working prototypes that don't look fancy but get the job done](#a-couple-of-working-prototypes-that-dont-look-fancy-but-get-the-job-done)
+  - [Integrated in seat cowl (with BN880) of a Ducati Panigale 959 with 3d printed base](#integrated-in-seat-cowl-with-bn880-of-a-ducati-panigale-959-with-3d-printed-base)
+    - [Rendering of 3d model](#rendering-of-3d-model)
+    - [Picture of installed model](#picture-of-installed-model)
+    - [3d printing](#3d-printing)
+  - [Trasparent case (with BN220)](#trasparent-case-with-bn220)
 
 Hardware is similar for both and it's mostly based on things I could easily find:
 
@@ -29,7 +30,7 @@ The GPS antenna is underneath the very end of the tail, with minimal plastic ove
 
 A simple 3d printed board is used to hold all components in place
 
-- GPS: BN880
+- GPS: BN880 or BK880 or BK280 (same form factor)
 - ESP32: Lolin d32pro
 - LiPo Battery (2000 mAh will last a full day of riding)
 - A small on/off button
