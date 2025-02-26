@@ -25,6 +25,7 @@
 #define BTSPPENABLED // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
 #define BLEENABLED   // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
 // #define ENABLE_OTA     // add OTA Enable here if you are using Arduino IDE, otherwise use -DENABLE_OTA in platformio
+#define HIGHER_GPS_RATES // enable 20Hz and 25Hz GPS rates, not all GPS support these rates
 
 /*
  You should not disable these unless there is a problem with the specific feature
@@ -35,7 +36,9 @@
 #define BUTTON         // Enable changing WIFI_STA and WIFI_AP via Boot button. Small memory save to be worth removing - Which button is defined below
 #define SHORT_API      // URLs for commands such as enable/disable/change rate respond with a short json answer instead of a full web page
 
-// Configure names and PIN's used for interfacing with external world
+/*
+  Configure names and PIN's used for interfacing with external world
+*/ 
 #define DEVICE_MANUFACTURER "https://github.com/renatobo"
 #define DEVICE_NAME "Bono GPS"
 #define BONOGPS_BUILD_DATE __TIMESTAMP__
@@ -79,7 +82,6 @@
 #define BLE_CHARACTERISTIC_UUID (uint16_t)0x2A67 // CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID
 #define BLE_MTU 185                              // Maximum Transmission Unit for BLE. 185 is a safe tested value
 
-
 /* 
  Monitor UART settings
  */
@@ -102,7 +104,7 @@
 #ifndef LED_WIFI
 #define LED_WIFI LED_BUILTIN
 #endif // #ifndef LED_WIFI
-#endif
+#endif // #if !(defined(LED_BUILTIN))
 #if !(defined(WIFI_MODE_BUTTON))
 #error "You are missing the definition of WIFI_MODE_BUTTON in bonogps_board_settings.h"
 #endif
@@ -113,6 +115,7 @@
 // Library to store desidered preferences in NVM
 #include <Preferences.h>
 Preferences prefs;
+
 // data to be stored
 #include "esp_bt.h"
 #include "esp_wifi.h"
@@ -124,22 +127,22 @@ Preferences prefs;
 typedef struct
 {
   unsigned long gps_baud_rate = GPS_STANDARD_BAUD_RATE; // initial or current baud rate
-  uint8_t gps_rate = 5;
-  WiFiMode_t wifi_mode = WIFI_AP;
-  bool nmeaGSA = false;
-  bool nmeaGSV = false;
-  bool nmeaVTG = false;
-  bool nmeaGLL = false;
-  bool nmeaGBS = true;
-  bool nmeaTcpServer = false;
-  bool ble_active = true;
-  bool btspp_active = false;
-  bool trackaddict = false;
-  bool racechrono = false;
-  bool racetime = false;
-  uint8_t nmeaGSAGSVpolling = 0;
-  char wifi_ssid[WIFI_SSID_MAXLEN];
-  char wifi_key[WIFI_KEY_MAXLEN];
+  uint8_t gps_rate = 5;                                 // Rate in Hz
+  WiFiMode_t wifi_mode = WIFI_AP;                       // WiFi mode: WIFI_AP, WIFI_STA, WIFI_OFF
+  bool nmeaGSA = false;   // Enable GSA sentence
+  bool nmeaGSV = false;   // Enable GSV sentence
+  bool nmeaVTG = false;   // Enable VTG sentence
+  bool nmeaGLL = false;   // Enable GLL sentence
+  bool nmeaGBS = true;    // Enable GBS sentence
+  bool nmeaTcpServer = false;   // Enable TCP server for NMEA sentences
+  bool ble_active = true;       // Enable BLE Server
+  bool btspp_active = false;    // Enable BT-SPP Server
+  bool trackaddict = false;     // Enable predefined TrackAddict mode
+  bool racechrono = false;      // Enable predefined RaceChrono mode
+  bool racetime = false;        // Enable predefined RaceTime mode
+  uint8_t nmeaGSAGSVpolling = 0;  // Poll GSA and GSV info every n seconds
+  char wifi_ssid[WIFI_SSID_MAXLEN];   // SSID of the WiFi network in WIFI_AP mode
+  char wifi_key[WIFI_KEY_MAXLEN];     // Key of the WiFi network in WIFI_AP mode
 } stored_preference_t;
 
 stored_preference_t stored_preferences;
@@ -149,10 +152,9 @@ stored_preference_t stored_preferences;
 */
 
 uint16_t chip; // hold the device id to be used in broadcasting unit identifier strings
-// WiFi runtime variables
-char ap_ssid[MAX_AP_NAME_SIZE];
-const char ap_password[] = BONOGPS_PWD;
-int max_buffer = 0;
+char ap_ssid[MAX_AP_NAME_SIZE];         // hold the AP name to be used in WIFI_AP
+const char ap_password[] = BONOGPS_PWD; // hold the AP password to be used in WIFI_AP
+int max_buffer = 0;                     // hold the maximum buffer size for the GPS copy buffer
 
 /*
   For status page and to enable powersaving mode
@@ -161,37 +163,6 @@ int max_buffer = 0;
 #include "uptime_formatter.h"
 #endif
 bool gps_powersave = false;
-
-// The next section is used to parse the content of messages locally instead of proxying them
-// This can be used for
-// - Creating a custom binary packed format
-#ifdef NEED_NEOGPS
-// add libraries to parse GPS responses
-//#define NMEAGPS_KEEP_NEWEST_FIXES true
-//#define NMEAGPS_PARSING_SCRATCHPAD
-//#define NMEAGPS_TIMESTAMP_FROM_INTERVAL
-//#define NMEAGPS_DERIVED_TYPES
-//#define NMEAGPS_PARSE_PROPRIETARY
-//#define NMEAGPS_PARSE_MFR_ID
-#define TIME_EPOCH_MODIFIABLE
-#undef NEOGPS_PACKED_DATA
-#include <GPSfix_cfg.h>
-#include <NMEAGPS.h>
-#if !defined(GPS_FIX_TIME)
-#error You must define GPS_FIX_TIME in GPSfix_cfg.h!
-#endif
-#if !defined(GPS_FIX_LOCATION)
-#error You must uncomment GPS_FIX_LOCATION in GPSfix_cfg.h!
-#endif
-#if !defined(GPS_FIX_SPEED)
-#error You must uncomment GPS_FIX_SPEED in GPSfix_cfg.h!
-#endif
-#if !defined(GPS_FIX_ALTITUDE)
-#error You must uncomment GPS_FIX_ALTITUDE in GPSfix_cfg.h!
-#endif
-NMEAGPS gps;
-gps_fix my_fix;
-#endif
 
 #ifdef MDNS_ENABLE
 #include <ESPmDNS.h>
@@ -232,11 +203,12 @@ void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
   BLE stack (iOS)
 */
 #ifdef BLEENABLED
-#define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED
-#define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED
+#define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED // No BLE client
+#define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED // No BLE Scan
 #define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 2
 #define CONFIG_BT_NIMBLE_MAX_BONDS 2
 #define CONFIG_BT_NIMBLE_SVC_GAP_DEVICE_NAME BONOGPS_MDNS
+#define CONFIG_NIMBLE_STACK_USE_MEM_POOLS 1 // Enable the use of memory pools for stack operations. This will use slightly more RAM but may provide more stability.
 #include <NimBLEDevice.h>
 // ble runtime
 bool ble_deviceConnected = false;
@@ -351,8 +323,12 @@ const char UBLOX_INIT_5HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8,
 const char UBLOX_INIT_10HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12};
 // set rate of GPS to 1Hz
 const char UBLOX_INIT_1HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
-// set rate of GPS to 1Hz
-const char UBLOX_INIT_16HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
+#ifdef HIGHER_GPS_RATES
+// set rate of GPS to 20Hz
+const char UBLOX_INIT_20HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x32, 0x00, 0x01, 0x00, 0x01, 0x00, 0x48, 0xE6};
+// set rate of GPS to 25Hz
+const char UBLOX_INIT_25HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x28, 0x00, 0x01, 0x00, 0x01, 0x00, 0x3E, 0xAA};
+#endif
 
 // GLL_ON
 const char UBLOX_GxGLL_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2F};
@@ -368,39 +344,48 @@ const char UBLOX_GxVTG_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0
 const char UBLOX_GxGSA_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x05, 0x41};
 // Disable GxGSA
 const char UBLOX_GxGSA_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31};
+
 // Enable GxGSV (Sat View)
 const char UBLOX_GxGSV_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x06, 0x48};
 // Disable GxGSV
 const char UBLOX_GxGSV_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x38};
+
 // set Max SVs per Talker id to 8
 const char UBLOX_INIT_CHANNEL_8[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7D, 0xE7};
 // standard max SVs and extended digits for unsupported SVs
 const char UBLOX_INIT_CHANNEL_ALL[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x63};
+
 // use GP as Main talker and GSV Talker ID - this is needed for TrackAddict
 const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
 // use GP as Main talker and GSV Talker ID and restrict to GPS SVs ony - this is needed for RaceChrono
 const char UBLOX_INIT_MAINTALKER_GP_GPSONLY[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x10, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0xB8};
+
 // set gps port BAUD rate
 const char UBLOX_BAUD_57600[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDA, 0xA9};
 const char UBLOX_BAUD_38400[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8F, 0x70};
 const char UBLOX_BAUD_115200[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBC, 0x5E};
+
 // power saving : enable power saving mode for 1800 or 3600 seconds
 // UBX-RXM-PMREQ request
 const char UBLOX_PWR_SAVE_30MIN[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x77, 0x1B, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x0F, 0xF6};
 const char UBLOX_PWR_SAVE_1HR[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xEE, 0x36, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0xE1, 0x21};
 const char UBLOX_PWR_OFF[] PROGMEM = { 0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x5D, 0x4B};
-//, 0xrestart UBX-CFG-RST with controlled GNSS only software, hotstart (<4 hrs) so that ephemeris still valid
+
+// restart UBX-CFG-RST with controlled GNSS only software, hotstart (<4 hrs) so that ephemeris still valid
 const char UBLOX_WARMSTART[] PROGMEM = {0xB5, 0x62, 0x06, 0x04, 0x04, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x68};
-// Display precision in some apps
+
+// Enable GxGBS to display precision in some apps
 const char UBLOX_GxGBS_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x0C, 0x72};
+// Disable GxGBS to display precision in some apps
 const char UBLOX_GxGBS_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x62};
-// Poll GNGSA
+
+// Poll GNGSA (GN: Combined GNSS position. GNSS position fix from more than one constellation, for example, GPS and GLONASS)
 const char UBLOX_GNGSA_POLL[] PROGMEM = "$EIGNQ,GSA*2D\r\n";
-// Poll GNGSV
+// Poll GNGSV (GN: Combined GNSS position. GNSS position fix from more than one constellation, for example, GPS and GLONASS)
 const char UBLOX_GNGSV_POLL[] PROGMEM = "$EIGNQ,GSV*3A\r\n";
-// Poll GPGSA
+// Poll GPGSA (GP: GPS) RaceChrono only understand GPGSA
 const char UBLOX_GPGSA_POLL[] PROGMEM = "$EIGPQ,GSA*33\r\n";
-// Poll GPGSV
+// Poll GPGSV (GP: GPS) RaceChrono only understand GPGSV
 const char UBLOX_GPGSV_POLL[] PROGMEM = "$EIGPQ,GSV*24\r\n";
 bool gsaorgsv_turn = true;
 
@@ -709,6 +694,7 @@ void gps_disable_all()
 void gps_enable_common()
 {
   gps_disable_all();
+  // TODO: use the 'disable all NMEA messages' command here, then enable basic messages 
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
   stored_preferences.nmeaGSA = false;
   push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
@@ -719,6 +705,7 @@ void gps_enable_common()
   stored_preferences.nmeaVTG = false;
   push_gps_message(UBLOX_GxGLL_OFF, sizeof(UBLOX_GxGLL_OFF));
   stored_preferences.nmeaGLL = false;
+
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
@@ -1200,17 +1187,32 @@ void handle_menu()
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 1) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("rate/1hz'>1 Hz</label>\n<input type='radio' id='rate/5hz' ");
+  mainpage += F("rate/1hz'>1</label>\n<input type='radio' id='rate/5hz' ");
   
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 5) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' ");
+  mainpage += F("rate/5hz'>5</label>\n<input type='radio' id='rate/10hz' ");
   
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 10) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("rate/10hz'>10 Hz</label></article>");
+  #ifdef HIGHER_GPS_RATES
+  mainpage += F("rate/10hz'>10</label>\n<input type='radio' id='rate/20hz' ");
+
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 20) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/20hz'>20</label>\n<input type='radio' id='rate/25hz' ");
+
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 25) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/25hz'>25</label> Hz</article>");
+
+  #else
+  mainpage += F("rate/10hz'>10</label> Hz</article>");
+  #endif
   
   mainpage += input_onoff("Stream GxGBS", "gbs", stored_preferences.nmeaGBS);
   mainpage += input_onoff("Stream GxGSA", "gsa", stored_preferences.nmeaGSA);
@@ -1262,6 +1264,7 @@ void handle_preset()
 
 #ifdef BTSPPENABLED
   // racechrono main page
+  // TODO: Add WiFi option for iOS
   mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GBS</li><li>GSA+GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
   // racetime main page
@@ -1414,6 +1417,14 @@ void handle_rate()
   stored_preferences.gps_rate = rate;
   switch (rate)
   {
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
   case 10:
     push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
     break;
@@ -2385,29 +2396,34 @@ uint8_t gps_currentmessage[MAX_UART_BUFFER_SIZE]; // hold current buffer
 uint8_t gps_currentchar = '$';                    // hold current char
 int gps_message_pointer = 0;                      //pointer
 
-class MyServerCallbacks : public BLEServerCallbacks
+class MyServerCallbacks : public NimBLEServerCallbacks
 {
-  void onConnect(NimBLEServer *pServer, ble_gap_conn_desc *desc)
+  void onConnect(NimBLEServer *pServer, NimBLEConnInfo& connInfo) override
   {
     ble_deviceConnected = true;
-    ble_client_address = NimBLEAddress(desc->peer_id_addr).toString().c_str();
-    log_i("BLE Client address: %s", ble_client_address.c_str());
+    ble_client_address = connInfo.getAddress().toString().c_str();
+    log_i("BLE Client address: %s", ble_client_address);
 
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
     tBLEBatteryNotify.enable();
     #endif
 
   };
-  void onDisconnect(NimBLEServer *pServer)
+  void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override 
   {
     ble_deviceConnected = false;
     ble_client_address = "";
 
+    log_i("BLE Advertisting restarted");
+
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
     tBLEBatteryNotify.disable();
     #endif
+
+    // v2 of NimBLE: Advertising is no longer automatically restarted when a peer disconnects, so we need to enable it
+    NimBLEDevice::startAdvertising();
   }
-};
+} MyServerCallbacks;
 
 class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks
 {
@@ -2442,8 +2458,7 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks
       }
     }
   }
-};
-static MyCharacteristicCallbacks chrCommandCallbacks;
+} MyCommandCharacteristicCallbacks;
 
 void ble_start()
 {
@@ -2454,11 +2469,11 @@ void ble_start()
   NimBLEDevice::init(ble_device_id);
   // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM);
   /** Optional: set the transmit power, default is 3db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9);                             /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_ADV);       /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL0); /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL1); /** +9db */
-  NimBLEDevice::setPower(ESP_PWR_LVL_P9, ESP_BLE_PWR_TYPE_CONN_HDL2); /** +9db */
+  NimBLEDevice::setPower(9);                             /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::ADV);       /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::CONN_HDL0); /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::CONN_HDL1); /** +9db */
+  //NimBLEDevice::setPower(9, NimBLETxPowerType::CONN_HDL2); /** +9db */
   // Set the MTU to a larger value than standard 23
   NimBLEDevice::setMTU(BLE_MTU);
   ble_mtu = NimBLEDevice::getMTU();
@@ -2467,7 +2482,7 @@ void ble_start()
   NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
   // Create the BLE Server
   pServer = NimBLEDevice::createServer();
-  pServer->setCallbacks(new MyServerCallbacks());
+  pServer->setCallbacks(&MyServerCallbacks);
   // Create the BLE Service for GPS - Service and Location
   NimBLEService *pServiceGPS = pServer->createService(BLE_SERVICE_UUID);
   // Create a BLE Characteristic for the GPS - Speed and Location characteristic
@@ -2492,7 +2507,7 @@ void ble_start()
   pChar->setValue(BONO_GPS_VERSION);
   // Add a write characteristic to handle commands via BLE - reserved for commands "reboot" and "wifista"
   pCharacteristicCommand = pServiceInfo->createCharacteristic(BLE_RECONFIG_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR);
-  pCharacteristicCommand->setCallbacks(&chrCommandCallbacks);
+  pCharacteristicCommand->setCallbacks(&MyCommandCharacteristicCallbacks);
   pServiceInfo->start();
   pAdvertising->addServiceUUID(pServiceInfo->getUUID());
 
@@ -2530,7 +2545,7 @@ void ble_start()
   // define appearance, from https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
   pAdvertising->setAppearance(5186);
   /** If your device is battery powered you may consider setting scan response to false as it will extend battery life at the expense of less data sent.  */
-  pAdvertising->setScanResponse(false);
+  pAdvertising->enableScanResponse(false);
   // pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue -> find out more at https://github.com/h2zero/NimBLE-Arduino/issues/129
   // pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
 
@@ -2540,7 +2555,7 @@ void ble_start()
 
 void ble_stop()
 {
-  if (NimBLEDevice::getInitialized())
+  if (NimBLEDevice::isInitialized())
   {
     NimBLEDevice::stopAdvertising();
     NimBLEDevice::deinit(true);
@@ -2718,6 +2733,14 @@ void gps_initialize_settings()
   case 10:
     push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
     break;
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
   default:
     push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
     break;
@@ -2903,9 +2926,10 @@ void loop()
   // run all periodic tasks
   ts.execute();
 #else
-  // if scheduler is not available, we need to check for OTA (if builtin)
+  // if the scheduler is not available, we need to check for OTA (if builtin)
   #ifdef ENABLE_OTA
   ArduinoOTA.handle();
   #endif // #ifdef ENABLE_OTA
 #endif // #ifdef TASK_SCHEDULER
+
 }

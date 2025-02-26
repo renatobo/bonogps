@@ -1,30 +1,38 @@
 # Which GPS receiver?
 
-- [FAQ](#faq)
-  - [Q: Can I use a cheaper Neo-6M module?](#q-can-i-use-a-cheaper-neo-6m-module)
-  - [Q: Can I use a newer Neo-9M module?](#q-can-i-use-a-newer-neo-9m-module)
-  - [Q: What modules are recommended?](#q-what-modules-are-recommended)
-  - [Q: No data is made available to my apps, what's wrong?](#q-no-data-is-made-available-to-my-apps-whats-wrong)
-  - [Q: M8N, M8Q, M8U .. which one?](#q-m8n-m8q-m8u--which-one)
-- [Comparison of performance vs precision](#comparison-of-performance-vs-precision)
-  - [3 hours of measurements side by side](#3-hours-of-measurements-side-by-side)
-- [GPS modules setup via presaved configuration](#gps-modules-setup-via-presaved-configuration)
-- [Setup on your own, step by step](#setup-on-your-own-step-by-step)
-  - [Settings that are required](#settings-that-are-required)
-    - [UBX-CFG-GNSS](#ubx-cfg-gnss)
-    - [UBX-CFG-MSG](#ubx-cfg-msg)
-    - [UBX-CFG-NMEA](#ubx-cfg-nmea)
-    - [UBX-CFG-PRT](#ubx-cfg-prt)
-    - [UBX-CFG-NAV5](#ubx-cfg-nav5)
-  - [Settings to optimize performances](#settings-to-optimize-performances)
-    - [UBX-CFG-RATE](#ubx-cfg-rate)
-    - [UBX-CFG-PMS](#ubx-cfg-pms)
-    - [UBX-CFG-SBAS](#ubx-cfg-sbas)
-    - [UBX-CFG-NAVX5](#ubx-cfg-navx5)
-    - [UBX-CFG-ITFM](#ubx-cfg-itfm)
-  - [Messages that do not required changes](#messages-that-do-not-required-changes)
-  - [Save Configuration](#save-configuration)
-- [References](#references)
+- [Which GPS receiver?](#which-gps-receiver)
+  - [FAQ](#faq)
+    - [Q: Can I use a M10 module?](#q-can-i-use-a-m10-module)
+    - [Q: Can I use a cheaper Neo-6M module?](#q-can-i-use-a-cheaper-neo-6m-module)
+    - [Q: Can I use a newer Neo-9M module?](#q-can-i-use-a-newer-neo-9m-module)
+    - [Q: What modules are recommended?](#q-what-modules-are-recommended)
+    - [Q: No data is made available to my apps, what's wrong?](#q-no-data-is-made-available-to-my-apps-whats-wrong)
+    - [Q: M10, M8N, M8Q, M8U .. which one?](#q-m10-m8n-m8q-m8u--which-one)
+  - [Comparison of performance vs precision](#comparison-of-performance-vs-precision)
+    - [3 hours of measurements side by side](#3-hours-of-measurements-side-by-side)
+  - [GPS modules setup via presaved configuration](#gps-modules-setup-via-presaved-configuration)
+  - [Setup on your own, step by step](#setup-on-your-own-step-by-step)
+    - [Settings that are required](#settings-that-are-required)
+      - [UBX-CFG-GNSS](#ubx-cfg-gnss)
+        - [GPS, SBAS](#gps-sbas)
+        - [GPS, SBAS, Galileo, GLONASS](#gps-sbas-galileo-glonass)
+      - [UBX-CFG-MSG](#ubx-cfg-msg)
+      - [UBX-CFG-NMEA](#ubx-cfg-nmea)
+      - [UBX-CFG-PRT](#ubx-cfg-prt)
+      - [UBX-CFG-NAV5](#ubx-cfg-nav5)
+    - [Settings to optimize performances](#settings-to-optimize-performances)
+      - [UBX-CFG-RATE](#ubx-cfg-rate)
+      - [UBX-CFG-PMS](#ubx-cfg-pms)
+      - [UBX-CFG-SBAS](#ubx-cfg-sbas)
+        - [Without Integrity, WAAS for Americas](#without-integrity-waas-for-americas)
+        - [With Integrity, WAAS for Americas](#with-integrity-waas-for-americas)
+      - [UBX-CFG-NAVX5](#ubx-cfg-navx5)
+      - [UBX-CFG-ITFM](#ubx-cfg-itfm)
+        - [With Active Antenna (e.g. BN-880)](#with-active-antenna-eg-bn-880)
+        - [With Passive Antenna (e.g. BN-220)](#with-passive-antenna-eg-bn-220)
+    - [Messages that do not required changes](#messages-that-do-not-required-changes)
+    - [Save Configuration](#save-configuration)
+  - [References](#references)
 
 This project requires a receiver compatible with ublox M8, for the following reasons
 
@@ -35,25 +43,31 @@ This project requires a receiver compatible with ublox M8, for the following rea
 
 ## FAQ
 
+### Q: Can I use a M10 module?
+
+**A:** yes they are tested and recommended for performances
+
 ### Q: Can I use a cheaper Neo-6M module?
 
 **A:** not really, as it gives a max of 5Hz frequency and its performance are far less than a Neo-8M module for a fraction more of the cost
 
 ### Q: Can I use a newer Neo-9M module?
 
-**A:** It could work, but this project is not tested for it yet.
+**A:** the M9 series is designed for low power so not optimal, not recommended
 
 ### Q: What modules are recommended?
 
-**A:** Genuine ublox M8 are best, with an active antenna that is tuned for GPS+Glonass+Galileo. Too much to say about this subject.
+**A:** Genuine ublox M10 or M8 are best, with an active antenna that is tuned for GPS+Glonass+Galileo. Too much to say about this subject.
 
 ### Q: No data is made available to my apps, what's wrong?
 
-**A:** First thing to check is: is the PORT RATE stored in your GPS (see below paragraph **UBX-CFG-PRT**) matching the one expected by the bonogps.cpp code in macro `GPS_STANDARD_BAUD_RATE` ? It should be 115200. Open an issue otherwise so that we can work out troubleshooting
+**A:** First thing to check is: is the PORT RATE stored in your GPS (see below paragraph **UBX-CFG-PRT**) matching the one expected by the bonogps.cpp code in macro `GPS_STANDARD_BAUD_RATE` ? It should be 115200. Open an issue otherwise so that we can work out troubleshooting. There is a primitive auto-bauding sequence that tries to guess what speed your GPS is using.
 
-### Q: M8N, M8Q, M8U .. which one?
+### Q: M10, M8N, M8Q, M8U .. which one?
 
-**A:** According to the [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf), you should avoid NEO-M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three). NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
+**A:** Avoid M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three), see [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf).
+NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
+M10 devices support 25 Hz and are now (as of version 2) recommended.
 
 ## Comparison of performance vs precision
 
@@ -86,7 +100,9 @@ _Note: these instructions are specific to a GPS module compatile with ublox 8 me
 You can setup an out of the box M8 module restoring one of these saved configurations:
 
 - passive antenna [BN220](gps-bn220-config.txt)
-- active antenna [BN820](gps-bn880-config.txt)
+- active antenna [BN880](gps-bn880-config.txt)
+
+No configuration saved yet for BK280 or BK880
 
 The procedure is
 

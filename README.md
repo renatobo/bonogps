@@ -15,7 +15,7 @@
 
 ## For the track day enthusiast
 
-The main goal of this device is to **make GPS data (speed, location) available to mobile apps that can record data, for example for track riding**. While there are many good (and not even too expensive) solutions out there, building one for yourself is a great experience.
+The main goal of this device is to **make GPS data (speed, location) available to mobile apps that can record data up to 25 Hz, for example for track riding**. While there are many good (and not even too expensive) solutions out there, building one for yourself is a great experience.
 
 ![Map of Buttonwillow lateral acceleration](software/using/buttonwillow_map.png)
 
@@ -30,11 +30,19 @@ If you are not into the maker thing or if you don't know anyone who might be, [l
 
 ## For the SW Engineer / maker
 
-This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M8 (for example  [BN880](https://www.amazon.com/Geekstory-Navigation-Raspberry-Aircraft-Controller/dp/B078Y6323W), [BN220](https://www.amazon.com/Navigation-Raspberry-Betaflight-Geekstory-Shipping/dp/B07PRDY6DS), or [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) ) and repeats them back to a logger device, either
+This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M10 and M8 series, for example
+
+-  [BK880](https://store.beitian.com/products/beitian-compass-qmc5883l-amp2-6-pix4-pixhawk-gnss-gps-glonass-dual-flight-control-gps-module-bn-880q?variant=44977758011679) 25 Hz active antenna > recommended
+-  [BK280](https://store.beitian.com/collections/gps-module/products/beitian-gps-module-with-antenna-ubx-m10050-gnss-chip-ultra-low-power-gnss-receiver-for-track-be-180?variant=44859232420127) 25 Hz > recommended
+-  [BN880](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46725104730399&_pos=1&_sid=fe8b2c602&_ss=r) 10 Hz active antenna
+-  [BN220](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46694929989919&_pos=1&_sid=fe8b2c602&_ss=r) 10 Hz passive antenna
+-   [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) ) 
+
+and repeats them back to a logger device, either
 
 1. a Bluetooth Low Energy (BLE) service
 2. a BT Classic (BT-SPP) stream
-3. a TCP/IP socket
+3. a TCP-IP socket
 
 The logger device is likely going to be one of the *Track Lap time apps* listed above running on your phone.
 
@@ -46,7 +54,7 @@ A web configuration (extremely basic responsive HTML) panel allows changing conf
 
 The settings required by each app are available as presets that you can load for your device (iOS, Android). More information on what version, features, and connections of each app are in [software/connecting](software/connecting).
 
-You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/product/u-center) via TCP/IP, in this case be aware that the uart speed is fixed.
+You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/product/u-center) via TCP-IP, in this case be aware that the uart speed is fixed.
 
 ## HowTo
 

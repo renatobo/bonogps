@@ -1,10 +1,11 @@
 # Connecting to Harry's LapTimer
 
-- [Features](#features)
-- [iOS Bluetooth Low Energy setup](#ios-bluetooth-low-energy-setup)
-- [iOS and Android TCP/IP setup](#ios-and-android-tcpip-setup)
-- [Android BT-SPP Setup](#android-bt-spp-setup)
-- [GPS Configuration for NMEA messages](#gps-configuration-for-nmea-messages)
+- [Connecting to Harry's LapTimer](#connecting-to-harrys-laptimer)
+  - [Features](#features)
+  - [iOS Bluetooth Low Energy setup](#ios-bluetooth-low-energy-setup)
+  - [iOS and Android TCP/IP setup](#ios-and-android-tcpip-setup)
+  - [Android BT-SPP Setup](#android-bt-spp-setup)
+  - [GPS Configuration for NMEA messages](#gps-configuration-for-nmea-messages)
 
 More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where you can also find a very good [user and developer forum](http://forum.gps-laptimer.de/viewforum.php?f=2). It offers the largest set of customizable options to build your own external device and it is the only supported platform for iOS phones via Bluetooth Low Energy.
 
@@ -14,13 +15,13 @@ More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where
 
 - NMEA parsing offered by HLT directly: `GxRMC`+`GxGGA`+`GxGBS` messages
 - Enable or Disable `GxGSV`+`GxGSA` as needed, with a lower update frequency selectable for 1, 2, or 5 sec (as [instructed by Harry](http://forum.gps-laptimer.de/viewtopic.php?t=4359))
-- tested with v24
+- tested up to v24.9.1
 - from v1.2 of BonoGPS, battery information on certain ESP32 boards (for example LOLIN D32 PRO) is available so that HLT can provide it back to you while using the app
 
 Connections
 
 - iOS and Android: TCP/IP port 8118. This is the easier option, yet it prevents connecting other devices to your mobile phone (e.g. an action camera or an ODBII device) so it's not recommended
-- iOS: BLE tested on iPhone (tested with 7). BLE nicely handles up to 10Hz GPS update rates when `GSV`/`GSA` streaming is disabled or polled at low frequencies (e.g. every few seconds)
+- iOS: BLE tested on iPhone (tested from 7 to 15). BLE nicely handles up to 20Hz GPS update rates when `GSV`/`GSA` streaming is disabled or polled at low frequencies (e.g. every 5 seconds)
 - Android: BT-SPP tested on Android, 10Hz and  `GSV`/`GSA` at higher polling frequency (streaming saturates the UART connection on the GPS itself)
 
 After configuring the connection, your unit shows up in the Sensors List as 'Custom [BTLE/TCP-IP] GNSS' device
