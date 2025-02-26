@@ -25,6 +25,7 @@
 #define BTSPPENABLED // add BT-SPP stack, remove if unnecessary as it uses quite a bit of flash space
 #define BLEENABLED   // add BLE stack, remove if unnecessary as it uses quite a bit of flash space
 // #define ENABLE_OTA     // add OTA Enable here if you are using Arduino IDE, otherwise use -DENABLE_OTA in platformio
+#define HIGHER_GPS_RATES // enable 20Hz and 25Hz GPS rates, not all GPS support these rates
 
 /*
  You should not disable these unless there is a problem with the specific feature
@@ -322,8 +323,12 @@ const char UBLOX_INIT_5HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xC8,
 const char UBLOX_INIT_10HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x64, 0x00, 0x01, 0x00, 0x01, 0x00, 0x7A, 0x12};
 // set rate of GPS to 1Hz
 const char UBLOX_INIT_1HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
-// set rate of GPS to 1Hz
-const char UBLOX_INIT_16HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xE8, 0x03, 0x01, 0x00, 0x01, 0x00, 0x01, 0x39};
+#ifdef HIGHER_GPS_RATES
+// set rate of GPS to 20Hz
+const char UBLOX_INIT_20HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x32, 0x00, 0x01, 0x00, 0x01, 0x00, 0x48, 0xE6};
+// set rate of GPS to 25Hz
+const char UBLOX_INIT_25HZ[] PROGMEM = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0x28, 0x00, 0x01, 0x00, 0x01, 0x00, 0x3E, 0xAA};
+#endif
 
 // GLL_ON
 const char UBLOX_GxGLL_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x2F};
@@ -339,39 +344,48 @@ const char UBLOX_GxVTG_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0
 const char UBLOX_GxGSA_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x05, 0x41};
 // Disable GxGSA
 const char UBLOX_GxGSA_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31};
+
 // Enable GxGSV (Sat View)
 const char UBLOX_GxGSV_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x06, 0x48};
 // Disable GxGSV
 const char UBLOX_GxGSV_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x38};
+
 // set Max SVs per Talker id to 8
 const char UBLOX_INIT_CHANNEL_8[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x08, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7D, 0xE7};
 // standard max SVs and extended digits for unsupported SVs
 const char UBLOX_INIT_CHANNEL_ALL[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x76, 0x63};
+
 // use GP as Main talker and GSV Talker ID - this is needed for TrackAddict
 const char UBLOX_INIT_MAINTALKER_GP[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x00, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x78, 0x78};
 // use GP as Main talker and GSV Talker ID and restrict to GPS SVs ony - this is needed for RaceChrono
 const char UBLOX_INIT_MAINTALKER_GP_GPSONLY[] PROGMEM = {0xB5, 0x62, 0x06, 0x17, 0x14, 0x00, 0x10, 0x41, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x88, 0xB8};
+
 // set gps port BAUD rate
 const char UBLOX_BAUD_57600[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xE1, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xDA, 0xA9};
 const char UBLOX_BAUD_38400[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0x96, 0x00, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x8F, 0x70};
 const char UBLOX_BAUD_115200[] PROGMEM = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x00, 0xC2, 0x01, 0x00, 0x03, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBC, 0x5E};
+
 // power saving : enable power saving mode for 1800 or 3600 seconds
 // UBX-RXM-PMREQ request
 const char UBLOX_PWR_SAVE_30MIN[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x77, 0x1B, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0x0F, 0xF6};
 const char UBLOX_PWR_SAVE_1HR[] PROGMEM = {0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xEE, 0x36, 0x00, 0x02, 0x00, 0x00, 0x00, 0xE8, 0x00, 0x00, 0x00, 0xE1, 0x21};
 const char UBLOX_PWR_OFF[] PROGMEM = { 0xB5, 0x62, 0x02, 0x41, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x5D, 0x4B};
-//, 0xrestart UBX-CFG-RST with controlled GNSS only software, hotstart (<4 hrs) so that ephemeris still valid
+
+// restart UBX-CFG-RST with controlled GNSS only software, hotstart (<4 hrs) so that ephemeris still valid
 const char UBLOX_WARMSTART[] PROGMEM = {0xB5, 0x62, 0x06, 0x04, 0x04, 0x00, 0x00, 0x00, 0x02, 0x00, 0x10, 0x68};
-// Display precision in some apps
+
+// Enable GxGBS to display precision in some apps
 const char UBLOX_GxGBS_ON[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x01, 0x01, 0x00, 0x01, 0x01, 0x00, 0x0C, 0x72};
+// Disable GxGBS to display precision in some apps
 const char UBLOX_GxGBS_OFF[] PROGMEM = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08, 0x62};
-// Poll GNGSA
+
+// Poll GNGSA (GN: Combined GNSS position. GNSS position fix from more than one constellation, for example, GPS and GLONASS)
 const char UBLOX_GNGSA_POLL[] PROGMEM = "$EIGNQ,GSA*2D\r\n";
-// Poll GNGSV
+// Poll GNGSV (GN: Combined GNSS position. GNSS position fix from more than one constellation, for example, GPS and GLONASS)
 const char UBLOX_GNGSV_POLL[] PROGMEM = "$EIGNQ,GSV*3A\r\n";
-// Poll GPGSA
+// Poll GPGSA (GP: GPS) RaceChrono only understand GPGSA
 const char UBLOX_GPGSA_POLL[] PROGMEM = "$EIGPQ,GSA*33\r\n";
-// Poll GPGSV
+// Poll GPGSV (GP: GPS) RaceChrono only understand GPGSV
 const char UBLOX_GPGSV_POLL[] PROGMEM = "$EIGPQ,GSV*24\r\n";
 bool gsaorgsv_turn = true;
 
@@ -680,6 +694,7 @@ void gps_disable_all()
 void gps_enable_common()
 {
   gps_disable_all();
+  // TODO: use the 'disable all NMEA messages' command here, then enable basic messages 
   push_gps_message(UBLOX_GxGSA_OFF, sizeof(UBLOX_GxGSA_OFF));
   stored_preferences.nmeaGSA = false;
   push_gps_message(UBLOX_GxGSV_OFF, sizeof(UBLOX_GxGSV_OFF));
@@ -690,6 +705,7 @@ void gps_enable_common()
   stored_preferences.nmeaVTG = false;
   push_gps_message(UBLOX_GxGLL_OFF, sizeof(UBLOX_GxGLL_OFF));
   stored_preferences.nmeaGLL = false;
+
   push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
   stored_preferences.gps_rate = 10;
 #ifdef TASK_SCHEDULER
@@ -1171,17 +1187,32 @@ void handle_menu()
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 1) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("rate/1hz'>1 Hz</label>\n<input type='radio' id='rate/5hz' ");
+  mainpage += F("rate/1hz'>1</label>\n<input type='radio' id='rate/5hz' ");
   
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 5) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("rate/5hz'>5 Hz</label>\n<input type='radio' id='rate/10hz' ");
+  mainpage += F("rate/5hz'>5</label>\n<input type='radio' id='rate/10hz' ");
   
   mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
   mainpage += ((stored_preferences.gps_rate == 10) ? "rate' checked>" : "rate'> ");
   mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
-  mainpage += F("rate/10hz'>10 Hz</label></article>");
+  #ifdef HIGHER_GPS_RATES
+  mainpage += F("rate/10hz'>10</label>\n<input type='radio' id='rate/20hz' ");
+
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 20) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/20hz'>20</label>\n<input type='radio' id='rate/25hz' ");
+
+  mainpage += String(WEBPORTAL_OPTION_SELECT_ONCHANGE);
+  mainpage += ((stored_preferences.gps_rate == 25) ? "rate' checked>" : "rate'> ");
+  mainpage += String(WEBPORTAL_OPTION_LABELCLASSBTN);
+  mainpage += F("rate/25hz'>25</label> Hz</article>");
+
+  #else
+  mainpage += F("rate/10hz'>10</label> Hz</article>");
+  #endif
   
   mainpage += input_onoff("Stream GxGBS", "gbs", stored_preferences.nmeaGBS);
   mainpage += input_onoff("Stream GxGSA", "gsa", stored_preferences.nmeaGSA);
@@ -1233,6 +1264,7 @@ void handle_preset()
 
 #ifdef BTSPPENABLED
   // racechrono main page
+  // TODO: Add WiFi option for iOS
   mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GBS</li><li>GSA+GSV polling every 5 sec</li><li>10 Hz updates</li><li>BT-SPP Connection only</li></ul></article><article><p>Load options for:<p><a href='/racechrono/android'>Android: BT-SPP</a></p></article></details>");
 
   // racetime main page
@@ -1385,6 +1417,14 @@ void handle_rate()
   stored_preferences.gps_rate = rate;
   switch (rate)
   {
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
   case 10:
     push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
     break;
@@ -2693,6 +2733,14 @@ void gps_initialize_settings()
   case 10:
     push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
     break;
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
   default:
     push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
     break;
