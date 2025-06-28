@@ -3,6 +3,7 @@
 - [What is BonoGPS?](#what-is-bonogps)
   - [For the track day enthusiast](#for-the-track-day-enthusiast)
   - [For the SW Engineer / maker](#for-the-sw-engineer--maker)
+    - [Diagram of project components](#diagram-of-project-components)
   - [HowTo](#howto)
     - [Daily Usage](#daily-usage)
       - [Save a configuration](#save-a-configuration)
@@ -50,11 +51,15 @@ Examples of actual devices are in [hardware/assembled](hardware/assembled), at a
 
 ![Prototype picture](hardware/assembled/bonogps_bn220_side.jpg)
 
-A web configuration (extremely basic responsive HTML) panel allows changing configuration and select GPS parameters on the fly: access it via [http://bonogps.local](http://bonogps.local) (when in WiFi AP mode, this becomes [http://10.0.0.1](http://10.0.0.1) on Android without mDNS resolution).
+A web configuration (basic responsive HTML) panel allows changing configuration and select GPS parameters on the fly: access it via [http://bonogps.local](http://bonogps.local) (when in WiFi AP mode, this becomes [http://10.0.0.1](http://10.0.0.1) on Android without mDNS resolution).
 
 The settings required by each app are available as presets that you can load for your device (iOS, Android). More information on what version, features, and connections of each app are in [software/connecting](software/connecting).
 
 You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/product/u-center) via TCP-IP, in this case be aware that the uart speed is fixed.
+
+### Diagram of project components
+
+![Project diagram](software/bonogps_project_diagram.png)
 
 ## HowTo
 
