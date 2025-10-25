@@ -33,26 +33,26 @@
     - [Save Configuration](#save-configuration)
   - [References](#references)
 
-This project requires a receiver compatible with ublox M8 or M10, for the following reasons
+This project requires a receiver compatible with inexpensive Beitian M8 (classic) or M9 series (performance)
 
-- it's widely available as it's used in avionics (drones) projects
-- it's cost effective
-- it allows 10Hz (M8) to 25Hz (M10) refresh rate
-- it allows granular configuration of NMEA messages
+- they are widely available: used in avionics (drones) projects
+- cost-effective
+- allow 10Hz (M8 Classic) to 25Hz (M19 Performance series) refresh rate
+- granular configuration of NMEA messages
 
 ## FAQ
 
-### Q: Can I use a cheaper Neo-6M module?
+### Q: Can I use a cheaper Neo-6M module or Beitian M10 BE-XXX series?
 
-**A:** not really, as it gives a max of 5Hz frequency and its performance are far less than a Neo-8M module for a fraction more of the cost
+**A:** Neo-6M not really, as it gives a max of 5Hz frequency and its performance are far less than a Neo-8M module for a fraction more of the cost. Beitian BE-XXX series is limited to 4 Hz, so that's also a no.
 
-### Q: Can I use a newer Neo-9M module?
+### Q: Can I use a newer M9 module?
 
-**A:** Probably yes - testing performed on some M9 Beitian devices like BK880 and BK280 confirm them as good choices if you are looking at 25 Hz refresh
+**A:** Yes - testing performed on some M9 Beitian devices like BK880 and BK280 confirm them as good choices if you are looking at 25 Hz refresh
 
 ### Q: What modules are recommended?
 
-**A:** Genuine ublox M10 or M8 are best, with an active antenna that is tuned for GPS+Glonass+Galileo. Too much to say about this subject.
+**A:** Genuine ublox are best, with an active antenna that is tuned for GPS+Glonass+Galileo. Too much to say about this subject, see the discussion forum.
 
 ### Q: No data is made available to my apps, what's wrong?
 
@@ -60,7 +60,7 @@ This project requires a receiver compatible with ublox M8 or M10, for the follow
 
 ### Q: M8N, M8Q, M8U .. which one?
 
-**A:** According to the [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf), you should avoid NEO-M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three). NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well.
+**A:** According to the [NEO-M8-FW3 datasheet](https://www.u-blox.com/sites/default/files/NEO-M8-FW3_DataSheet_%28UBX-15031086%29.pdf), you should avoid NEO-M8N as it's limited to 5 Hz for 2 or more concurrent constellations (e.g. GPS+<GLONASS/Galileo> or even all three). NEO-M8Q and NEO-M8M have 10Hz for multiple constellations, and 18Hz for a single one. Read up [here](https://discuss.ardupilot.org/t/gps-config-u-blox-m8n/46970/34) as well. Beitian uses a different naming convention and it can be confusing: check specs for (a) refresh rate (b) type of antenna
 
 ## Comparison of performance vs precision
 
