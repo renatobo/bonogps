@@ -48,7 +48,7 @@ This project requires a receiver compatible with ublox M8 or M10, for the follow
 
 ### Q: Can I use a newer Neo-9M module?
 
-**A:** It could work, but this project is not tested for it yet.
+**A:** Probably yes - testing performed on some M9 Beitian devices like BK880 and BK280 confirm them as good choices if you are looking at 25 Hz refresh
 
 ### Q: What modules are recommended?
 
