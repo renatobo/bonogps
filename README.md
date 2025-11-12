@@ -4,6 +4,7 @@
   - [For the track day enthusiast](#for-the-track-day-enthusiast)
   - [For the SW Engineer / maker](#for-the-sw-engineer--maker)
     - [Diagram of project components](#diagram-of-project-components)
+  - [Quick Start Guide](#quick-start-guide)
   - [HowTo](#howto)
     - [Daily Usage](#daily-usage)
       - [Save a configuration](#save-a-configuration)
@@ -11,6 +12,7 @@
   - [Hardware build instructions](#hardware-build-instructions)
     - [GPS Choice and setup preconfiguration](#gps-choice-and-setup-preconfiguration)
   - [Software build instructions](#software-build-instructions)
+  - [Technical Specifications](#technical-specifications)
   - [Troubleshooting and FAQ](#troubleshooting-and-faq)
   - [Possible enhancements and ideas](#possible-enhancements-and-ideas)
   - [Credits and tools](#credits-and-tools)
@@ -65,6 +67,86 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 ### Diagram of project components
 
 ![Project diagram](software/bonogps_project_diagram.png)
+
+## Quick Start Guide
+
+**New to BonoGPS? Get started in 5 steps:**
+
+### Step 1: Get the Hardware (Budget: $30-60)
+
+**Minimum setup (~$30):**
+- ESP32 DevKit board (~$8-12) - [Amazon](https://www.amazon.com/s?k=esp32+devkit)
+- BN220 GPS module (~$15-20) - [Beitian Store](https://store.beitian.com/)
+- USB cable for programming/power
+- Basic jumper wires
+
+**Recommended setup (~$45):**
+- ESP32 DevKit or LOLIN D32 PRO (~$12-20)
+- BN880 GPS with active antenna (~$25) - [Beitian Store](https://store.beitian.com/)
+- Li-Ion battery (650-2000mAh, ~$5-10)
+- Case or 3D printed enclosure
+
+**Best performance (~$60):**
+- LOLIN D32 PRO with built-in battery charger (~$15-20)
+- BK880 or BK280 GPS (M10, 25Hz) (~$35-45) - [Beitian Store](https://store.beitian.com/)
+- 2000mAh Li-Ion battery (~$8-12)
+- Custom 3D printed mount
+
+### Step 2: Wire It Up (15 minutes)
+
+Connect GPS to ESP32 - only 4 wires needed:
+- GPS **VCC** → ESP32 **3.3V** (power)
+- GPS **GND** → ESP32 **GND** (ground)
+- GPS **TX** → ESP32 **RX** (GPIO 16 on DevKit, GPIO 4 on LOLIN D32 PRO)
+- GPS **RX** → ESP32 **TX** (GPIO 17 on DevKit, GPIO 2 on LOLIN D32 PRO)
+
+See detailed wiring diagrams: [Generic ESP32](hardware/esp32) | [LOLIN D32 PRO](hardware/esp32/lolin_d32_pro.md)
+
+### Step 3: Configure GPS Module (30 minutes)
+
+**Critical:** GPS must be configured before first use.
+
+1. Download [u-blox u-center](https://www.u-blox.com/en/product/u-center)
+2. Connect GPS to computer via USB-to-serial adapter
+3. Follow the [GPS configuration guide](hardware/GPS)
+4. Set baudrate to **115200**
+5. Enable required NMEA messages
+6. Save configuration to GPS flash memory
+
+### Step 4: Build and Upload Software (20-45 minutes)
+
+**Option A: Arduino IDE (easier for beginners)**
+1. Install [Arduino IDE 2.x](https://www.arduino.cc/en/software)
+2. Add ESP32 board support
+3. Install required libraries (see [library list](software/building#external-libraries))
+4. Open `bonogps.ino`
+5. Select "ESP32 Dev Module" or "LOLIN D32 PRO"
+6. Select "Minimal SPIFFS (1.9MB)" partition scheme
+7. Upload to ESP32
+
+**Option B: PlatformIO (recommended for developers)**
+1. Install [VS Code + PlatformIO](https://platformio.org/install/ide?install=vscode)
+2. Clone this repository: `git clone https://github.com/renatobo/bonogps.git`
+3. Open project folder in VS Code
+4. Select build target for your board
+5. Build and upload
+
+See detailed instructions: [Software build guide](software/building)
+
+### Step 5: Connect to Your App (10 minutes)
+
+1. Power on BonoGPS - wait for GPS fix (LED blinks once/second)
+2. Connect phone to **BonoGPS-XXXX** WiFi network
+3. Open browser to [http://10.0.0.1](http://10.0.0.1)
+4. Go to **Device > Load Preset** - select your app and platform
+5. Enable appropriate connection (BLE/BT-SPP/TCP-IP)
+6. Open your lap timer app and connect
+
+**Supported apps:** [Harry's Lap Timer](software/connecting/harrylaptimer) | [TrackAddict](software/connecting/trackaddict) | [RaceChrono](software/connecting/racechrono) | [RaceTime](software/connecting/racetime)
+
+**Need help?** See [Troubleshooting FAQ](#troubleshooting-and-faq) below.
+
+---
 
 ## HowTo
 
@@ -122,6 +204,8 @@ You can load a preset configuration from the configuration page selecting *Devic
 
 ## Hardware build instructions
 
+**⏱️ Time:** 30-60 minutes | **🎯 Difficulty:** Beginner (basic soldering skills helpful)
+
 The minimum build is a ublox M8 series GPS receiver module connected to an ESP32:
 
 - TX/RX from the GPS to a serial port (default in the code is UART2/Serial2) on ESP32. Remember: you need to connect RX on one device to TX on the other and viceversa
@@ -138,15 +222,151 @@ Schematics are relatively simple
 
 Examples are in [hardware/assembled](hardware/assembled) including an example with more options using an ESP32 device type Lolin D32 Pro which has an internal battery charger [hardware/esp32/lolin_d32_pro.md](hardware/esp32/lolin_d32_pro.md)
 
+**See also:**
+- [GPS Configuration Guide](hardware/GPS) - Configure GPS before use
+- [Assembly Troubleshooting](hardware/assembled#hardware-assembly-troubleshooting) - Common wiring issues
+- [LOLIN D32 PRO Specific Guide](hardware/esp32/lolin_d32_pro.md) - Battery charging setup
+
 ### GPS Choice and setup preconfiguration
+
+**⏱️ Time:** 30-45 minutes | **🎯 Difficulty:** Intermediate | **Prerequisites:** USB-to-serial adapter, u-center software
 
 Thanks to needs of a very active drone community, there are a lot of inexpensive GPS receivers: some considerations on performance/accuracy/cost are reported [in the hardware/GPS folder](hardware/GPS).
 
 What you need to configure is documented [in the hardware/GPS folder](hardware/GPS): this is **important**, the performances of your GPS won't be optimal until you do, or the whole setup will not work at all.
 
+**See also:**
+- [GPS Module Comparison](hardware/GPS#performance-comparison) - Detailed specs for each module
+- [GPS Troubleshooting](hardware/GPS#gps-hardware-troubleshooting) - Module-specific issues
+- [u-blox u-center Guide](hardware/GPS) - Configuration software instructions
+
 ## Software build instructions
 
+**⏱️ Time:** 20-45 minutes (Arduino IDE: 20-30 min, PlatformIO: 30-45 min first time) | **🎯 Difficulty:** Beginner to Intermediate | **Prerequisites:** Arduino IDE or VS Code with PlatformIO, USB cable
+
 This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE version 2 (2.3.4)](https://www.arduino.cc/en/software). More information on what libraries are needed and software organization [in the software/building folder](software/building).
+
+**See also:**
+- [Build Troubleshooting](software/building#build-troubleshooting) - Library versions, compilation errors
+- [Board Settings](include/README.md) - Pin definitions and configurations
+- [Connecting to Apps](software/connecting) - After successful build
+
+## Technical Specifications
+
+### Performance Expectations
+
+**GPS Accuracy:**
+- **Horizontal position:** 2-3 meters (6-10 feet) typical with M8/M10 chipsets
+- **Speed accuracy:** ±0.1 km/h at constant velocity
+- **Update rates:** 10Hz (M8 modules), 25Hz (M10 modules)
+- **Cold start time:** 5-15 minutes (first power-on)
+- **Hot start time:** 1-5 seconds (after recent fix)
+- **Signal quality:** C/N0 values typically 30-40 dBHz (higher is better)
+
+**Power Consumption:**
+- **ESP32:** 80-160mA (varies with WiFi/Bluetooth activity)
+- **GPS module:** 30-80mA (depends on module and fix status)
+- **LED indicators:** 10-40mA
+- **Total typical:** 250-350mA average during operation
+- **Peak consumption:** Up to 500mA when WiFi and GPS are both active
+
+**Battery Life Examples:**
+- 650mAh battery: ~2-2.5 hours runtime
+- 1000mAh battery: ~3-4 hours runtime
+- 2000mAh battery: ~6-8 hours runtime (full track day)
+
+**Note:** Actual battery life depends on WiFi/Bluetooth usage, GPS update rate, and environmental conditions.
+
+### Connectivity Specifications
+
+**WiFi:**
+- **Standard:** 802.11 b/g/n (2.4 GHz only)
+- **Range:** ~30-50 meters open air (depends on environment)
+- **Access Point mode:** Supports up to 4 simultaneous clients
+- **TCP server port:** 1818 (configurable)
+- **mDNS hostname:** bonogps.local
+
+**Bluetooth Low Energy (BLE):**
+- **Standard:** Bluetooth 4.2 / 5.0 (depends on ESP32 module)
+- **Range:** ~10-30 meters typical
+- **Service UUID:** 1819 (Location and Navigation Service)
+- **Max throughput:** ~20Hz GPS data with minimal satellite info
+- **iOS support:** Full (recommended connection method)
+
+**Bluetooth Classic (BT-SPP):**
+- **Standard:** Bluetooth 2.0 SPP (Serial Port Profile)
+- **Range:** ~10-30 meters typical
+- **Baudrate:** 115200 (matches GPS UART)
+- **Max throughput:** ~10Hz GPS data with satellite info
+- **Android support:** Full (recommended connection method)
+
+### Build Size and Memory
+
+**Flash Memory Usage:**
+- **With BLE + BT-SPP:** ~1.5-1.7 MB (requires Minimal SPIFFS partition)
+- **With BLE only:** ~1.3-1.4 MB
+- **With BT-SPP only:** ~1.2-1.3 MB
+- **Minimum partition:** 1.9 MB app space required
+
+**RAM Usage:**
+- **ESP32 SRAM:** ~120-180 KB used (out of 320 KB available)
+- **PSRAM:** Optional, helps with stability if available (LOLIN D32 PRO has 4MB)
+
+**SPIFFS Storage:**
+- **Configuration files:** ~2-4 KB
+- **Reserved space:** 190 KB (with Minimal SPIFFS partition)
+
+### Supported NMEA Messages
+
+**Standard output messages:**
+- `GxGGA` - Global Positioning System Fix Data
+- `GxRMC` - Recommended Minimum Specific GPS Data
+- `GxGBS` - GNSS Satellite Fault Detection (accuracy estimates)
+- `GxGSA` - GPS DOP and Active Satellites (optional, polled)
+- `GxGSV` - GPS Satellites in View (optional, polled)
+- `GxVTG` - Track Made Good and Ground Speed
+- `GxZDA` - Time and Date
+
+**Talker ID support:**
+- `GN` - Multi-constellation GNSS (GPS+GLONASS+Galileo+BeiDou)
+- `GP` - GPS only (required by some apps like RaceChrono)
+
+**Message rates:** Configurable from 1Hz to 25Hz (hardware dependent)
+
+### Environmental Specifications
+
+**Operating conditions:**
+- **Temperature:** -20°C to +70°C (-4°F to 158°F) typical
+- **Note:** Li-Ion batteries should not be charged below 0°C (32°F)
+- **Humidity:** Most ESP32 boards are not waterproof without enclosure
+- **Vibration:** Solder connections recommended for motorcycle use
+- **Mounting:** GPS antenna requires clear sky view (metal/carbon blocks signal)
+
+**GPS antenna considerations:**
+- **Active antennas:** Better signal quality, require 3.3V power, ~50mA draw
+- **Passive antennas:** Lower signal quality, no extra power required
+- **Placement:** Best under plastic fairings/seat cowls, avoid metal/carbon
+
+### Limitations and Known Issues
+
+**Connection limitations:**
+- **BT-SPP reconnection:** Android may require device restart or re-pairing
+- **BLE throughput:** Limited to ~20Hz with full NMEA messages
+- **WiFi TCP:** Single client at a time for GPS data stream
+- **Memory pressure:** Running BLE + BT-SPP + WiFi simultaneously may cause instability
+
+**GPS limitations:**
+- **Indoor use:** GPS will not work indoors or under metal roofs
+- **Urban canyons:** Tall buildings can degrade accuracy
+- **Tree cover:** Dense foliage can reduce satellite visibility
+- **First fix:** Takes 5-15 minutes on first power-on to download almanac
+
+**Software limitations:**
+- **OTA updates:** Disabled by default to save flash space
+- **Web interface:** Basic HTML/CSS, optimized for mobile browsers
+- **Configuration backup:** Manual export/import via web interface
+
+See [Troubleshooting FAQ](#troubleshooting-and-faq) for solutions to common problems.
 
 ## Troubleshooting and FAQ
 

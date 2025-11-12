@@ -26,6 +26,8 @@ This software runs on it (be sure to select it within the Arduino IDE or to use 
 
 ## Integrated in seat cowl (with BN880) of a Ducati Panigale 959 with 3D printed base
 
+**⏱️ Time:** 3-4 hours (plus 12-15 hours for 3D printing) | **🎯 Difficulty:** Intermediate to Advanced | **Prerequisites:** Soldering skills, 3D printer access, basic electronics knowledge
+
 The GPS antenna is underneath the very end of the tail, with minimal plastic over it and with the best clear line of sight of any other location on the bike.
 
 A simple 3D printed board is used to hold all components in place
@@ -77,7 +79,14 @@ Steps - [here a video of how all pieces fit together](959%20under%20tail%20v11.m
 
 .. and you are done! Don't forget you need to store a base configuration on your GPS before it's ready for use (check [GPS configuration](../GPS/README.md))
 
+**See also:**
+- [GPS Configuration Guide](../GPS) - **Critical:** Configure before first use
+- [Software Build Guide](../../software/building) - Flash firmware to ESP32
+- [Connecting Apps](../../software/connecting) - Link BonoGPS to lap timer apps
+
 ## Transparent case (with BN220)
+
+**⏱️ Time:** 1-2 hours | **🎯 Difficulty:** Beginner | **Prerequisites:** Basic soldering, double-sided tape or velcro
 
 A small 650mAh battery gives ~ 4 hrs of autonomy, I repurposed one that was supposed to be used for a digital camera
 

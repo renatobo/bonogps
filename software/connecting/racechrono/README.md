@@ -1,5 +1,7 @@
 # RaceChrono
 
+**⏱️ Time:** 10-15 minutes | **🎯 Difficulty:** Beginner | **Prerequisites:** Load RaceChrono preset from BonoGPS web interface
+
 - [RaceChrono](#racechrono)
   - [Setup over BT-SPP on Android](#setup-over-bt-spp-on-android)
   - [Setup over WiFi on iOS](#setup-over-wifi-on-ios)
@@ -73,3 +75,8 @@ This means
 
 - Main Talker ID = GP
 - `GSA` and `GSV` every 5 seconds, with only `GSV` restricted to GP
+
+**See also:**
+- [GPS Configuration Guide](../../../hardware/GPS) - How to set up GP Talker ID and NMEA messages
+- [Main Troubleshooting FAQ](../../../README.md#troubleshooting-and-faq) - Connection and GPS issues
+- [Other Supported Apps](../) - Compare with Harry's Lap Timer, TrackAddict, RaceTime

@@ -1,5 +1,7 @@
 # Setup and configuration of mobile apps
 
+**⏱️ Time:** 10-20 minutes per app | **🎯 Difficulty:** Beginner to Intermediate (varies by platform)
+
 This directory contains detailed setup instructions for connecting BonoGPS to various lap timer applications.
 
 ## Supported Apps

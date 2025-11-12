@@ -1,5 +1,7 @@
 # Connecting to Harry's LapTimer
 
+**⏱️ Time:** 10-15 minutes | **🎯 Difficulty:** Beginner (iOS BLE), Intermediate (Android BT-SPP or TCP/IP)
+
 - [Connecting to Harry's LapTimer](#connecting-to-harrys-laptimer)
   - [Features](#features)
   - [iOS Bluetooth Low Energy setup](#ios-bluetooth-low-energy-setup)
@@ -90,3 +92,8 @@ According [to this good reference message](http://forum.gps-laptimer.de/viewtopi
 - `GxGGA`, `GxRMC`, and `GxGBS` are streaming
 
 HLT is the only app that easily works with the GN talker id, so no translation of Talker ID was necessary.
+
+**See also:**
+- [GPS Configuration Guide](../../../hardware/GPS) - How to set up NMEA messages
+- [Main Troubleshooting FAQ](../../../README.md#troubleshooting-and-faq) - Common connection issues
+- [Other Supported Apps](../) - Compare with RaceChrono, TrackAddict, RaceTime

@@ -22,6 +22,8 @@ Development is active on the [VS Code + Platformio](https://platformio.org/insta
 
 ### Arduino IDE (recommended if you are new to the 'maker' approach)
 
+**⏱️ Time:** 20-30 minutes | **🎯 Difficulty:** Beginner | **Prerequisites:** Arduino IDE 2.x, ESP32 board support
+
 Code is written to be compatible with the Arduino IDE, there are a couple of steps required, starting from the assumption that you have already installed and set up the Arduino IDE for ESP32
 
 - install the 'External libraries' listed in the section [deps] entry `lib_deps` of `platform.ini`. See below an example of how and when to select a specific version
@@ -36,6 +38,8 @@ If you are unsure of what board you are running, [check this introductory tutori
 You can update software OTA, check a later paragraph here on how, as it's not enabled by default.
 
 ### PlatformIO
+
+**⏱️ Time:** 30-45 minutes (first time setup) | **🎯 Difficulty:** Intermediate | **Prerequisites:** VS Code, Python, Git
 
 Beside install PlatformIO (on VS Code as a recommendation), the build system uses a custom **python** script to determine the current software release version: `git_rev_macro.py` and it expects the project folder to be downloaded from github directly to build up the `GIT_REV` and `GIT_REPO` macro variables correctly.
 
@@ -122,6 +126,12 @@ board_build.partitions = min_spiffs.csv
 Within the Arduino IDE, from `Tools > Partition Scheme`
 
 ![Partition settings](partition_setting.png)
+
+**See also:**
+- [Hardware Assembly Guide](../../hardware/assembled) - Physical connections and wiring
+- [GPS Configuration](../../hardware/GPS) - **Must configure GPS before use**
+- [Connecting Apps](../connecting) - Test your build with lap timer apps
+- [Board Pin Definitions](../../include/README.md) - Customizing for different ESP32 boards
 
 ## Build Troubleshooting
 
