@@ -14,6 +14,7 @@
       - [OTA on Arduino IDE](#ota-on-arduino-ide)
       - [OTA on PlatformIO](#ota-on-platformio)
     - [Important: Partition size](#important-partition-size)
+  - [Build Troubleshooting](#build-troubleshooting)
 
 ## IDE options/suggestions: Arduino IDE or VS Code+Platformio
 
@@ -121,3 +122,108 @@ board_build.partitions = min_spiffs.csv
 Within the Arduino IDE, from `Tools > Partition Scheme`
 
 ![Partition settings](partition_setting.png)
+
+## Build Troubleshooting
+
+### Common Build Issues
+
+#### Library Compatibility Issues
+
+**Problem:** `NimBLE-Arduino compilation errors` or `class NimBLEDevice has no member...`
+
+**Solution:**
+- Install NimBLE-Arduino **version 2.x** specifically (not 1.x or 3.x)
+- In Arduino IDE: Library Manager → Search "NimBLE-Arduino" → Install version 2.x
+- In PlatformIO: Specified in `platformio.ini` as `h2zero/NimBLE-Arduino@^2.0.0`
+
+**Problem:** `EasyButton.h errors` or `undefined reference to EasyButton`
+
+**Solution:**
+- Install **EasyButton version 2.0.1** exactly (not 2.0.3 or higher)
+- Newer versions have breaking API changes
+- In Arduino IDE: Search for "EasyButton" by Evert Arias → Install 2.0.1
+- In PlatformIO: `evert-arias/EasyButton@^2.0.1`
+
+#### Compilation Errors
+
+**Problem:** `Region 'iram0_0_seg' overflowed` or similar memory errors
+
+**Solution:**
+- Ensure partition scheme is set to "Minimal SPIFFS (1.9MB APP)"
+- Reduce enabled features by commenting out `BTSPPENABLED` or `BLEENABLED` if you only need one
+- Check `board_build.partitions = min_spiffs.csv` in PlatformIO
+
+**Problem:** `GIT_REV or GIT_REPO undeclared`
+
+**Solution:**
+- Clone the repository using git (not download as ZIP)
+- If using PlatformIO and still failing:
+  1. Comment out the `git_rev_macro.py` line in `platformio.ini`
+  2. Add manual defines: `-DGIT_REV=\"manual\"` and `-DGIT_REPO=\"local\"`
+
+**Problem:** `Sketch too big` or `will not fit in partition`
+
+**Solution:**
+1. Verify partition scheme is "Minimal SPIFFS (1.9MB)"
+2. Disable unused features:
+   - Comment out `#define BTSPPENABLED` if not using BT-SPP
+   - Comment out `#define BLEENABLED` if not using BLE
+   - Comment out `#define ENABLE_OTA` if not using OTA updates
+3. In Arduino IDE, ensure optimization is set to "Default" or "More" (not "Debug")
+
+#### Upload and Connection Issues
+
+**Problem:** `Failed to connect to ESP32` during upload
+
+**Solution:**
+- Hold the BOOT button while clicking Upload
+- Check USB cable (use data cable, not charge-only)
+- Install CH340 or CP2102 drivers if using clone ESP32 boards
+- Try different USB ports
+- Reduce upload speed in Arduino IDE (`Tools > Upload Speed` → try 115200)
+
+**Problem:** `Serial port not found` or `Permission denied` on Linux
+
+**Solution:**
+```bash
+# Add user to dialout group
+sudo usermod -a -G dialout $USER
+# Log out and log back in for changes to take effect
+```
+
+#### PlatformIO Specific Issues
+
+**Problem:** `platformio.ini not found` or project structure errors
+
+**Solution:**
+- Open the root folder of the cloned repository in VS Code
+- Ensure `.platformio` folder exists in your home directory
+- Rebuild IntelliSense: `Ctrl+Shift+P` → "Rebuild IntelliSense Index"
+
+**Problem:** Custom build targets not working
+
+**Solution:**
+- Create `platformio_custom.ini` from the template
+- Add your custom configurations there
+- This file is gitignored so your settings won't be overwritten
+
+### Getting Verbose Build Output
+
+**Arduino IDE:**
+- `File > Preferences` → Check "Show verbose output during: compilation"
+
+**PlatformIO:**
+- Add `-v` flag to build: `pio run -v`
+
+### Still Having Issues?
+
+1. Check [GitHub Issues - Build Errors](https://github.com/renatobo/bonogps/issues?q=is%3Aissue+label%3Abuild)
+2. Verify all library versions match those in `platformio.ini`
+3. Try a clean build:
+   - Arduino IDE: Delete sketch build folder
+   - PlatformIO: `pio run --target clean` then rebuild
+4. Open a new issue with:
+   - Full error message
+   - IDE and version (Arduino/PlatformIO)
+   - ESP32 board model
+   - Library versions installed

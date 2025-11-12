@@ -11,6 +11,7 @@
   - [Hardware build instructions](#hardware-build-instructions)
     - [GPS Choice and setup preconfiguration](#gps-choice-and-setup-preconfiguration)
   - [Software build instructions](#software-build-instructions)
+  - [Troubleshooting and FAQ](#troubleshooting-and-faq)
   - [Possible enhancements and ideas](#possible-enhancements-and-ideas)
   - [Credits and tools](#credits-and-tools)
 
@@ -146,6 +147,145 @@ What you need to configure is documented [in the hardware/GPS folder](hardware/G
 ## Software build instructions
 
 This code is developed specifically for ESP32, and tested with [PlatformIO](https://platformio.org/) (main development platform) and the [Arduino IDE version 2 (2.3.4)](https://www.arduino.cc/en/software). More information on what libraries are needed and software organization [in the software/building folder](software/building).
+
+## Troubleshooting and FAQ
+
+### Common Issues and Solutions
+
+#### GPS and Hardware Issues
+
+**Q: My GPS is not getting a fix / takes very long to acquire satellites**
+
+**A:** Several factors can affect GPS acquisition time:
+- **First time setup:** Cold start can take 5-15 minutes to download almanac data
+- **Antenna placement:** Ensure the GPS antenna has clear view of the sky. The BN-880 LED should blink once per second when it has a fix
+- **Antenna orientation:** For BN-880/BK-880, the antenna should face upward (skyward)
+- **Indoor use:** GPS will not work indoors or in areas with obstructed sky view
+- **Configuration:** Verify your GPS is properly configured with the correct baudrate (115200) and messages enabled. See [GPS configuration guide](hardware/GPS)
+
+**Q: No GPS data is reaching my mobile app**
+
+**A:** Troubleshooting steps:
+1. Check that the GPS has a fix (BN devices: red LED blinking every second)
+2. Verify the baudrate matches: GPS port should be 115200 (check `GPS_STANDARD_BAUD_RATE` in code)
+3. Confirm correct NMEA messages are enabled for your app (load the appropriate preset)
+4. Check TX/RX wiring: GPS TX → ESP32 RX, GPS RX → ESP32 TX
+5. Open an [issue](https://github.com/renatobo/bonogps/issues) with details if problem persists
+
+**Q: Which GPS module should I buy?**
+
+**A:** See the [GPS comparison table](#for-the-sw-engineer--maker) in this README. Quick recommendations:
+- **Best performance:** BK880 or BK280 (M10 chipset, 25Hz, ~$35-45)
+- **Good balance:** BN880 (M8 chipset with active antenna, 10Hz, ~$25)
+- **Budget option:** BN220 (M8 chipset with passive antenna, 10Hz, ~$15-20)
+
+Active antennas provide significantly better signal quality. Avoid NEO-M8N if you need multiple GNSS constellations.
+
+#### Bluetooth and Connection Issues
+
+**Q: ESP32 reboots when I change Bluetooth settings / No Bluetooth available**
+
+**A:** This is typically caused by:
+- **Insufficient partition space:** Ensure you're using the "Minimal SPIFFS" partition scheme (1.9MB app space)
+- **Memory issues:** Both BLE and BT-SPP enabled simultaneously can cause memory pressure. Try disabling one if not needed
+- **Library conflicts:** Ensure you're using NimBLE-Arduino version 2.x (not 1.x)
+- Check the [closed issue #60](https://github.com/renatobo/bonogps/issues/60) for resolution details
+
+**Q: Can't reconnect to RaceChrono via BT-SPP after first disconnect**
+
+**A:** Known issue with Android BT-SPP. Workarounds:
+- Restart the ESP32 device
+- "Forget" the Bluetooth device on Android and re-pair
+- Restart the RaceChrono app
+- See [issue #30](https://github.com/renatobo/bonogps/issues/30) for ongoing discussion
+
+**Q: BLE connection issues with Harry's Lap Timer on iOS**
+
+**A:** Common solutions:
+- Ensure BLE is enabled in the web configuration
+- Verify the service UUID is **1819** and characteristic UUID is **2A67**
+- Device name should be `BonoGPS-XXXX` (check web interface header)
+- iOS may cache old Bluetooth data - try restarting your iPhone
+- BLE works best at 20Hz or lower with GSA/GSV polling disabled or at low frequency (every 5 seconds)
+
+#### WiFi and Web Interface Issues
+
+**Q: Can't access the web interface at bonogps.local**
+
+**A:** Troubleshooting:
+- **Android users:** Use [http://10.0.0.1](http://10.0.0.1) instead (Android doesn't support mDNS by default)
+- **Access Point mode:** Connect to the BonoGPS-XXXX WiFi network first (password is in the source code)
+- **Client mode:** Ensure your device is on the same WiFi network as BonoGPS
+- Check the built-in LED: Slow blink (500ms) = AP mode, Fast blink (250ms) = Client mode
+- Use the BOOT button to cycle between WiFi modes (short press for AP/off, long press for Client)
+
+**Q: How do I change WiFi modes?**
+
+**A:** Use the BOOT button (or external button on LOLIN D32 PRO):
+- **Short press:** Toggle between Access Point mode and WiFi off
+- **Long press (2+ seconds):** Switch to Client mode (connects to your saved WiFi network)
+
+The built-in blue LED indicates the mode:
+- Slow blinking (500ms cycle): Access Point active
+- Fast blinking (250ms cycle): Client mode active
+- Off: WiFi disabled
+
+#### Build and Compilation Issues
+
+**Q: Arduino IDE compilation fails with NimBLE errors**
+
+**A:** Solutions:
+- Use NimBLE-Arduino version **2.x** (not 1.x or 3.x)
+- Install the exact library versions from `platform.ini` `lib_deps` section
+- Use EasyButton version **2.0.1** specifically (newer versions have breaking changes)
+- Ensure you selected "Minimal SPIFFS (1.9MB)" partition scheme
+- See [issue #50](https://github.com/renatobo/bonogps/issues/50) for NimBLE-specific solutions
+
+**Q: Build fails with "not enough space" or partition errors**
+
+**A:** The compiled binary is large due to Bluetooth stacks:
+- Select `Tools > Partition Scheme > Minimal SPIFFS (1.9MB APP)`
+- In PlatformIO: use `board_build.partitions = min_spiffs.csv`
+- Disable unused features (BLE or BT-SPP) if you only need one connection type
+
+**Q: Git revision macro errors during PlatformIO build**
+
+**A:** The build uses `git_rev_macro.py` to get version info:
+- Clone the repository with git (don't download as ZIP)
+- If issues persist, comment out the script invocation in `platformio.ini`
+- Manually define `GIT_REV` and `GIT_REPO` macros if needed
+
+### App-Specific Issues
+
+**Q: RaceChrono shows weird/incorrect data**
+
+**A:** Check these settings:
+- Main Talker ID must be **GP** (not GN) for RaceChrono
+- Enable only `GPGGA`, `GPRMC`, optionally `GPGSA`/`GPGSV`
+- Load the RaceChrono preset from *Device > Load Preset*
+- See [RaceChrono setup guide](software/connecting/racechrono)
+
+**Q: TrackAddict not receiving data**
+
+**A:** TrackAddict requirements:
+- Requires Main Talker ID = **GP**
+- Must have `GPRMC`, `GPGGA`, and `GPGLL` enabled
+- Only works via BT-SPP on Android
+- Load the TrackAddict preset from the web interface
+
+### Getting Help
+
+If your issue isn't covered here:
+
+1. Check the [GitHub Discussions](https://github.com/renatobo/bonogps/discussions) - many questions already answered
+2. Review [closed issues](https://github.com/renatobo/bonogps/issues?q=is%3Aissue+is%3Aclosed) for similar problems
+3. Check app-specific guides in [software/connecting](software/connecting)
+4. Open a new [issue](https://github.com/renatobo/bonogps/issues) with:
+   - Your hardware (ESP32 model, GPS model)
+   - Software version and how you built it
+   - What app you're connecting to
+   - Detailed description of the problem
+   - Any error messages or logs
 
 ## Possible enhancements and ideas
 
