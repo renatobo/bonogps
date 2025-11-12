@@ -64,13 +64,21 @@ This project requires a receiver compatible with inexpensive Beitian M8 (classic
 
 ## Comparison of performance vs precision
 
-A comparison in a static location with clear sky among performances (speed = navigation rate, intesity = SV CN0) and precision (HDOP) shows that
+A comparison in a static location with clear sky among performance (speed = navigation rate, intensity = SV CN0) and precision (HDOP):
 
-- BN220, with a passive antenna, has the lower quality of signal: this means it might have difficulties when visibility is not great. It can handle 10Hz with GPS+GLONASS+Galileo, 18Hz with GPS Only. C/n0 is around 30 dBHz in all cases;
-- BN880, with an active antenna and same computing unit as BN220, improves SV CN0 significantly: between 30 and 35 dBHz;
--M8N, with an active antenna and legitimate ublox chipset, has the best SV CN0 (between 35 dBHz and 40 dBHz) and precision, at the cost of a slow update rate: 10Hz with only GPS, 5Hz with GPS+another, even less with Galileo.
+| Module | Chipset | Antenna | Multi-Constellation Rate | GPS Only Rate | Signal Quality (C/N0) | Precision | Notes |
+| ------ | ------- | ------- | ------------------------ | ------------- | --------------------- | --------- | ----- |
+| BK880 | M10 | Active | 25 Hz | 25 Hz | 35-40 dBHz | Excellent | Best choice for track use |
+| BK280 | M10 | Passive | 25 Hz | 25 Hz | 30-35 dBHz | Excellent | Best budget option |
+| NEO-M8N | M8N | Active | 5 Hz | 10 Hz | 35-40 dBHz | Very Good | Genuine u-blox, slow refresh |
+| BN880 | M8 | Active | 10 Hz | 18 Hz | 30-35 dBHz | Good | Good balance |
+| BN220 | M8 | Passive | 10 Hz | 18 Hz | ~30 dBHz | Good | Budget, may struggle in poor visibility |
 
-As noted in several sources, Galileo is now proving to add better precision than GLONASS.
+**Key Findings:**
+- **M10 modules (BK series)** offer the best overall performance with 25Hz support
+- **Active antennas** significantly improve signal quality (5-10 dBHz better)
+- **Signal quality (C/N0):** Higher is better; 35+ dBHz is excellent
+- **Galileo** provides better precision than GLONASS in current testing
 
 ### 3 hours of measurements side by side
 

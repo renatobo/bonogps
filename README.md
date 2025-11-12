@@ -31,13 +31,17 @@ If you are not into the maker thing or if you don't know anyone who might be, [l
 
 ## For the SW Engineer / maker
 
-This repo contains software, a list of hardware, and (simple) schematics to build an ESP32 device that reads NMEA sentences from a GPS receiver compatible with u-blox M10 and M8 series, for example
+This repo contains software, a list of hardware, and (simple) schematics to build an ESP32 device that reads NMEA sentences from a GPS receiver compatible with u-blox M10 and M8 series, for example:
 
--  [BK880](https://store.beitian.com/products/beitian-compass-qmc5883l-amp2-6-pix4-pixhawk-gnss-gps-glonass-dual-flight-control-gps-module-bn-880q?variant=44977758011679) 25 Hz active antenna > recommended
--  [BK280](https://store.beitian.com/collections/gps-module/products/beitian-gps-module-with-antenna-ubx-m10050-gnss-chip-ultra-low-power-gnss-receiver-for-track-be-180?variant=44859232420127) 25 Hz > recommended
--  [BN880](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46725104730399&_pos=1&_sid=fe8b2c602&_ss=r) 10 Hz active antenna
--  [BN220](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46694929989919&_pos=1&_sid=fe8b2c602&_ss=r) 10 Hz passive antenna
--  [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K)
+| GPS Module | Chipset | Max Refresh | Antenna Type | Recommended | Link |
+| ---------- | ------- | ----------- | ------------ | ----------- | ---- |
+| **BK880** | M10 | **25 Hz** | Active | ✓ Best | [Store](https://store.beitian.com/products/beitian-compass-qmc5883l-amp2-6-pix4-pixhawk-gnss-gps-glonass-dual-flight-control-gps-module-bn-880q?variant=44977758011679) |
+| **BK280** | M10 | **25 Hz** | Passive | ✓ Best | [Store](https://store.beitian.com/collections/gps-module/products/beitian-gps-module-with-antenna-ubx-m10050-gnss-chip-ultra-low-power-gnss-receiver-for-track-be-180?variant=44859232420127) |
+| BN880 | M8 | 10 Hz | Active | Good | [Store](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46725104730399&_pos=1&_sid=fe8b2c602&_ss=r) |
+| BN220 | M8 | 10 Hz | Passive | Budget | [Store](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46694929989919&_pos=1&_sid=fe8b2c602&_ss=r) |
+| DIYmall NEO-M8N | M8N | 10 Hz | Active | Compatible | [Amazon](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) |
+
+**Note:** Active antennas provide better signal quality. M10 modules (BK880/BK280) offer 25Hz refresh rate which is ideal for track use. See [GPS setup guide](hardware/GPS) for detailed configuration.
 
 and repeats them back to a logger device, either
 
@@ -100,12 +104,16 @@ For convenience, the WiFi status (Start its own AP, or connect to a local WiFi) 
 
 There are many mobile apps to log lap times, few accept custom devices, in particular on iOS. The ones below are tested.
 
-|         | Harry Lap Timer    | TrackAddict | RaceChrono | Racetime |
-| ------- | ------------------ | ----------- | ---------- | -------- |
-| iOS     | **BLE**, TCP-IP    |             | TCP-IP     |
-| Android | **BT-SPP**, TCP-IP | BT-SPP      | BT-SPP     | BT-SPP   |
+| App | Platform | Connection | Max Refresh | Tested Version | Setup Guide |
+| --- | -------- | ---------- | ----------- | -------------- | ----------- |
+| [Harry's Lap Timer](https://www.gps-laptimer.de) | iOS | **BLE** (recommended), TCP-IP | 20Hz (BLE) | v24.9.1 | [Guide](software/connecting/harrylaptimer) |
+| [Harry's Lap Timer](https://www.gps-laptimer.de) | Android | **BT-SPP** (recommended), TCP-IP | 10Hz | v24.9.1 | [Guide](software/connecting/harrylaptimer) |
+| [TrackAddict](https://www.hptuners.com/product/trackaddict-app/) | Android | BT-SPP | 10Hz | v4.6.0 | [Guide](software/connecting/trackaddict) |
+| [RaceChrono](https://racechrono.com/) | iOS | TCP-IP | 10Hz | v7.0.10 | [Guide](software/connecting/racechrono) |
+| [RaceChrono](https://racechrono.com/) | Android | BT-SPP | 10Hz | v7.0.10 | [Guide](software/connecting/racechrono) |
+| [RaceTime](https://www.racetimeapp.com/en/) | Android | BT-SPP | 10Hz | v3.3.8 lite | [Guide](software/connecting/racetime) |
 
-See more info in each subfolder of **[connecting](software/connecting)**.
+**Note:** Recommended connection methods are shown in **bold**. See detailed setup instructions in each guide.
 
 You can load a preset configuration from the configuration page selecting *Device > Load Preset* and then choosing your mobile phone device and app combination (when there are alternatives, the recommended option is in bold)
 
