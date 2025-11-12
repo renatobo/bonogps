@@ -56,8 +56,8 @@ If your ESP32 board has a battery and you have enabled the `SHOWBATTERY` feature
 
 Go to *Administration > Settings > Expert Settings* and
 
-- within 'accessory tweaks', turn on 'Use Wi-Fi Sensors'
-- within 'custom wifi gps adapter', set Connection Type `TCP/IP`, 'Device IP Address' to `10.0.0.1`, TCP Port to `1818`
+- within 'accessory tweaks', turn on 'Use WiFi Sensors'
+- within 'custom WiFi gps adapter', set Connection Type `TCP/IP`, 'Device IP Address' to `10.0.0.1`, TCP Port to `1818`
 
 ![WiFi](hlt-wifi.jpeg)
 
