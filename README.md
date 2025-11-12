@@ -5,6 +5,8 @@
   - [For the SW Engineer / maker](#for-the-sw-engineer--maker)
     - [Diagram of project components](#diagram-of-project-components)
   - [Quick Start Guide](#quick-start-guide)
+  - [Known Good Configurations](#known-good-configurations)
+  - [Complete Bill of Materials (BOM)](#complete-bill-of-materials-bom)
   - [How to Verify Everything is Working](#how-to-verify-everything-is-working)
   - [Common Mistakes to Avoid](#common-mistakes-to-avoid)
   - [HowTo](#howto)
@@ -17,6 +19,7 @@
   - [Technical Specifications](#technical-specifications)
   - [Troubleshooting and FAQ](#troubleshooting-and-faq)
   - [Possible enhancements and ideas](#possible-enhancements-and-ideas)
+  - [Glossary](#glossary)
   - [Credits and tools](#credits-and-tools)
 
 ## For the track day enthusiast
@@ -147,6 +150,251 @@ See detailed instructions: [Software build guide](software/building)
 **Supported apps:** [Harry's Lap Timer](software/connecting/harrylaptimer) | [TrackAddict](software/connecting/trackaddict) | [RaceChrono](software/connecting/racechrono) | [RaceTime](software/connecting/racetime)
 
 **Need help?** See [Troubleshooting FAQ](#troubleshooting-and-faq) below.
+
+---
+
+## Known Good Configurations
+
+These hardware and app combinations have been tested and confirmed working. Use these as reference if you want a guaranteed-to-work setup.
+
+### Budget Build - iOS ($45)
+**Hardware:**
+- ESP32 DevKit (~$10)
+- BN880 GPS with active antenna (~$25)
+- 1000mAh Li-Ion battery (~$6)
+- Micro USB cable for programming
+- Basic transparent case
+
+**Software & Connection:**
+- Harry's Lap Timer (iOS)
+- Connection: BLE
+- Preset: "Harry's Lap Timer iOS BLE"
+- Expected performance: 10Hz, good accuracy (2-3m)
+
+**Why this works:** BN880 active antenna provides reliable signal, BLE is native to iOS, Harry's Lap Timer has best BLE support.
+
+### Best Performance - iOS ($65)
+**Hardware:**
+- LOLIN D32 PRO (~$18)
+- BK880 GPS M10 with active antenna (~$40)
+- 2000mAh Li-Ion battery (~$10)
+- Custom 3D printed mount
+
+**Software & Connection:**
+- Harry's Lap Timer (iOS)
+- Connection: BLE
+- Preset: "Harry's Lap Timer iOS BLE"
+- Expected performance: 20Hz over BLE, excellent accuracy (<2m)
+
+**Why this works:** M10 chipset supports 25Hz, LOLIN has battery management, BLE optimized for iOS. Best overall iOS solution.
+
+### Budget Build - Android ($35)
+**Hardware:**
+- ESP32 DevKit (~$8)
+- BN220 GPS with passive antenna (~$18)
+- Powered via USB (no battery)
+- Velcro mounting
+
+**Software & Connection:**
+- RaceChrono (Android)
+- Connection: BT-SPP
+- Preset: "RaceChrono Android BT-SPP"
+- Expected performance: 10Hz, good accuracy in open areas
+
+**Why this works:** BT-SPP is most reliable on Android, RaceChrono is free and widely used, no battery needed for testing.
+
+### Recommended - Android ($50)
+**Hardware:**
+- ESP32 DevKit or LOLIN D32 PRO (~$12-18)
+- BN880 GPS with active antenna (~$25)
+- 1500mAh Li-Ion battery (~$8)
+- Basic enclosure
+
+**Software & Connection:**
+- RaceChrono or TrackAddict (Android)
+- Connection: BT-SPP
+- Preset: App-specific BT-SPP preset
+- Expected performance: 10Hz, excellent accuracy (2-3m)
+
+**Why this works:** Active antenna ensures good signal, BT-SPP handles full NMEA messages reliably, proven battery life for track days.
+
+### Advanced - Android with High Refresh ($65)
+**Hardware:**
+- LOLIN D32 PRO (~$18)
+- BK880 M10 GPS with active antenna (~$40)
+- 2000mAh Li-Ion battery (~$10)
+- Professional mounting solution
+
+**Software & Connection:**
+- Harry's Lap Timer (Android)
+- Connection: BT-SPP or TCP-IP
+- Preset: "Harry's Lap Timer Android BT-SPP"
+- Expected performance: 10Hz over BT-SPP (25Hz requires TCP-IP)
+
+**Why this works:** M10 chipset provides maximum performance, larger battery for full track day, LOLIN handles power management. **Note:** 25Hz requires TCP-IP connection which has less range than Bluetooth.
+
+### Universal WiFi Setup - iOS & Android ($45)
+**Hardware:**
+- ESP32 DevKit (~$10)
+- BN880 GPS (~$25)
+- 2000mAh Li-Ion battery (~$10) - important for WiFi power draw
+
+**Software & Connection:**
+- RaceChrono (iOS or Android)
+- Connection: TCP-IP over WiFi
+- IP: 10.0.0.1, Port: 1818
+- Expected performance: 10Hz, works on any platform
+
+**Why this works:** TCP-IP works universally, no Bluetooth pairing needed, RaceChrono supports custom TCP devices. Larger battery compensates for WiFi power consumption.
+
+### What About TrackAddict?
+**Hardware:** Any ESP32 + BN220/BN880
+**Platform:** Android only (not available on iOS)
+**Connection:** BT-SPP only
+**Important:** Must use **GP Talker ID** (not GN). Load "TrackAddict Android BT-SPP" preset.
+
+### Testing Configuration (Cheapest, $30)
+For initial testing before investing in batteries/cases:
+- ESP32 DevKit (~$8)
+- BN220 GPS (~$18)
+- USB power from laptop
+- Any supported app
+- Test app connection indoors via WiFi, then test GPS outdoors
+
+---
+
+## Complete Bill of Materials (BOM)
+
+Use this comprehensive shopping list to gather all components for your BonoGPS build. Choose components based on your budget and performance requirements.
+
+### Core Components (Required)
+
+| Component | Options | Qty | Est. Cost | Purpose | Where to Buy | Notes |
+|-----------|---------|-----|-----------|---------|--------------|-------|
+| **ESP32 Board** | ESP32 DevKit (generic) | 1 | $8-12 | Main controller | [Amazon](https://www.amazon.com/s?k=esp32+devkit), AliExpress | Most common, cheapest |
+| | LOLIN D32 PRO | 1 | $15-20 | Main controller + extras | [WEMOS/LOLIN Store](https://www.wemos.cc/) | Battery charger, PSRAM, TF card |
+| **GPS Module** | BN220 (M8, passive) | 1 | $15-20 | Budget GPS | [Beitian Store](https://store.beitian.com/) | 10Hz max, passive antenna |
+| | BN880 (M8, active) | 1 | $23-27 | Good GPS | [Beitian Store](https://store.beitian.com/) | 10Hz max, active antenna (recommended) |
+| | BK280 (M10, passive) | 1 | $35-40 | Best GPS | [Beitian Store](https://store.beitian.com/) | 25Hz capable, passive antenna |
+| | BK880 (M10, active) | 1 | $38-45 | Best GPS | [Beitian Store](https://store.beitian.com/) | 25Hz capable, active antenna (best performance) |
+| | NEO-M8N | 1 | $25-30 | Compatible GPS | [Amazon](https://www.amazon.com/s?k=neo-m8n+gps) | Alternative M8 module |
+| **USB Cable** | Micro USB cable | 1 | $3-5 | Programming & power | Amazon, any electronics store | For ESP32 DevKit |
+| | USB-C cable | 1 | $5-8 | Programming & power | Amazon, any electronics store | For LOLIN D32 PRO |
+| **Jumper Wires** | Male-to-female, 10cm | 4+ | $2-5 | GPS wiring | Amazon, AliExpress | Only needed if not soldering |
+
+**Core components subtotal:** $30-60 depending on choices
+
+### Power Components (Recommended for portable use)
+
+| Component | Options | Qty | Est. Cost | Purpose | Where to Buy | Notes |
+|-----------|---------|-----|-----------|---------|--------------|-------|
+| **Battery** | 650mAh Li-Ion 3.7V | 1 | $5-7 | ~2-2.5 hrs runtime | Amazon, hobby stores | JST connector |
+| | 1000mAh Li-Ion 3.7V | 1 | $6-8 | ~3-4 hrs runtime | Amazon, hobby stores | JST connector |
+| | 1500mAh Li-Ion 3.7V | 1 | $8-10 | ~5-6 hrs runtime | Amazon, hobby stores | JST connector |
+| | 2000mAh Li-Ion 3.7V | 1 | $8-12 | ~6-8 hrs runtime | Amazon, hobby stores | JST connector, best for track day |
+| **Battery Charger** | USB Li-Ion charger | 1 | $3-6 | Battery charging | Amazon, AliExpress | Not needed for LOLIN D32 PRO (built-in) |
+| | LiPo balance charger | 1 | $15-25 | Multi-battery charging | Amazon, hobby stores | Optional, for multiple batteries |
+
+**Power components subtotal:** $5-40 depending on battery size and charger
+
+### Assembly Components (Optional but recommended)
+
+| Component | Options | Qty | Est. Cost | Purpose | Where to Buy | Notes |
+|-----------|---------|-----|-----------|---------|--------------|-------|
+| **Enclosure** | Transparent plastic case | 1 | $3-8 | Basic protection | Amazon, electronics stores | Various sizes available |
+| | Custom 3D printed case | 1 | $5-15 | Perfect fit | Local makerspace, online 3D print services | STL files in [hardware/assembled](hardware/assembled) |
+| | Weatherproof box | 1 | $10-20 | Professional protection | Amazon | For permanent motorcycle installations |
+| **Mounting** | Velcro strips | 1 set | $3-5 | Removable mounting | Amazon, hardware stores | Easy attachment/removal |
+| | Double-sided tape (3M VHB) | 1 roll | $5-10 | Semi-permanent | Amazon, hardware stores | Strong, vibration-resistant |
+| | Zip ties | 10+ | $2-5 | Cable management | Amazon, hardware stores | Various sizes |
+| **Wiring** | Heat shrink tubing | 1 set | $5-8 | Wire insulation | Amazon | Professional finish |
+| | 22-24 AWG stranded wire | 1m | $3-5 | Custom wiring | Amazon, electronics stores | If making custom cables |
+| | JST connectors | 5 sets | $5-10 | Battery connectors | Amazon, hobby stores | For custom battery connections |
+| **Soldering** | Soldering iron kit | 1 | $15-40 | Permanent connections | Amazon | If you don't have one |
+| | Solder (lead-free) | 1 roll | $8-15 | Soldering | Amazon, electronics stores | 60/40 or lead-free |
+| | Flux pen | 1 | $5-8 | Better solder joints | Amazon | Makes soldering easier |
+
+**Assembly components subtotal:** $0-80+ depending on tools and quality
+
+### Configuration Tools (One-time purchase)
+
+| Component | Options | Qty | Est. Cost | Purpose | Where to Buy | Notes |
+|-----------|---------|-----|-----------|---------|--------------|-------|
+| **USB-to-Serial Adapter** | CP2102 or FTDI adapter | 1 | $5-10 | GPS configuration | Amazon, AliExpress | Required for GPS setup with u-center |
+| | USB-to-TTL with 3.3V/5V switch | 1 | $8-12 | GPS configuration (better) | Amazon | More versatile, safer |
+
+**Configuration tools subtotal:** $5-12 (one-time, reusable)
+
+### Software (Free)
+
+| Software | Cost | Purpose | Where to Get |
+|----------|------|---------|--------------|
+| Arduino IDE 2.x | Free | Firmware compilation (beginner) | [arduino.cc](https://www.arduino.cc/en/software) |
+| VS Code + PlatformIO | Free | Firmware compilation (advanced) | [platformio.org](https://platformio.org/) |
+| u-blox u-center | Free | GPS configuration | [u-blox.com](https://www.u-blox.com/en/product/u-center) |
+| Harry's Lap Timer | $0-100 | iOS/Android lap timing | App Store / Play Store |
+| RaceChrono | Free-$20 | iOS/Android lap timing | App Store / Play Store |
+| TrackAddict | Free-$25 | Android lap timing | Play Store |
+| RaceTime | Free | Android lap timing | Play Store |
+
+### Shopping List Templates
+
+**Minimum viable build ($30-35):**
+- [ ] ESP32 DevKit ($8-12)
+- [ ] BN220 GPS ($15-20)
+- [ ] Micro USB cable ($3-5)
+- [ ] 4x jumper wires ($2-5) OR soldering supplies
+- [ ] USB-to-serial adapter ($5-10) for GPS config
+- **Total: ~$33-52**
+
+**Recommended portable build ($50-65):**
+- [ ] ESP32 DevKit or LOLIN D32 PRO ($10-18)
+- [ ] BN880 GPS ($25)
+- [ ] 1000-1500mAh battery ($6-10)
+- [ ] USB cable ($3-8)
+- [ ] Plastic case ($3-8)
+- [ ] Velcro or double-sided tape ($3-5)
+- [ ] USB-to-serial adapter ($5-10)
+- **Total: ~$55-84**
+
+**Best performance build ($70-90):**
+- [ ] LOLIN D32 PRO ($15-20)
+- [ ] BK880 M10 GPS ($38-45)
+- [ ] 2000mAh battery ($8-12)
+- [ ] USB-C cable ($5-8)
+- [ ] 3D printed custom case ($5-15)
+- [ ] Mounting solution ($3-10)
+- [ ] USB-to-serial adapter ($5-10)
+- [ ] Soldering supplies if needed ($15-40)
+- **Total: ~$79-160**
+
+### Notes on Purchasing
+
+**GPS Modules:**
+- Buy directly from Beitian Store for authentic modules
+- Beware of clones on AliExpress/eBay (may have older firmware or fake chipsets)
+- Active antennas significantly improve performance in difficult conditions
+
+**Batteries:**
+- Match voltage: 3.7V Li-Ion or LiPo only
+- Check connector: JST 2-pin is most common
+- Capacity = runtime: 650mAh → 2hrs, 2000mAh → 8hrs
+- Never charge Li-Ion batteries below 0°C (32°F)
+
+**ESP32 Boards:**
+- DevKit: Universal compatibility, cheapest
+- LOLIN D32 PRO: Built-in battery management worth the extra cost for portable use
+
+**Where to save money:**
+- Skip the case initially (test on desk)
+- Use USB power instead of battery for testing
+- Use jumper wires instead of soldering initially
+- BN220 instead of BN880 (passive vs active antenna)
+
+**Where NOT to save money:**
+- GPS module quality (buy from reputable source)
+- USB cable quality (cheap cables cause upload/power issues)
+- Battery quality (cheap batteries fail quickly)
 
 ---
 
@@ -668,6 +916,98 @@ If your issue isn't covered here:
 ## Possible enhancements and ideas
 
 See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q=is%3Aissue+is%3Aopen+label%3Aenhancement) on the github project
+
+## Glossary
+
+**GPS & Navigation Terms:**
+
+- **GPS Fix:** When the GPS receiver has locked onto enough satellites (minimum 4) to calculate position. Indicated by LED blinking once per second on BN/BK modules.
+- **Cold Start:** First power-on when GPS has no recent satellite data. Takes 5-15 minutes to download almanac and ephemeris data.
+- **Hot Start:** GPS restart when recent satellite data is still valid. Typically achieves fix in 1-5 seconds.
+- **Warm Start:** GPS restart after some time, when almanac is still valid but ephemeris is outdated. Takes 30-60 seconds.
+- **Satellite Almanac:** Coarse orbital data for all satellites, valid for months. Required for cold start.
+- **Ephemeris:** Precise orbital data for specific satellites, valid for 2-4 hours. Required for accurate positioning.
+- **GNSS (Global Navigation Satellite System):** Umbrella term for all satellite navigation systems (GPS, GLONASS, Galileo, BeiDou).
+- **GPS (Global Positioning System):** US satellite navigation system, one type of GNSS.
+- **M8 / M10:** u-blox GPS chipset generations. M8 supports 10Hz max, M10 supports 25Hz max.
+- **C/N0 (Carrier-to-Noise Ratio):** Signal quality measurement in dBHz. Higher is better (30-40 dBHz typical, 45+ excellent).
+- **HDOP (Horizontal Dilution of Precision):** Geometric accuracy indicator. Lower is better (<1.0 excellent, 1-2 good, >5 poor).
+- **DOP (Dilution of Precision):** Measure of satellite geometry effect on position accuracy.
+
+**GPS Antenna Terms:**
+
+- **Active Antenna:** Has built-in amplifier (LNA), requires power, better signal quality. Typical for BN880/BK880.
+- **Passive Antenna:** No amplifier, cheaper, lower signal quality. Typical for BN220/BK280.
+- **LNA (Low Noise Amplifier):** Built-in amplifier in active antennas that boosts weak GPS signals.
+
+**GPS Message Formats:**
+
+- **NMEA (National Marine Electronics Association):** Standard text format for GPS data (e.g., $GPGGA,123456...).
+- **UBX:** u-blox binary protocol, more compact than NMEA but requires parsing library.
+- **Talker ID:** Two-letter prefix indicating satellite system source:
+  - **GP:** GPS only (US satellites)
+  - **GN:** Multi-constellation GNSS (GPS + GLONASS + Galileo + BeiDou)
+- **NMEA Messages:**
+  - **GGA:** Global Positioning System Fix Data (position, altitude, fix quality)
+  - **RMC:** Recommended Minimum Specific GPS Data (position, speed, course, time)
+  - **GSA:** GPS DOP and Active Satellites (satellite IDs, dilution of precision)
+  - **GSV:** GPS Satellites in View (satellite count, signal strength per satellite)
+  - **GBS:** GNSS Satellite Fault Detection (accuracy estimates)
+  - **VTG:** Track Made Good and Ground Speed (course and speed)
+  - **ZDA:** Time and Date (UTC time and date)
+
+**Connectivity Terms:**
+
+- **BLE (Bluetooth Low Energy):** Low-power Bluetooth standard (Bluetooth 4.0+). Recommended for iOS with Harry's Lap Timer. Max ~20Hz GPS data.
+- **BT-SPP (Bluetooth Serial Port Profile):** Classic Bluetooth serial connection. Recommended for Android. Max ~10Hz with full messages.
+- **TCP-IP:** Network connection over WiFi. Works on both iOS and Android. Single client at a time for GPS stream.
+- **UART (Universal Asynchronous Receiver-Transmitter):** Serial communication protocol between GPS and ESP32.
+- **Baudrate:** Speed of serial communication in bits per second. BonoGPS uses 115200 baud.
+- **mDNS (Multicast DNS):** Network protocol that resolves bonogps.local to IP address. Doesn't work on Android by default.
+
+**ESP32 Terms:**
+
+- **ESP32:** Microcontroller with built-in WiFi and Bluetooth. Brain of BonoGPS device.
+- **Flash Memory:** Non-volatile storage on ESP32 where firmware is stored (~4MB total).
+- **RAM/SRAM:** Volatile memory for program execution (~320KB on standard ESP32).
+- **PSRAM:** Optional extra RAM (4MB on LOLIN D32 PRO) for improved stability.
+- **Partition Scheme:** How flash memory is divided. BonoGPS requires "Minimal SPIFFS (1.9MB)" for app space.
+- **SPIFFS:** File system on ESP32 for storing configuration files (~190KB with minimal partition).
+- **OTA (Over-The-Air):** Wireless firmware updates. Disabled by default in BonoGPS to save flash space.
+- **GPIO (General Purpose Input/Output):** Programmable pins on ESP32 for connecting peripherals.
+- **UART2/Serial2:** Second serial port on ESP32, used for GPS communication (TX=GPIO17, RX=GPIO16 on DevKit).
+
+**Build & Development Terms:**
+
+- **Arduino IDE:** Beginner-friendly development environment for programming ESP32.
+- **PlatformIO:** Professional IDE extension for VS Code, preferred for BonoGPS development.
+- **Library:** Pre-written code package that adds functionality (e.g., NimBLE-Arduino for Bluetooth).
+- **NimBLE:** Lightweight Bluetooth Low Energy library for ESP32. BonoGPS requires version 2.x.
+- **Preset:** Pre-configured settings for specific apps, loaded via web interface (Device > Load Preset).
+
+**u-blox Configuration Terms:**
+
+- **u-center:** Windows software from u-blox for configuring GPS modules.
+- **UBX-CFG-xxx:** Configuration commands for u-blox GPS modules (e.g., UBX-CFG-PRT for port settings).
+- **Save to Flash:** Persist GPS configuration so it survives power cycles. Critical step often forgotten!
+
+**Hardware Terms:**
+
+- **DevKit:** Generic ESP32 development board, most common and cheapest option (~$8-12).
+- **LOLIN D32 PRO:** Premium ESP32 board with battery charger, PSRAM, and TF card slot (~$15-20).
+- **Li-Ion / LiPo:** Rechargeable lithium battery types. 3.7V nominal, charge to 4.2V, discharge to 3.0V minimum.
+- **JST Connector:** Small 2-pin connector commonly used for batteries.
+- **VCC:** Power supply voltage pin (3.3V for GPS modules).
+- **GND:** Ground / 0V reference voltage pin.
+- **TX (Transmit):** Data output pin. GPS TX connects to ESP32 RX.
+- **RX (Receive):** Data input pin. GPS RX connects to ESP32 TX.
+
+**App-Specific Terms:**
+
+- **Harry's Lap Timer (HLT):** Most feature-rich lap timer app, only iOS app supporting BLE GPS.
+- **RaceChrono:** Lap timer with cleanest UX, requires GP Talker ID.
+- **TrackAddict:** Android-only lap timer, requires GP Talker ID.
+- **Hz (Hertz):** Updates per second. 10Hz = 10 position updates per second. 25Hz = 25 updates per second (M10 modules only).
 
 ## Credits and tools
 
