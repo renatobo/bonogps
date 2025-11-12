@@ -6,7 +6,11 @@
   - [Possible alternative to NAV-SAT: NAV-SVINFO (same size)](#possible-alternative-to-nav-sat-nav-svinfo-same-size)
   - [Likely not needed as included in NAV-PVT](#likely-not-needed-as-included-in-nav-pvt)
 
+This document compares different GPS message formats to identify the most bandwidth-efficient solution for transmitting complete Position, Velocity, and Time (PVT) data.
+
 Right now we use `RMC`+`GGA`+`GBS` at high resolution, then `GSA`+`GSV` at lower resolution. Are there less expensive (in terms of bandwidth) options?
+
+**Summary:** The ublox Binary format (NAV-PVT + NAV-SAT) is the most efficient at 488 bytes, compared to 785 bytes for PUBX format and 912 bytes for standard NMEA messages.
 
 ## NMEA standard messages `RMC`+`GGA`+`GSA`+`GSV`+`GBS`
 

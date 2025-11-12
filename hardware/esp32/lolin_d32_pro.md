@@ -4,7 +4,7 @@
 - [Serial2 PINs need to be assigned](#serial2-pins-need-to-be-assigned)
 - [Battery monitoring](#battery-monitoring)
 - [Turning on and off when on a battery](#turning-on-and-off-when-on-a-battery)
-- [External leds for WiFi and Active](#external-leds-for-wifi-and-active)
+- [External LEDs for WiFi and Active](#external-leds-for-wifi-and-active)
 - [Complete example schematic](#complete-example-schematic)
 
 ## No BOOT Button
@@ -32,7 +32,7 @@ Note: IO4 is used by the SD Card, so this might have to be changed if you use it
 
 `GPIO_35`  provides Battery voltage with an A2D conversion (check this [tutorial](https://www.youtube.com/watch?t=88&v=yZjpYmWVLh8&feature=youtu.be)).
 
-This replicates the functionality of *battery fuel gauge* available on the [Lipo Rider Plus](https://wiki.seeedstudio.com/Lipo-Rider-Plus/https://wiki.seeedstudio.com/Lipo-Rider-Plus/), but printed directly on the header of the main page of the web configuration interface.
+This replicates the functionality of *battery fuel gauge* available on the [Lipo Rider Plus](https://wiki.seeedstudio.com/Lipo-Rider-Plus/), but printed directly on the header of the main page of the web configuration interface.
 
 ![main page header](lolin_d32_pro_battery.png)
 
@@ -50,12 +50,12 @@ These are enabled by the preprocessing macro `SHOWBATTERY`
 
 Since the battery is always attached, the easiest option is to use the `EN` pin by tying it to the ground. This disables the onboard voltage regulator ME6211 (check [schematics](https://www.wemos.cc/en/latest/_static/files/sch_d32_pro_v2.0.0.pdf))
 
-## External leds for WiFi and Active
+## External LEDs for WiFi and Active
 
-If you fully enclose your device, you should have external LED's so show that the device is on and what type of WiFi mode.
+If you fully enclose your device, you should have external LEDs to show that the device is on and what type of WiFi mode.
 
-- pick a low power led (e.g. a 3mm red or yellow)
-- compute what resistance you need (suggested: [Led Calculator](https://www.hobby-hour.com/electronics/ledcalc.php))
+- pick a low power LED (e.g. a 3mm red or yellow)
+- compute what resistance you need (suggested: [LED Calculator](https://www.hobby-hour.com/electronics/ledcalc.php))
 
 Now let bonogps know using these macros
 
@@ -66,8 +66,8 @@ Now let bonogps know using these macros
 
 Considering
 
-- `LED_ACTIVE_EXTERNAL` defined as `GPIO_NUM_14`, with led at 20 mA so closest resistor off the shelf is 47 Ohm
-- `LED_WIFI` defined as `GPIO_NUM_12`, with led at 20 mA so closest resistor off the shelf is 47 Ohm
+- `LED_ACTIVE_EXTERNAL` defined as `GPIO_NUM_14`, with LED at 20 mA so closest resistor off the shelf is 47 Ohm
+- `LED_WIFI` defined as `GPIO_NUM_12`, with LED at 20 mA so closest resistor off the shelf is 47 Ohm
 - `WIFI_MODE_BUTTON` defined as `GPIO_NUM_25`, with temporary switch
 - external On/Off locking switch
 - LiPo battery
@@ -76,6 +76,6 @@ This is how the schematics looks like
 
 ![Lolin d32 pro schematic](lolin_d32_pro_schem.png)
 
-BN-220 is shown, but it doesn not matter - it could be any of the supported ones.
+BN-220 is shown, but it does not matter - it could be any of the supported ones.
 
 [Fritzing source file](lolin_d32_pro.fzz)

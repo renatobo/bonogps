@@ -26,11 +26,11 @@ Code is written to be compatible with the Arduino IDE, there are a couple of ste
 - install the 'External libraries' listed in the section [deps] entry `lib_deps` of `platform.ini`. See below an example of how and when to select a specific version
 - open the `bonogps.ino` file: it's empty as all in the code is somewhere else
 - choose your board: "ESP32 Dev Module" (the generic board that everyone has, often tagged DOIT) or ["LOLIN D32 PRO" are supported](hardware/esp32/lolin_d32_pro.md), otherwise you might have to redefine your pins in `bonogps_board_settings.h`
-- choose a partition schema with enough space (e.g. the Minimal SPIFSS with 1.9Mb of flash space)
+- choose a partition schema with enough space (e.g. the Minimal SPIFFS with 1.9 MB of flash space)
 
 The rest is common to any other build on the Arduino IDE.
 
-IF you are unsure of what board you are running, [check this introductory tutorial](https://randomnerdtutorials.com/getting-started-with-esp32/).
+If you are unsure of what board you are running, [check this introductory tutorial](https://randomnerdtutorials.com/getting-started-with-esp32/).
 
 You can update software OTA, check a later paragraph here on how, as it's not enabled by default.
 
@@ -95,7 +95,7 @@ OTA libraries are not enabled by default, to keep the binary size smaller and to
 
 Since updating via OTA is extremely convenient when you are testing, here is how to activate it via two preprocessing macro variables
 
-- `ENABLE_OTA` if defined, libraries and code are built in, if undefined,d no OTA is included
+- `ENABLE_OTA` if defined, libraries and code are built in, if undefined, no OTA is included
 - `OTA_AVAILABILITY_SECS` defines for how long OTA is available after boot, either `-1` (forever) or a finite number of seconds. If undefined, it's `300`, to avoid any mistake on the field where you might mistakenly start flashing a firmware you are actually using
 
 #### OTA on Arduino IDE
@@ -110,7 +110,7 @@ Since updating via OTA is extremely convenient when you are testing, here is how
 
 ### Important: Partition size
 
-You have to select a partitioning schema with 1.7 Mb of programming space (e.g. Minimal SPIFF with 1.9Mb), as the app with its libraries tends to be pretty large due to BT stacks.
+You have to select a partitioning schema with 1.7 MB of programming space (e.g. Minimal SPIFFS with 1.9 MB), as the app with its libraries tends to be pretty large due to BT stacks.
 
 Within PlatformIO, use the [platformio.ini](platformio.ini) available configuration
 

@@ -1,11 +1,15 @@
 
 # Include files
 
+This directory contains header files used by the BonoGPS project.
+
+## Board Configuration
+
 - [include/bonogps_board_settings.h](bonogps_board_settings.h) includes board settings (PINS mostly) that are specific to a tested board.
 
 ## Generated files
 
-These header files are generated so you should not manually modify them. Regenerate them with [generate_css.sh](../generate_css.sh)
+**Important:** These header files are auto-generated - do not manually modify them. Regenerate them with [generate_css.sh](../generate_css.sh)
 
 - [include/bonogps_css_base.h](bonogps_css_base.h) preprocessing macro that defines the strings returned by the `http://bonogps.local/css` url in the portal
 - [include/bonogps_css_base_battery.h](bonogps_css_base_battery.h) preprocessing macro that defines the strings returned by the `http://bonogps.local/css` url in the portal with additional definitions to show the battery (no need to increase the flash size if you don't need a battery gauge). This is used when macro `SHOWBATTERY` is used

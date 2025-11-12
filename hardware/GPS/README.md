@@ -37,7 +37,7 @@ This project requires a receiver compatible with inexpensive Beitian M8 (classic
 
 - they are widely available: used in avionics (drones) projects
 - cost-effective
-- allow 10Hz (M8 Classic) to 25Hz (M19 Performance series) refresh rate
+- allow 10Hz (M8 Classic) to 25Hz (M10 Performance series) refresh rate
 - granular configuration of NMEA messages
 
 ## FAQ
@@ -97,19 +97,19 @@ You can setup an out of the box M8 module restoring one of these saved configura
 
 The procedure is
 
-1. Connect the receiver to your PC (a FTDI USB to TTL module comes handy, the same one used to program arduino boards without USB ports, [example](https://www.amazon.com/s?k=ftdi+usb+to+serial&i=electronics&ref=nb_sb_noss_1) );
-2. Open U-Center and connect to the serial device used at step 1 (you can configure correct COM port and Baudrate under Reciever tab);
-3. Go to Tools -> GNSS Configuration or Tools -> Reciever Configuration, depending on your U-Center version;
+1. Connect the receiver to your PC (a FTDI USB to TTL module comes handy, the same one used to program Arduino boards without USB ports, [example](https://www.amazon.com/s?k=ftdi+usb+to+serial&i=electronics&ref=nb_sb_noss_1));
+2. Open U-Center and connect to the serial device used at step 1 (you can configure correct COM port and Baudrate under Receiver tab);
+3. Go to Tools -> GNSS Configuration or Tools -> Receiver Configuration, depending on your U-Center version;
 4. Find one of the saved configuration files in this folder;
 5. Select your GPS module series (BN220 and BN820 is M8);
-6. Select "Store Configrations into BBR/Flash';
+6. Select "Store Configurations into BBR/Flash";
 7. Click 'File > GNSS'.
 
-at this point the configuration is stored on your device in its flash memory. Please note some cheap GPS receiver modules do not have flash memory and they will not work for this project.
+At this point the configuration is stored on your device in its flash memory. Please note that some cheap GPS receiver modules do not have flash memory and they will not work for this project.
 
-The example configuration offered in this repo configures the default baudrate of GPS receiver at 115200 (which is expected baudrate by bongogps software), but sometimes GPS receiver has factory 9600 baudrate. This will lead to connection errors as soon as U-Center applies the baudrate setting. So, once you'll start receiving connection errors, configure baudrate to 115200 via (Reciever -> Baudrate). After that, the flashing should continue normally.
+The example configuration offered in this repo configures the default baudrate of the GPS receiver at 115200 (which is the expected baudrate by bonogps software), but sometimes the GPS receiver has a factory default of 9600 baudrate. This will lead to connection errors as soon as U-Center applies the baudrate setting. So, once you start receiving connection errors, configure the baudrate to 115200 via (Receiver -> Baudrate). After that, the flashing should continue normally.
 
-Save configuration is notably (as is - several sources say so and I find it as well) unreliable, so please run it more than a few times and check that settins have actually been saved across resets/power downs.
+Save configuration is notably (as is - several sources say so and I find it as well) unreliable, so please run it more than a few times and check that settings have actually been saved across resets/power downs.
 
 ## Setup on your own, step by step
 

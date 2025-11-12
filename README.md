@@ -31,13 +31,13 @@ If you are not into the maker thing or if you don't know anyone who might be, [l
 
 ## For the SW Engineer / maker
 
-This repo contains software, list of hardware, and (simple) schematics  to build an ESP32 device to reads NMEA sentences from a GPS receiver compatible with u-blox M10 and M8 series, for example
+This repo contains software, a list of hardware, and (simple) schematics to build an ESP32 device that reads NMEA sentences from a GPS receiver compatible with u-blox M10 and M8 series, for example
 
 -  [BK880](https://store.beitian.com/products/beitian-compass-qmc5883l-amp2-6-pix4-pixhawk-gnss-gps-glonass-dual-flight-control-gps-module-bn-880q?variant=44977758011679) 25 Hz active antenna > recommended
 -  [BK280](https://store.beitian.com/collections/gps-module/products/beitian-gps-module-with-antenna-ubx-m10050-gnss-chip-ultra-low-power-gnss-receiver-for-track-be-180?variant=44859232420127) 25 Hz > recommended
 -  [BN880](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46725104730399&_pos=1&_sid=fe8b2c602&_ss=r) 10 Hz active antenna
 -  [BN220](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46694929989919&_pos=1&_sid=fe8b2c602&_ss=r) 10 Hz passive antenna
--   [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) ) 
+-  [DIYmall Micro GPS with NEO-M8N](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K)
 
 and repeats them back to a logger device, either
 
@@ -51,11 +51,11 @@ Examples of actual devices are in [hardware/assembled](hardware/assembled), at a
 
 ![Prototype picture](hardware/assembled/bonogps_bn220_side.jpg)
 
-A web configuration (basic responsive HTML) panel allows changing configuration and select GPS parameters on the fly: access it via [http://bonogps.local](http://bonogps.local) (when in WiFi AP mode, this becomes [http://10.0.0.1](http://10.0.0.1) on Android without mDNS resolution).
+A web configuration (basic responsive HTML) panel allows changing configuration and selecting GPS parameters on the fly: access it via [http://bonogps.local](http://bonogps.local) (when in WiFi AP mode, this becomes [http://10.0.0.1](http://10.0.0.1) on Android without mDNS resolution).
 
 The settings required by each app are available as presets that you can load for your device (iOS, Android). More information on what version, features, and connections of each app are in [software/connecting](software/connecting).
 
-You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/product/u-center) via TCP-IP, in this case be aware that the uart speed is fixed.
+You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/product/u-center) via TCP-IP. In this case, be aware that the UART speed is fixed.
 
 ### Diagram of project components
 
@@ -69,7 +69,7 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 2. Open your preferred mobile app and connect it to your BonoGPS-*ABCD* device (ABCD is a combination of 4 letters and numbers unique to your ESP32 device)
 3. Enjoy your ride!
 
-Most runtime configurations are managed via its web-based interface: you can use your phone or any device with a web browser which is able to connect to either the built-in Access Point the BonoGPS provides or (if you are home and on you have configured the WiFi Client credentials) [http://bonogps.local](http://bonogps.local)
+Most runtime configurations are managed via its web-based interface: you can use your phone or any device with a web browser which is able to connect to either the built-in Access Point the BonoGPS provides or (if you are home and you have configured the WiFi Client credentials) [http://bonogps.local](http://bonogps.local)
 
 The local built-in access point will be named BonoGPS-*ABCD* device (ABCD is a combination of 4 letters and numbers unique to your ESP32 device) and the password to it is in the source code (you can change it to your discretion - it's simply meant to avoid anyone connecting by mistake)
 
@@ -83,8 +83,8 @@ The local built-in access point will be named BonoGPS-*ABCD* device (ABCD is a c
 
 The BOOT button (or another button of your choice) allows you to loop between WiFi modes on the fly:
 
-- short press: toggle between WiFi Access Point (built in led, usually blue, slowly blinking 500 ms cycle and no WiFi (built in led off)
-- long press (at least 2 seconds): enable WiFi Client so that you can reach the unit from your preferred WiFi network (internal led/blue led light flashes rapidly with a 250 ms cycle) a
+- short press: toggle between WiFi Access Point (built in led, usually blue, slowly blinking 500 ms cycle) and no WiFi (built in led off)
+- long press (at least 2 seconds): enable WiFi Client so that you can reach the unit from your preferred WiFi network (internal led/blue led light flashes rapidly with a 250 ms cycle)
 
 #### Save a configuration
 
