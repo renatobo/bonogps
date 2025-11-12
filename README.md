@@ -5,6 +5,8 @@
   - [For the SW Engineer / maker](#for-the-sw-engineer--maker)
     - [Diagram of project components](#diagram-of-project-components)
   - [Quick Start Guide](#quick-start-guide)
+  - [How to Verify Everything is Working](#how-to-verify-everything-is-working)
+  - [Common Mistakes to Avoid](#common-mistakes-to-avoid)
   - [HowTo](#howto)
     - [Daily Usage](#daily-usage)
       - [Save a configuration](#save-a-configuration)
@@ -145,6 +147,162 @@ See detailed instructions: [Software build guide](software/building)
 **Supported apps:** [Harry's Lap Timer](software/connecting/harrylaptimer) | [TrackAddict](software/connecting/trackaddict) | [RaceChrono](software/connecting/racechrono) | [RaceTime](software/connecting/racetime)
 
 **Need help?** See [Troubleshooting FAQ](#troubleshooting-and-faq) below.
+
+---
+
+## How to Verify Everything is Working
+
+After completing the Quick Start, use this checklist to confirm your BonoGPS is functioning correctly:
+
+### Hardware & Boot Checks
+- ✅ **ESP32 powers on:** Device responds when plugged in via USB or battery
+- ✅ **Built-in LED indicates WiFi mode:**
+  - Slow blink (500ms cycle) = Access Point mode active
+  - Fast blink (250ms cycle) = Client mode active
+  - Off = WiFi disabled
+- ✅ **GPS module powers on:** GPS module LED is visible (if module has one)
+
+### GPS Functionality
+- ✅ **GPS acquires satellite fix:**
+  - BN/BK modules: Red LED blinks once per second after fix
+  - First time: Allow 5-15 minutes outdoors with clear sky view
+  - Subsequent times: Should get fix in 1-5 seconds
+- ✅ **Satellite count adequate:** At least 4 satellites visible for accurate positioning
+  - Check in web interface under "Status" or "GPS Info"
+  - 8+ satellites = excellent signal
+  - 4-7 satellites = good signal
+  - <4 satellites = insufficient for accurate position
+
+### Connectivity & Web Interface
+- ✅ **Can access web interface:**
+  - Connect to BonoGPS-XXXX WiFi network
+  - Navigate to http://10.0.0.1 (Android) or http://bonogps.local (iOS/desktop)
+  - Configuration page loads successfully
+- ✅ **Web interface shows correct device info:**
+  - Device name displays (BonoGPS-XXXX)
+  - Battery voltage shown (if using LOLIN D32 PRO with battery)
+  - Firmware version visible
+
+### App Connection
+- ✅ **Mobile app discovers device:**
+  - BLE: Device appears as "BonoGPS-XXXX" in Bluetooth settings
+  - BT-SPP: Device pairs successfully via Bluetooth
+  - TCP-IP: App connects to 10.0.0.1:1818
+- ✅ **App receives GPS data:**
+  - Speed readings update in real-time
+  - Position shows on map (if app has map view)
+  - Satellite count matches GPS module readings
+- ✅ **Data update rate is correct:**
+  - 10Hz modules: ~10 updates per second
+  - 25Hz modules: ~25 updates per second (M10 chipset only)
+
+### Track Day Ready
+- ✅ **Battery runtime adequate:** Full charge provides expected runtime based on capacity
+- ✅ **GPS maintains fix while moving:** No dropouts during test drive
+- ✅ **Mounting secure:** Device stays in place under vibration
+- ✅ **App records session successfully:** Can complete and save a test session
+
+**If any check fails**, see the [Troubleshooting FAQ](#troubleshooting-and-faq) section below.
+
+---
+
+## Common Mistakes to Avoid
+
+### Critical Mistakes (Will prevent device from working)
+
+**❌ Forgetting to configure GPS before first use**
+- **Why it matters:** GPS modules ship with default settings that may not work with BonoGPS or your app
+- **Solution:** Follow the [GPS configuration guide](hardware/GPS) before connecting GPS to ESP32
+- **Time cost:** 30-45 minutes to configure correctly
+
+**❌ Wrong partition scheme during upload**
+- **Why it matters:** Default partition is too small for BonoGPS firmware with Bluetooth
+- **Solution:** Select "Minimal SPIFFS (1.9MB)" in Arduino IDE or PlatformIO
+- **Error:** Build fails with "not enough space" or upload fails
+
+**❌ Swapped TX/RX pins**
+- **Why it matters:** UART communication requires TX→RX and RX→TX crossover
+- **Solution:** Connect GPS TX to ESP32 RX, and GPS RX to ESP32 TX
+- **Symptom:** No GPS data received, web interface shows "No GPS fix"
+
+**❌ Testing GPS indoors**
+- **Why it matters:** GPS requires direct line of sight to satellites
+- **Solution:** Test outdoors with clear sky view, away from buildings and trees
+- **First fix:** Allow 5-15 minutes for initial satellite almanac download
+
+### App Compatibility Mistakes
+
+**❌ Using GN Talker ID with RaceChrono or TrackAddict**
+- **Why it matters:** These apps require GP Talker ID specifically
+- **Solution:** Load the app-specific preset from web interface (sets Main Talker ID = GP)
+- **Symptom:** App shows "no data" or "invalid GPS"
+
+**❌ Wrong connection method for platform**
+- **Why it matters:** iOS doesn't support BT-SPP, Android BLE has limitations
+- **Solution:**
+  - **iOS:** Use BLE (Harry's Lap Timer) or TCP-IP (RaceChrono)
+  - **Android:** Use BT-SPP (most reliable) or TCP-IP as backup
+- **Symptom:** Device not found or connection drops
+
+**❌ Too high refresh rate with satellite messages enabled**
+- **Why it matters:** Bluetooth bandwidth is limited
+- **Solution:**
+  - For BLE: Use 20Hz or lower, disable GSA/GSV or poll at 5-second intervals
+  - For BT-SPP: 10Hz is safe with full messages
+- **Symptom:** Connection drops, data corruption, app crashes
+
+### Build and Upload Mistakes
+
+**❌ Wrong NimBLE library version**
+- **Why it matters:** Breaking changes between versions 1.x, 2.x, and 3.x
+- **Solution:** Use NimBLE-Arduino version **2.x** specifically
+- **Error:** Compilation fails with "class NimBLEDevice has no member..."
+
+**❌ Not cloning from Git (downloading ZIP instead)**
+- **Why it matters:** Build script uses Git to determine version info
+- **Solution:** Use `git clone https://github.com/renatobo/bonogps.git`
+- **Error:** "git_rev_macro.py" errors during PlatformIO build
+
+**❌ Insufficient USB power**
+- **Why it matters:** ESP32 + GPS + WiFi can draw up to 500mA
+- **Solution:** Use quality USB cable and powered USB port (not USB hub)
+- **Symptom:** Random resets, brownouts, WiFi disconnections
+
+### Hardware Assembly Mistakes
+
+**❌ Using 5V instead of 3.3V for GPS power**
+- **Why it matters:** Most GPS modules are 3.3V only, 5V will damage them
+- **Solution:** Connect GPS VCC to ESP32 **3.3V pin**, never 5V
+- **Result:** Permanent GPS module damage
+
+**❌ Weak solder connections for motorcycle use**
+- **Why it matters:** Vibration will eventually break cold solder joints
+- **Solution:** Use proper soldering technique or crimped connectors
+- **Symptom:** Intermittent GPS connection, random disconnections
+
+**❌ GPS antenna placement under metal or carbon fiber**
+- **Why it matters:** Metal and carbon fiber block GPS signals completely
+- **Solution:** Place antenna under plastic fairings/seat cowls only
+- **Symptom:** Never gets satellite fix, satellite count always 0
+
+### Configuration Mistakes
+
+**❌ Not saving GPS configuration to flash**
+- **Why it matters:** Configuration is lost when GPS powers off
+- **Solution:** In u-center, send UBX-CFG-CFG command to save to flash
+- **Symptom:** GPS works after configuration but reverts on next power-on
+
+**❌ Mismatched baudrate between GPS and ESP32**
+- **Why it matters:** Serial communication requires matching speeds
+- **Solution:** Set GPS to 115200 baud, matches `GPS_STANDARD_BAUD_RATE` in code
+- **Symptom:** Garbled data, no GPS messages received
+
+**❌ Forgetting to enable required NMEA messages**
+- **Why it matters:** Apps need specific messages (GGA, RMC minimum)
+- **Solution:** Load app preset or manually enable messages in u-center
+- **Symptom:** App connects but shows "no GPS data"
+
+**Pro tip:** Follow the Quick Start Guide step-by-step and verify each stage before moving to the next. Most issues are caught early this way.
 
 ---
 
