@@ -1,5 +1,7 @@
 # Connecting to Harry's LapTimer
 
+**⏱️ Time:** 10-15 minutes | **🎯 Difficulty:** Beginner (iOS BLE), Intermediate (Android BT-SPP or TCP/IP)
+
 - [Connecting to Harry's LapTimer](#connecting-to-harrys-laptimer)
   - [Features](#features)
   - [iOS Bluetooth Low Energy setup](#ios-bluetooth-low-energy-setup)
@@ -56,8 +58,8 @@ If your ESP32 board has a battery and you have enabled the `SHOWBATTERY` feature
 
 Go to *Administration > Settings > Expert Settings* and
 
-- within 'accessory tweaks', turn on 'Use Wi-Fi Sensors'
-- within 'custom wifi gps adapter', set Connection Type `TCP/IP`, 'Device IP Address' to `10.0.0.1`, TCP Port to `1818`
+- within 'accessory tweaks', turn on 'Use WiFi Sensors'
+- within 'custom WiFi gps adapter', set Connection Type `TCP/IP`, 'Device IP Address' to `10.0.0.1`, TCP Port to `1818`
 
 ![WiFi](hlt-wifi.jpeg)
 
@@ -90,3 +92,8 @@ According [to this good reference message](http://forum.gps-laptimer.de/viewtopi
 - `GxGGA`, `GxRMC`, and `GxGBS` are streaming
 
 HLT is the only app that easily works with the GN talker id, so no translation of Talker ID was necessary.
+
+**See also:**
+- [GPS Configuration Guide](../../../hardware/GPS) - How to set up NMEA messages
+- [Main Troubleshooting FAQ](../../../README.md#troubleshooting-and-faq) - Common connection issues
+- [Other Supported Apps](../) - Compare with RaceChrono, TrackAddict, RaceTime

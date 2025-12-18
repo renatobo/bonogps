@@ -1,8 +1,10 @@
 # RaceChrono
 
+**⏱️ Time:** 10-15 minutes | **🎯 Difficulty:** Beginner | **Prerequisites:** Load RaceChrono preset from BonoGPS web interface
+
 - [RaceChrono](#racechrono)
   - [Setup over BT-SPP on Android](#setup-over-bt-spp-on-android)
-  - [Setup over Wifi on iOS](#setup-over-wifi-on-ios)
+  - [Setup over WiFi on iOS](#setup-over-wifi-on-ios)
   - [GPS configuration for NMEA messages](#gps-configuration-for-nmea-messages)
 
 The lap timer with the cleanest UX currently supported: [https://racechrono.com/](https://racechrono.com/)
@@ -27,9 +29,9 @@ When you click on the lower left green "swipe up" icon, you'll be able to see fu
 ![Information](racechrono_information.png)
 
 
-## Setup over Wifi on iOS
+## Setup over WiFi on iOS
 
-Make sure you have connected your iPhone to the AP on the BonoGPS device as you would to perfrom the setup
+Make sure you have connected your iPhone to the AP on the BonoGPS device as you would to perform the setup
 
 Open settings from the gear icon in the main page, then add an Internal sensor
 
@@ -47,7 +49,7 @@ This next section requires several selections, step 1, enable the "NMEA 0183" sl
 
 ![Information](RC-NMEA.png)
 
-On the same page as above now set you target IP address and port, the default is show below but if you have changed the network and the port in the code please put the updated values in. 
+On the same page as above now set your target IP address and port, the default is shown below but if you have changed the network and the port in the code please put the updated values in. 
 
 ![Information](RC-IP.png)
 
@@ -73,3 +75,8 @@ This means
 
 - Main Talker ID = GP
 - `GSA` and `GSV` every 5 seconds, with only `GSV` restricted to GP
+
+**See also:**
+- [GPS Configuration Guide](../../../hardware/GPS) - How to set up GP Talker ID and NMEA messages
+- [Main Troubleshooting FAQ](../../../README.md#troubleshooting-and-faq) - Connection and GPS issues
+- [Other Supported Apps](../) - Compare with Harry's Lap Timer, TrackAddict, RaceTime
