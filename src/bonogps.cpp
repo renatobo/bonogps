@@ -691,6 +691,31 @@ void gps_disable_all()
   stored_preferences.racechrono = false;
   stored_preferences.racetime = false;
 }
+// Single source of truth for mapping a rate (Hz) to the matching UBX command.
+// Rate is orthogonal to app presets: presets configure NMEA messages only.
+void gps_set_rate(uint8_t rate)
+{
+  switch (rate)
+  {
+#ifdef HIGHER_GPS_RATES
+  case 20:
+    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
+    break;
+  case 25:
+    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
+    break;
+#endif
+  case 10:
+    push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
+    break;
+  case 5:
+    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
+    break;
+  default:
+    push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
+    break;
+  }
+}
 void gps_enable_common()
 {
   gps_disable_all();
@@ -706,8 +731,8 @@ void gps_enable_common()
   push_gps_message(UBLOX_GxGLL_OFF, sizeof(UBLOX_GxGLL_OFF));
   stored_preferences.nmeaGLL = false;
 
-  push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-  stored_preferences.gps_rate = 10;
+  // Rate is intentionally left untouched: it is a user setting applied
+  // separately (boot: gps_initialize_settings; web: handle_rate).
 #ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(0);
 #else
@@ -1415,26 +1440,7 @@ void handle_rate()
   log_i("Set GPS Rate to %s Hz", strate);
   int rate = strate.toInt();
   stored_preferences.gps_rate = rate;
-  switch (rate)
-  {
-#ifdef HIGHER_GPS_RATES
-  case 20:
-    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
-    break;
-  case 25:
-    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
-    break;
-#endif
-  case 10:
-    push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-    break;
-  case 5:
-    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
-    break;
-  default:
-    push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
-    break;
-  }
+  gps_set_rate(rate);
 #ifdef SHORT_API
   webserver.send_P(200, text_json, json_ok);
 #else
@@ -1743,7 +1749,7 @@ void handle_trackaddict_off()
 void handle_racechrono_android()
 {
   // /racechrono/android
-  log_i("Setting optimal configuration for RaceChrono on Android: 10Hz, GSA+GSV+GBS Off, BT-SPP");
+  log_i("Setting optimal configuration for RaceChrono on Android: GSA+GSV+GBS Off, BT-SPP (rate unchanged)");
   gps_enable_racechrono();
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
@@ -1760,7 +1766,7 @@ void handle_racechrono_android()
 void handle_racetime_android()
 {
   // /racetime/android
-  log_i("Setting optimal configuration for RaceTime on Android: 10Hz, GSA+GSV+GBS Off, GLL+VTG ON, BT-SPP");
+  log_i("Setting optimal configuration for RaceTime on Android: GSA+GSV+GBS Off, GLL+VTG ON, BT-SPP (rate unchanged)");
   gps_enable_racetime();
 #ifdef BLEENABLED
   stored_preferences.ble_active = false;
@@ -2722,29 +2728,7 @@ void gps_initialize_settings()
   }
 #endif
 
-  switch (stored_preferences.gps_rate)
-  {
-  case 1:
-    push_gps_message(UBLOX_INIT_1HZ, sizeof(UBLOX_INIT_1HZ));
-    break;
-  case 5:
-    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
-    break;
-  case 10:
-    push_gps_message(UBLOX_INIT_10HZ, sizeof(UBLOX_INIT_10HZ));
-    break;
-#ifdef HIGHER_GPS_RATES
-  case 20:
-    push_gps_message(UBLOX_INIT_20HZ, sizeof(UBLOX_INIT_20HZ));
-    break;
-  case 25:
-    push_gps_message(UBLOX_INIT_25HZ, sizeof(UBLOX_INIT_25HZ));
-    break;
-#endif
-  default:
-    push_gps_message(UBLOX_INIT_5HZ, sizeof(UBLOX_INIT_5HZ));
-    break;
-  }
+  gps_set_rate(stored_preferences.gps_rate);
 #ifdef TASK_SCHEDULER
   control_poll_GSA_GSV(stored_preferences.nmeaGSAGSVpolling);
 #endif
