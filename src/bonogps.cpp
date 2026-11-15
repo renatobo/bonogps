@@ -83,6 +83,11 @@
 #define BLE_SERVICE_UUID (uint16_t)0x1819        // SERVICE_LOCATION_AND_NAVIGATION_UUID
 #define BLE_CHARACTERISTIC_UUID (uint16_t)0x2A67 // CHARACTERISTIC_LOCATION_AND_SPEED_CHARACTERISTIC_UUID
 #define BLE_MTU 185                              // Maximum Transmission Unit for BLE. 185 is a safe tested value
+// RaceChrono BLE DIY API (https://github.com/aollin/racechrono-ble-diy-device): binary GPS packets
+// that RaceChrono reads directly, exposed next to the NMEA service above
+#define RC_BLE_SERVICE_UUID (uint16_t)0x1FF8     // RaceChrono DIY service
+#define RC_BLE_GPS_MAIN_UUID (uint16_t)0x0003    // GPS main characteristic, 20 bytes per fix
+#define RC_BLE_GPS_TIME_UUID (uint16_t)0x0004    // GPS time characteristic, date + hour
 
 /* 
  Monitor UART settings
@@ -212,6 +217,7 @@ void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
 #define CONFIG_BT_NIMBLE_SVC_GAP_DEVICE_NAME BONOGPS_MDNS
 #define CONFIG_NIMBLE_STACK_USE_MEM_POOLS 1 // Enable the use of memory pools for stack operations. This will use slightly more RAM but may provide more stability.
 #include <NimBLEDevice.h>
+#include "racechrono_gps.h"
 // ble runtime
 bool ble_deviceConnected = false;
 void ble_start();
@@ -1293,6 +1299,9 @@ void handle_preset()
   // racechrono main page - WiFi (TCP/IP NMEA 0183, RaceChrono DIY device) works on every board,
   // BT-SPP is an extra option only where the chip has classic Bluetooth
   mainpage += F("<details open><summary>RaceChrono <a target='_blank' href='https://racechrono.com/'>?</a></summary><article>Recommended options:<br><ul><li>Talker id GPS for all systems</li><li>Restrict GSV to GPS</li><li>no GBS</li><li>GSA+GSV polling every 5 sec</li><li>10 Hz updates</li></ul></article><article><p>Load options for:<p><a href='/racechrono/wifi'>WiFi: RaceChrono DIY device, NMEA 0183</a></p>");
+#ifdef BLEENABLED
+  mainpage += F("<p><a href='/racechrono/ble'>BLE: RaceChrono DIY device (phone keeps mobile data)</a></p>");
+#endif
 #ifdef BTSPPENABLED
   mainpage += F("<p><a href='/racechrono/android'>Android: BT-SPP</a></p>");
 #endif
@@ -1857,6 +1866,40 @@ void handle_racechrono_wifi()
   message += FPSTR(savecfg);
   webserver.send(200, html_text, generate_html_body(message));
 }
+#ifdef BLEENABLED
+// RaceChrono over BLE: the device always exposes the RaceChrono DIY service (0x1FF8) while BLE is
+// on, so this preset only sets the GPS messages RaceChrono needs (GGA+RMC, GSA polled for VDOP) and
+// makes sure BLE is running. Works on every board, phone data is untouched (no phone WiFi needed).
+void handle_racechrono_ble()
+{
+  // /racechrono/ble
+  log_i("Setting optimal configuration for RaceChrono via BLE (RaceChrono DIY device)");
+  gps_enable_racechrono();
+#ifdef BTSPPENABLED
+  if (stored_preferences.btspp_active)
+  {
+    // Same hack as the Harry Lap Timer iOS preset: going from BT-SPP to BLE without a restart crashes the stack
+    stored_preferences.btspp_active = false;
+    stored_preferences.ble_active = true;
+    StoreNVMPreferences(true);
+    webserver.send(200, html_text, generate_html_body(F("<b>RESTARTING</b> to set optimal configuration for RaceChrono via BLE:</p><p>Settings have been already saved</p>")));
+    delay(1000);
+    ESP.restart();
+  }
+#endif
+  if (!stored_preferences.ble_active)
+  {
+    ble_start();
+    stored_preferences.ble_active = true;
+  }
+  String message((char *)0);
+  message.reserve(70);
+  message += F("Set optimal configuration for RaceChrono via BLE:");
+  message += FPSTR(savecfg);
+  webserver.send(200, html_text, generate_html_body(message));
+}
+#endif
+
 void handle_racetime_wifi()
 {
   // /racetime/wifi
@@ -2358,6 +2401,7 @@ void WebConfig_start()
 #endif
 #ifdef BLEENABLED
   webserver.on(UriBraces("/ble/{}"), handle_ble);
+  webserver.on("/racechrono/ble", handle_racechrono_ble);
 #endif
 #ifdef TASK_SCHEDULER
   webserver.on(UriBraces("/powersave/{}"), handle_powersave);
@@ -2484,6 +2528,30 @@ void OTA_stop()
 NimBLEServer *pServer = NULL;
 NimBLECharacteristic *pCharacteristicGPS = NULL;
 NimBLECharacteristic *pCharacteristicCommand = NULL;
+NimBLECharacteristic *pCharacteristicRcGpsMain = NULL;
+NimBLECharacteristic *pCharacteristicRcGpsTime = NULL;
+RaceChronoGpsEncoder rcGpsEncoder;
+
+// Feed GPS UART bytes to the RaceChrono encoder and notify each finished fix
+void ble_racechrono_gps_feed(const uint8_t *buf, size_t len)
+{
+  if (!pCharacteristicRcGpsMain || !pCharacteristicRcGpsTime)
+    return;
+  uint32_t now = millis();
+  for (size_t i = 0; i < len; i++)
+  {
+    if (!rcGpsEncoder.feed((char)buf[i], now))
+      continue;
+    // time first: the main packet's sync bits must match a time value the client can read
+    if (rcGpsEncoder.takeTimeChanged())
+    {
+      pCharacteristicRcGpsTime->setValue(rcGpsEncoder.timePacket(), RACECHRONO_GPS_TIME_SIZE);
+      pCharacteristicRcGpsTime->notify();
+    }
+    pCharacteristicRcGpsMain->setValue(rcGpsEncoder.mainPacket(), RACECHRONO_GPS_MAIN_SIZE);
+    pCharacteristicRcGpsMain->notify();
+  }
+}
 #if defined(SHOWBATTERY)
 NimBLECharacteristic *pCharBattery = NULL;
 
@@ -2591,7 +2659,10 @@ void ble_start()
   ble_mtu = NimBLEDevice::getMTU();
   log_d("BLE MTU set to: %d", ble_mtu);
   NimBLEDevice::setSecurityIOCap(BLE_HS_IO_NO_INPUT_OUTPUT);
-  NimBLEDevice::setSecurityAuth(/*BLE_SM_PAIR_AUTHREQ_BOND | BLE_SM_PAIR_AUTHREQ_MITM |*/ BLE_SM_PAIR_AUTHREQ_SC);
+  // Bond (store the keys), no MITM (no display/keypad), Secure Connections.
+  // Without bonding the phone keeps a bond the device never stored: every reconnect fails
+  // encryption (key missing), Android starts re-pairing and drops the link after ~5-30 s.
+  NimBLEDevice::setSecurityAuth(/*bonding*/ true, /*mitm*/ false, /*sc*/ true);
   // Create the BLE Server
   pServer = NimBLEDevice::createServer();
   pServer->setCallbacks(&MyServerCallbacks);
@@ -2599,10 +2670,18 @@ void ble_start()
   NimBLEService *pServiceGPS = pServer->createService(BLE_SERVICE_UUID);
   // Create a BLE Characteristic for the GPS - Speed and Location characteristic
   pCharacteristicGPS = pServiceGPS->createCharacteristic(BLE_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);  
-  // Start the service
-  pServiceGPS->start();
   // Start advertising
   NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
+
+  // RaceChrono DIY service, advertised first so it always fits in the advertising packet
+  NimBLEService *pServiceRaceChrono = pServer->createService(RC_BLE_SERVICE_UUID);
+  pCharacteristicRcGpsMain = pServiceRaceChrono->createCharacteristic(RC_BLE_GPS_MAIN_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  pCharacteristicRcGpsTime = pServiceRaceChrono->createCharacteristic(RC_BLE_GPS_TIME_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  rcGpsEncoder.reset();
+  pCharacteristicRcGpsMain->setValue(rcGpsEncoder.mainPacket(), RACECHRONO_GPS_MAIN_SIZE);
+  pCharacteristicRcGpsTime->setValue(rcGpsEncoder.timePacket(), RACECHRONO_GPS_TIME_SIZE);
+  pAdvertising->addServiceUUID(pServiceRaceChrono->getUUID());
+
   pAdvertising->addServiceUUID(pServiceGPS->getUUID());
 
   // Device info service
@@ -2620,7 +2699,6 @@ void ble_start()
   // Add a write characteristic to handle commands via BLE - reserved for commands "reboot" and "wifista"
   pCharacteristicCommand = pServiceInfo->createCharacteristic(BLE_RECONFIG_CHARACTERISTIC_UUID, NIMBLE_PROPERTY::WRITE_NR);
   pCharacteristicCommand->setCallbacks(&MyCommandCharacteristicCallbacks);
-  pServiceInfo->start();
   pAdvertising->addServiceUUID(pServiceInfo->getUUID());
 
 #if defined(SHOWBATTERY)
@@ -2636,7 +2714,6 @@ void ble_start()
     #endif
     if (pCharBattery)
     {
-      pServiceBattery->start();
       uint8_t batterypct=LiPoChargePercentage(ReadBatteryVoltage());
       pCharBattery->setValue(batterypct);
       log_d("BLE pCharBattery value set to: %d", batterypct);
@@ -2657,7 +2734,10 @@ void ble_start()
   // define appearance, from https://www.bluetooth.com/wp-content/uploads/Sitecore-Media-Library/Gatt/Xml/Characteristics/org.bluetooth.characteristic.gap.appearance.xml
   pAdvertising->setAppearance(5186);
   /** If your device is battery powered you may consider setting scan response to false as it will extend battery life at the expense of less data sent.  */
-  pAdvertising->enableScanResponse(false);
+  // Scan response is on anyway: it carries the device name, so RaceChrono's device list shows
+  // "BonoGPS-XXXX" next to the CAN bridge instead of a bare address.
+  pAdvertising->enableScanResponse(true);
+  pAdvertising->setName(ble_device_id);
   // pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue -> find out more at https://github.com/h2zero/NimBLE-Arduino/issues/129
   // pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
 
@@ -2670,6 +2750,9 @@ void ble_stop()
   if (NimBLEDevice::isInitialized())
   {
     NimBLEDevice::stopAdvertising();
+    // deinit(true) deletes the server and its characteristics
+    pCharacteristicRcGpsMain = NULL;
+    pCharacteristicRcGpsTime = NULL;
     NimBLEDevice::deinit(true);
     #if defined(SHOWBATTERY) && defined(TASK_SCHEDULER)
     tBLEBatteryNotify.disable();
@@ -2954,6 +3037,11 @@ void loop()
 #endif
 
 #ifdef BLEENABLED
+    // RaceChrono binary GPS packets: decoded even with no client connected, so the
+    // date is already known and the first fix goes out as soon as RaceChrono connects
+    if (stored_preferences.ble_active)
+      ble_racechrono_gps_feed(sbuf, len);
+
     if (ble_deviceConnected && stored_preferences.ble_active)
     {
       // we have BLE active
