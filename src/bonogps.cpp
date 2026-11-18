@@ -779,6 +779,24 @@ void gps_enable_racechrono()
 #endif
   stored_preferences.racechrono = true;
 }
+// RaceChrono over BLE: the DIY encoder accepts any talker ID, so unlike the NMEA
+// presets keep the system-dependent talker and all constellations. That way the
+// GGA satellite count (shown by RaceChrono) is the receiver's real one instead of
+// GPS satellites only. The racechrono flag stays false, so the boot path re-applies
+// this through the default branch (UBLOX_INIT_CHANNEL_ALL) and polls with GN.
+void gps_enable_racechrono_ble()
+{
+  log_i("Setting GPS for RaceChrono over BLE (all constellations)");
+  gps_enable_common();
+  push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
+#ifdef TASK_SCHEDULER
+  // GSA carries VDOP for the encoder; GSV is polled too for NMEA clients
+  control_poll_GSA_GSV(5);
+  stored_preferences.nmeaGSAGSVpolling = 5;
+#else
+  stored_preferences.nmeaGSAGSVpolling = 0;
+#endif
+}
 
 /*
   WiFi connections (server, client, status led)
@@ -1873,7 +1891,7 @@ void handle_racechrono_ble()
 {
   // /racechrono/ble
   log_i("Setting optimal configuration for RaceChrono via BLE (RaceChrono DIY device)");
-  gps_enable_racechrono();
+  gps_enable_racechrono_ble();
 #ifdef BTSPPENABLED
   if (stored_preferences.btspp_active)
   {
@@ -2896,8 +2914,8 @@ void gps_initialize_settings()
     push_gps_message(UBLOX_GxGBS_OFF, sizeof(UBLOX_GxGBS_OFF));
   }
 
-#ifdef BTSPPENABLED
-  // apply settings required by TrackAddict
+  // re-apply app presets (talker ID, SV filter, polling): the GPS loses them on a
+  // power cycle. Not BT-SPP specific: the WiFi and BLE presets set them too.
   if (stored_preferences.trackaddict)
   {
     gps_enable_trackaddict();
@@ -2914,7 +2932,6 @@ void gps_initialize_settings()
   {
     push_gps_message(UBLOX_INIT_CHANNEL_ALL, sizeof(UBLOX_INIT_CHANNEL_ALL));
   }
-#endif
 
   gps_set_rate(stored_preferences.gps_rate);
 #ifdef TASK_SCHEDULER

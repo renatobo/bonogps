@@ -27,6 +27,7 @@ BonoGPS exposes the [RaceChrono BLE DIY](https://github.com/aollin/racechrono-bl
 
 Notes:
 - The GPS is set to GGA + RMC with GSA and GSV polled every 5 seconds; the encoder reads GGA and RMC, and VDOP from GSA
+- Unlike the NMEA presets, the BLE preset keeps all constellations and the receiver's own talker IDs (no GP-only restriction), so RaceChrono shows the receiver's real satellite count. If you loaded the BLE preset on older firmware, load it again and save the configuration to pick this up
 - Speed is sent in km/h as the spec requires; if RaceChrono's speed ever looks about 1.85x off, the knots-to-km/h conversion is the place to check
 
 ## Setup over BT-SPP on Android
