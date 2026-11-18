@@ -39,21 +39,21 @@ If you are not into the maker thing or if you don't know anyone who might be, [l
 
 ## For the SW Engineer / maker
 
-This repo contains software, a list of hardware, and (simple) schematics to build an ESP32 device that reads NMEA sentences from a GPS receiver compatible with u-blox M10 and M8 series, for example:
+This repo contains software, a list of hardware, and (simple) schematics to build an ESP32 device that reads NMEA sentences from a GPS receiver compatible with u-blox M8, M9 and M10 series, for example:
 
 | GPS Module | Chipset | Max Refresh | Antenna Type | Recommended | Link |
 | ---------- | ------- | ----------- | ------------ | ----------- | ---- |
-| **BK880** | M10 | **25 Hz** | Active | ✓ Best | [Store](https://store.beitian.com/products/beitian-compass-qmc5883l-amp2-6-pix4-pixhawk-gnss-gps-glonass-dual-flight-control-gps-module-bn-880q?variant=44977758011679) |
+| **BK880** | M9 | **25 Hz** | Active | ✓ Best | [Store](https://store.beitian.com/products/beitian-compass-qmc5883l-amp2-6-pix4-pixhawk-gnss-gps-glonass-dual-flight-control-gps-module-bn-880q?variant=44977758011679) |
 | **BK280** | M10 | **25 Hz** | Passive | ✓ Best | [Store](https://store.beitian.com/collections/gps-module/products/beitian-gps-module-with-antenna-ubx-m10050-gnss-chip-ultra-low-power-gnss-receiver-for-track-be-180?variant=44859232420127) |
 | BN880 | M8 | 10 Hz | Active | Good | [Store](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46725104730399&_pos=1&_sid=fe8b2c602&_ss=r) |
 | BN220 | M8 | 10 Hz | Passive | Budget | [Store](https://store.beitian.com/products/beitian-ubx-m8030-g-mouse-supports-gps-qzss-and-sbas-fixed-wing-traversing-aircraft-gps-module-antenna-bn-180-220-280-357-880-880q?variant=46694929989919&_pos=1&_sid=fe8b2c602&_ss=r) |
 | DIYmall NEO-M8N | M8N | 10 Hz | Active | Compatible | [Amazon](https://www.amazon.com/DIYmall-NEO-M8N-Module-HMC5983-Antenna/dp/B012RNLG0K) |
 
-**Note:** Active antennas provide better signal quality. M10 modules (BK880/BK280) offer 25Hz refresh rate which is ideal for track use. See [GPS setup guide](hardware/GPS) for detailed configuration.
+**Note:** Active antennas provide better signal quality. BK880 (M9) and BK280 modules offer 25Hz refresh rate which is ideal for track use. See [GPS setup guide](hardware/GPS) for detailed configuration.
 
 and repeats them back to a logger device, either
 
-1. a Bluetooth Low Energy (BLE) service
+1. a Bluetooth Low Energy (BLE) service: NMEA sentences (Harry's Lap Timer) and binary RaceChrono DIY GPS packets (RaceChrono)
 2. a BT Classic (BT-SPP) stream
 3. a TCP-IP socket
 
@@ -93,14 +93,14 @@ You can also interface your GPS to [uBlox u-center](https://www.u-blox.com/en/pr
 
 **Best performance (~$60):**
 - LOLIN D32 PRO with built-in battery charger (~$15-20)
-- BK880 or BK280 GPS (M10, 25Hz) (~$35-45) - [Beitian Store](https://store.beitian.com/)
+- BK880 (M9) or BK280 GPS (25Hz) (~$35-45) - [Beitian Store](https://store.beitian.com/)
 - 2000mAh Li-Ion battery (~$8-12)
 - Custom 3D printed mount
 
 ### Step 2: Wire It Up (15 minutes)
 
 Connect GPS to ESP32 - only 4 wires needed:
-- GPS **VCC** → ESP32 **3.3V** (power)
+- GPS **VCC** → ESP32 **3.3V** or **5V**, depending on the module (see [GPS power by module](#gps-power-by-module))
 - GPS **GND** → ESP32 **GND** (ground)
 - GPS **TX** → ESP32 **RX** (GPIO 16 on DevKit, GPIO 4 on LOLIN D32 PRO)
 - GPS **RX** → ESP32 **TX** (GPIO 17 on DevKit, GPIO 2 on LOLIN D32 PRO)
@@ -176,7 +176,7 @@ These hardware and app combinations have been tested and confirmed working. Use 
 ### Best Performance - iOS ($65)
 **Hardware:**
 - LOLIN D32 PRO (~$18)
-- BK880 GPS M10 with active antenna (~$40)
+- BK880 GPS (M9) with active antenna (~$40)
 - 2000mAh Li-Ion battery (~$10)
 - Custom 3D printed mount
 
@@ -186,7 +186,7 @@ These hardware and app combinations have been tested and confirmed working. Use 
 - Preset: "Harry's Lap Timer iOS BLE"
 - Expected performance: 20Hz over BLE, excellent accuracy (<2m)
 
-**Why this works:** M10 chipset supports 25Hz, LOLIN has battery management, BLE optimized for iOS. Best overall iOS solution.
+**Why this works:** BK880 (M9) supports 25Hz, LOLIN has battery management, BLE optimized for iOS. Best overall iOS solution.
 
 ### Budget Build - Android ($35)
 **Hardware:**
@@ -221,7 +221,7 @@ These hardware and app combinations have been tested and confirmed working. Use 
 ### Advanced - Android with High Refresh ($65)
 **Hardware:**
 - LOLIN D32 PRO (~$18)
-- BK880 M10 GPS with active antenna (~$40)
+- BK880 (M9) GPS with active antenna (~$40)
 - 2000mAh Li-Ion battery (~$10)
 - Professional mounting solution
 
@@ -231,7 +231,7 @@ These hardware and app combinations have been tested and confirmed working. Use 
 - Preset: "Harry's Lap Timer Android BT-SPP"
 - Expected performance: 10Hz over BT-SPP (25Hz requires TCP-IP)
 
-**Why this works:** M10 chipset provides maximum performance, larger battery for full track day, LOLIN handles power management. **Note:** 25Hz requires TCP-IP connection which has less range than Bluetooth.
+**Why this works:** BK880 (M9) provides maximum performance, larger battery for full track day, LOLIN handles power management. **Note:** 25Hz requires TCP-IP connection which has less range than Bluetooth.
 
 ### Universal WiFi Setup - iOS & Android ($45)
 **Hardware:**
@@ -273,13 +273,14 @@ Use this comprehensive shopping list to gather all components for your BonoGPS b
 |-----------|---------|-----|-----------|---------|--------------|-------|
 | **ESP32 Board** | ESP32 DevKit (generic) | 1 | $8-12 | Main controller | [Amazon](https://www.amazon.com/s?k=esp32+devkit), AliExpress | Most common, cheapest |
 | | LOLIN D32 PRO | 1 | $15-20 | Main controller + extras | [WEMOS/LOLIN Store](https://www.wemos.cc/) | Battery charger, PSRAM, TF card |
+| | LilyGO T-Energy-S3 | 1 | — | Main controller + 18650 holder | [LilyGO](https://github.com/Xinyuan-LilyGO/T-Energy-S3) | ESP32-S3: BLE and WiFi only, **no BT-SPP**. See [T-Energy-S3 limitations](#lilygo-t-energy-s3-limitations) |
 | **GPS Module** | BN220 (M8, passive) | 1 | $15-20 | Budget GPS | [Beitian Store](https://store.beitian.com/) | 10Hz max, passive antenna |
 | | BN880 (M8, active) | 1 | $23-27 | Good GPS | [Beitian Store](https://store.beitian.com/) | 10Hz max, active antenna (recommended) |
 | | BK280 (M10, passive) | 1 | $35-40 | Best GPS | [Beitian Store](https://store.beitian.com/) | 25Hz capable, passive antenna |
-| | BK880 (M10, active) | 1 | $38-45 | Best GPS | [Beitian Store](https://store.beitian.com/) | 25Hz capable, active antenna (best performance) |
+| | BK880 (M9, active) | 1 | $38-45 | Best GPS | [Beitian Store](https://store.beitian.com/) | 25Hz capable, active antenna (best performance) |
 | | NEO-M8N | 1 | $25-30 | Compatible GPS | [Amazon](https://www.amazon.com/s?k=neo-m8n+gps) | Alternative M8 module |
 | **USB Cable** | Micro USB cable | 1 | $3-5 | Programming & power | Amazon, any electronics store | For ESP32 DevKit |
-| | USB-C cable | 1 | $5-8 | Programming & power | Amazon, any electronics store | For LOLIN D32 PRO |
+| | USB-C cable | 1 | $5-8 | Programming & power | Amazon, any electronics store | For LOLIN D32 PRO and LilyGO T-Energy-S3 |
 | **Jumper Wires** | Male-to-female, 10cm | 4+ | $2-5 | GPS wiring | Amazon, AliExpress | Only needed if not soldering |
 
 **Core components subtotal:** $30-60 depending on choices
@@ -359,7 +360,7 @@ Use this comprehensive shopping list to gather all components for your BonoGPS b
 
 **Best performance build ($70-90):**
 - [ ] LOLIN D32 PRO ($15-20)
-- [ ] BK880 M10 GPS ($38-45)
+- [ ] BK880 (M9) GPS ($38-45)
 - [ ] 2000mAh battery ($8-12)
 - [ ] USB-C cable ($5-8)
 - [ ] 3D printed custom case ($5-15)
@@ -384,6 +385,7 @@ Use this comprehensive shopping list to gather all components for your BonoGPS b
 **ESP32 Boards:**
 - DevKit: Universal compatibility, cheapest
 - LOLIN D32 PRO: Built-in battery management worth the extra cost for portable use
+- LilyGO T-Energy-S3: Built-in 18650 holder, charger and battery protection, but no BT-SPP (BLE and WiFi only). See [T-Energy-S3 limitations](#lilygo-t-energy-s3-limitations)
 
 **Where to save money:**
 - Skip the case initially (test on desk)
@@ -442,7 +444,7 @@ After completing the Quick Start, use this checklist to confirm your BonoGPS is 
   - Satellite count matches GPS module readings
 - ✅ **Data update rate is correct:**
   - 10Hz modules: ~10 updates per second
-  - 25Hz modules: ~25 updates per second (M10 chipset only)
+  - 25Hz modules: ~25 updates per second (M9/M10 modules only)
 
 ### Track Day Ready
 - ✅ **Battery runtime adequate:** Full charge provides expected runtime based on capacity
@@ -486,16 +488,18 @@ After completing the Quick Start, use this checklist to confirm your BonoGPS is 
 - **Symptom:** App shows "no data" or "invalid GPS"
 
 **❌ Wrong connection method for platform**
-- **Why it matters:** iOS doesn't support BT-SPP, Android BLE has limitations
+- **Why it matters:** iOS doesn't support BT-SPP, and ESP32-S3 boards (e.g. LilyGO T-Energy-S3) have no BT-SPP at all
 - **Solution:**
-  - **iOS:** Use BLE (Harry's Lap Timer) or TCP-IP (RaceChrono)
-  - **Android:** Use BT-SPP (most reliable) or TCP-IP as backup
+  - **iOS:** Use BLE (Harry's Lap Timer; RaceChrono BLE is untested on iOS) or TCP-IP
+  - **Android:** Use BT-SPP, BLE (RaceChrono) or TCP-IP
+  - **ESP32-S3 boards:** Use BLE or TCP-IP; BT-SPP presets are not available
 - **Symptom:** Device not found or connection drops
 
 **❌ Too high refresh rate with satellite messages enabled**
 - **Why it matters:** Bluetooth bandwidth is limited
 - **Solution:**
-  - For BLE: Use 20Hz or lower, disable GSA/GSV or poll at 5-second intervals
+  - For BLE with NMEA (Harry's Lap Timer): Use 20Hz or lower, disable GSA/GSV or poll at 5-second intervals
+  - For BLE with RaceChrono: each fix is a 20-byte binary packet, tested at 25Hz
   - For BT-SPP: 10Hz is safe with full messages
 - **Symptom:** Connection drops, data corruption, app crashes
 
@@ -518,10 +522,10 @@ After completing the Quick Start, use this checklist to confirm your BonoGPS is 
 
 ### Hardware Assembly Mistakes
 
-**❌ Using 5V instead of 3.3V for GPS power**
-- **Why it matters:** Most GPS modules are 3.3V only, 5V will damage them
-- **Solution:** Connect GPS VCC to ESP32 **3.3V pin**, never 5V
-- **Result:** Permanent GPS module damage
+**❌ Powering the GPS from the wrong voltage**
+- **Why it matters:** Modules differ. 5V damages a module rated for 3.3V only, while BN-880 and BK-880 need 3.6-5.5V, so the ESP32's 3.3V pin is below their minimum
+- **Solution:** Check the module's supply range and wire VCC to match (see [GPS power by module](#gps-power-by-module))
+- **Result:** A 3.3V-only module fed 5V is permanently damaged; an under-powered module may work poorly or not at all
 
 **❌ Weak solder connections for motorcycle use**
 - **Why it matters:** Vibration will eventually break cold solder joints
@@ -600,9 +604,12 @@ There are many mobile apps to log lap times, few accept custom devices, in parti
 | [TrackAddict](https://www.hptuners.com/product/trackaddict-app/) | Android | BT-SPP | 10Hz | v4.6.0 | [Guide](software/connecting/trackaddict) |
 | [RaceChrono](https://racechrono.com/) | iOS | TCP-IP | 10Hz | v7.0.10 | [Guide](software/connecting/racechrono) |
 | [RaceChrono](https://racechrono.com/) | Android | BT-SPP | 10Hz | v7.0.10 | [Guide](software/connecting/racechrono) |
+| [RaceChrono](https://racechrono.com/) | Android (iOS untested) | BLE (RaceChrono DIY device) | 25Hz | — | [Guide](software/connecting/racechrono) |
 | [RaceTime](https://www.racetimeapp.com/en/) | Android | BT-SPP | 10Hz | v3.3.8 lite | [Guide](software/connecting/racetime) |
 
 **Note:** Recommended connection methods are shown in **bold**. See detailed setup instructions in each guide.
+
+**ESP32-S3 boards (e.g. LilyGO T-Energy-S3)** have no BT-SPP, so the BT-SPP rows above don't apply to them. Use BLE (Harry's Lap Timer on iOS, RaceChrono) or the WiFi (TCP-IP) presets. The firmware also has WiFi presets for TrackAddict and RaceTime, but those connections aren't in the tested list above.
 
 You can load a preset configuration from the configuration page selecting *Device > Load Preset* and then choosing your mobile phone device and app combination (when there are alternatives, the recommended option is in bold)
 
@@ -615,18 +622,35 @@ You can load a preset configuration from the configuration page selecting *Devic
 The minimum build is a ublox M8 series GPS receiver module connected to an ESP32:
 
 - TX/RX from the GPS to a serial port (default in the code is UART2/Serial2) on ESP32. Remember: you need to connect RX on one device to TX on the other and viceversa
-- the GPS power pins to ESP32: VCC to 3v3, GND to GND
+- the GPS power pins to ESP32: VCC to 3.3V or 5V depending on the module (see [GPS power by module](#gps-power-by-module)), GND to GND
 
-BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the IMU which are not used so you should leave them unconnected.
+BN220 comes with a 4 pin adapter cable for GND TX RX VCC, while BN880 includes 2 additionals pins for SDA and SCL of the compass which are not used so you should leave them unconnected.
 
 Schematics are relatively simple
 
-- power the GPS module (3.3V on ESP32 to VCC on GPS receiver, GND on ESP32 to GND on GPS receiver)
+- power the GPS module (ESP32 3.3V or 5V to VCC on GPS receiver, per [GPS power by module](#gps-power-by-module); GND on ESP32 to GND on GPS receiver)
 - connect GPS RX to ESP32 UART2 TX and GPS TX to ESP32 UART2 RX (RX and TX are switched: GPS transmits, ESP32 receives)
 
 ![Schematics](hardware/esp32/esp32_to_gps_schem.png)
 
-Examples are in [hardware/assembled](hardware/assembled) including an example with more options using an ESP32 device type Lolin D32 Pro which has an internal battery charger [hardware/esp32/lolin_d32_pro.md](hardware/esp32/lolin_d32_pro.md)
+The schematic shows VCC on 3.3V. Use 5V instead for modules that need it.
+
+### GPS power by module
+
+Check your module's supply range before wiring VCC. They differ, and the ESP32's 3.3V pin is below the minimum for some popular modules.
+
+| Module | VCC rating | Power it from | Source |
+| ------ | ---------- | ------------- | ------ |
+| BN-880 | 3.6-5.5V, typical 5.0V | 5V | [BN-880 datasheet](hardware/GPS/BK880/BN-880-datasheet.pdf) |
+| BK-880 | 3.6-5.5V, typical 5.0V | 5V | [BK-880 pinout sheet](hardware/GPS/BK880/BK-880-pinout.jpg) |
+| BN-220, BK-280, NEO-M8N and others | Not documented in this repo: check the module's datasheet | 3.3V if the datasheet allows it, otherwise 5V | — |
+
+- **Where to get 5V:** the ESP32 board's 5V/VIN pin carries USB power when USB is connected. On battery, check what that pin carries on your board. On the LilyGO T-Energy-S3 it's the raw battery voltage (3.0-4.2V), so the [T-Energy-S3 case build](hardware/assembled/models/LilygoT-EnergyS3Case/README.md) adds a 5V boost converter.
+- **3.3V and a 3.6-5.5V module:** the older BN880 builds in [hardware/assembled](hardware/assembled) ran the BN880 from the 3.3V pin. That worked for them, but it's below the module's rated minimum.
+- **Never feed 5V to a module that is rated for 3.3V only.**
+- **UART logic levels:** ESP32 pins are 3.3V. The BK-880's TX and RX use 3.3V logic even when it's powered from 5V, so they connect directly. For other modules powered from 5V, check that TX is 3.3V logic before connecting it to the ESP32.
+
+Examples are in [hardware/assembled](hardware/assembled) including an example with more options using an ESP32 device type Lolin D32 Pro which has an internal battery charger [hardware/esp32/lolin_d32_pro.md](hardware/esp32/lolin_d32_pro.md), and a 3D printed case for the LilyGO T-Energy-S3 with a BK-880 [hardware/assembled/models/LilygoT-EnergyS3Case](hardware/assembled/models/LilygoT-EnergyS3Case/README.md)
 
 **See also:**
 - [GPS Configuration Guide](hardware/GPS) - Configure GPS before use
@@ -662,9 +686,9 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
 ### Performance Expectations
 
 **GPS Accuracy:**
-- **Horizontal position:** 2-3 meters (6-10 feet) typical with M8/M10 chipsets
+- **Horizontal position:** 2-3 meters (6-10 feet) typical with M8/M9/M10 chipsets
 - **Speed accuracy:** ±0.1 km/h at constant velocity
-- **Update rates:** 10Hz (M8 modules), 25Hz (M10 modules)
+- **Update rates:** 10Hz (M8 modules), 25Hz (M9/M10 modules)
 - **Cold start time:** 5-15 minutes (first power-on)
 - **Hot start time:** 1-5 seconds (after recent fix)
 - **Signal quality:** C/N0 values typically 30-40 dBHz (higher is better)
@@ -688,16 +712,19 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
 **WiFi:**
 - **Standard:** 802.11 b/g/n (2.4 GHz only)
 - **Range:** ~30-50 meters open air (depends on environment)
-- **Access Point mode:** Supports up to 4 simultaneous clients
+- **Access Point mode:** Supports up to 2 simultaneous clients
 - **TCP server port:** 1818 (configurable)
 - **mDNS hostname:** bonogps.local
 
 **Bluetooth Low Energy (BLE):**
 - **Standard:** Bluetooth 4.2 / 5.0 (depends on ESP32 module)
 - **Range:** ~10-30 meters typical
-- **Service UUID:** 1819 (Location and Navigation Service)
-- **Max throughput:** ~20Hz GPS data with minimal satellite info
+- **Service UUID:** 1819 (Location and Navigation Service), NMEA sentences for Harry's Lap Timer
+- **RaceChrono DIY service UUID:** 0x1FF8, binary GPS packets (20 bytes per fix) for RaceChrono. Exposed whenever BLE is on
+- **Max throughput:** ~20Hz with NMEA and minimal satellite info; 25Hz tested with RaceChrono DIY packets
+- **Pairing:** bonded, no PIN. Reconnects reuse the stored keys instead of pairing again
 - **iOS support:** Full (recommended connection method)
+- **Board support:** All boards, including ESP32-S3
 
 **Bluetooth Classic (BT-SPP):**
 - **Standard:** Bluetooth 2.0 SPP (Serial Port Profile)
@@ -705,6 +732,7 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
 - **Baudrate:** 115200 (matches GPS UART)
 - **Max throughput:** ~10Hz GPS data with satellite info
 - **Android support:** Full (recommended connection method)
+- **Board support:** Not available on ESP32-S3 boards (no classic Bluetooth radio)
 
 ### Build Size and Memory
 
@@ -749,7 +777,7 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
 - **Mounting:** GPS antenna requires clear sky view (metal/carbon blocks signal)
 
 **GPS antenna considerations:**
-- **Active antennas:** Better signal quality, require 3.3V power, ~50mA draw
+- **Active antennas:** Better signal quality, powered from the module's own supply, ~50mA draw
 - **Passive antennas:** Lower signal quality, no extra power required
 - **Placement:** Best under plastic fairings/seat cowls, avoid metal/carbon
 
@@ -757,9 +785,20 @@ This code is developed specifically for ESP32, and tested with [PlatformIO](http
 
 **Connection limitations:**
 - **BT-SPP reconnection:** Android may require device restart or re-pairing
-- **BLE throughput:** Limited to ~20Hz with full NMEA messages
+- **BLE throughput:** Limited to ~20Hz with full NMEA messages (Harry's Lap Timer); RaceChrono's binary packets are tested at 25Hz
+- **BLE bonds:** The device stores a limited number of bonded phones; when it's full, the oldest bond is dropped and that phone has to pair again
 - **WiFi TCP:** Single client at a time for GPS data stream
 - **Memory pressure:** Running BLE + BT-SPP + WiFi simultaneously may cause instability
+
+#### LilyGO T-Energy-S3 limitations
+
+- **No BT-SPP:** the ESP32-S3 has no classic Bluetooth radio. Use BLE or WiFi (TCP-IP); the BT-SPP presets are hidden in the web interface on this board
+- **No status LED:** the board has no user LED, so the WiFi status blink isn't visible. `LED_BUILTIN` points at GPIO2 as a placeholder; wire an LED and resistor there if you want it
+- **No battery level in the web interface:** `SHOWBATTERY` is off until the battery scale factor is calibrated for this board's divider
+- **USB powers everything:** plugging in USB-C boots the ESP32 and powers the GPS even with the slide switch off. There is no charge-only mode
+- **Blue LED is a charger LED:** it stays off on battery power even while the board is running. It also lights if the cell is inserted backwards, even with the slide switch off, so a blue LED with no USB connected means the cell is reversed
+- **GPIO43/44 are used by the GPS:** keep `ARDUINO_USB_CDC_ON_BOOT=1` (set by the `t_energy_s3` environments), otherwise those pins become the debug console
+- **GPS power:** the 3V pin can't power a BK-880 (needs 3.6-5.5V); see the [T-Energy-S3 case guide](hardware/assembled/models/LilygoT-EnergyS3Case/README.md) for the 5V boost wiring
 
 **GPS limitations:**
 - **Indoor use:** GPS will not work indoors or under metal roofs
@@ -801,7 +840,7 @@ See [Troubleshooting FAQ](#troubleshooting-and-faq) for solutions to common prob
 **Q: Which GPS module should I buy?**
 
 **A:** See the [GPS comparison table](#for-the-sw-engineer--maker) in this README. Quick recommendations:
-- **Best performance:** BK880 or BK280 (M10 chipset, 25Hz, ~$35-45)
+- **Best performance:** BK880 (M9) or BK280 (25Hz, ~$35-45)
 - **Good balance:** BN880 (M8 chipset with active antenna, 10Hz, ~$25)
 - **Budget option:** BN220 (M8 chipset with passive antenna, 10Hz, ~$15-20)
 
@@ -833,6 +872,15 @@ Active antennas provide significantly better signal quality. Avoid NEO-M8N if yo
 - Device name should be `BonoGPS-XXXX` (check web interface header)
 - iOS may cache old Bluetooth data - try restarting your iPhone
 - BLE works best at 20Hz or lower with GSA/GSV polling disabled or at low frequency (every 5 seconds)
+
+**Q: RaceChrono doesn't find BonoGPS over BLE, or keeps asking to pair**
+
+**A:** Common solutions:
+- Load the **RaceChrono > BLE: RaceChrono DIY device** preset and save the configuration, so BLE stays on after a restart
+- In RaceChrono, add the device as **RaceChrono DIY** > Bluetooth LE, not as a generic Bluetooth GPS
+- If pairing fails after a firmware update or after pairing other phones, "forget" BonoGPS in the phone's Bluetooth settings and pair again. The device keeps a limited number of bonds and drops the oldest when full
+- WiFi and Bluetooth share one radio: turning BonoGPS WiFi off for the session can help
+- See the [RaceChrono setup guide](software/connecting/racechrono#setup-over-ble)
 
 #### WiFi and Web Interface Issues
 
@@ -929,7 +977,7 @@ See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q
 - **Ephemeris:** Precise orbital data for specific satellites, valid for 2-4 hours. Required for accurate positioning.
 - **GNSS (Global Navigation Satellite System):** Umbrella term for all satellite navigation systems (GPS, GLONASS, Galileo, BeiDou).
 - **GPS (Global Positioning System):** US satellite navigation system, one type of GNSS.
-- **M8 / M10:** u-blox GPS chipset generations. M8 supports 10Hz max, M10 supports 25Hz max.
+- **M8 / M9 / M10:** u-blox GPS chipset generations. M8 supports 10Hz max; M9 (e.g. BK880) and M10 support 25Hz.
 - **C/N0 (Carrier-to-Noise Ratio):** Signal quality measurement in dBHz. Higher is better (30-40 dBHz typical, 45+ excellent).
 - **HDOP (Horizontal Dilution of Precision):** Geometric accuracy indicator. Lower is better (<1.0 excellent, 1-2 good, >5 poor).
 - **DOP (Dilution of Precision):** Measure of satellite geometry effect on position accuracy.
@@ -958,8 +1006,8 @@ See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q
 
 **Connectivity Terms:**
 
-- **BLE (Bluetooth Low Energy):** Low-power Bluetooth standard (Bluetooth 4.0+). Recommended for iOS with Harry's Lap Timer. Max ~20Hz GPS data.
-- **BT-SPP (Bluetooth Serial Port Profile):** Classic Bluetooth serial connection. Recommended for Android. Max ~10Hz with full messages.
+- **BLE (Bluetooth Low Energy):** Low-power Bluetooth standard (Bluetooth 4.0+). Used by Harry's Lap Timer on iOS (NMEA, max ~20Hz) and RaceChrono (binary RaceChrono DIY packets, 25Hz tested on Android, untested on iOS). The only Bluetooth option on ESP32-S3 boards.
+- **BT-SPP (Bluetooth Serial Port Profile):** Classic Bluetooth serial connection. Recommended for Android. Max ~10Hz with full messages. Not available on ESP32-S3 boards.
 - **TCP-IP:** Network connection over WiFi. Works on both iOS and Android. Single client at a time for GPS stream.
 - **UART (Universal Asynchronous Receiver-Transmitter):** Serial communication protocol between GPS and ESP32.
 - **Baudrate:** Speed of serial communication in bits per second. BonoGPS uses 115200 baud.
@@ -995,19 +1043,20 @@ See [issues with label enhancement](https://github.com/renatobo/bonogps/issues?q
 
 - **DevKit:** Generic ESP32 development board, most common and cheapest option (~$8-12).
 - **LOLIN D32 PRO:** Premium ESP32 board with battery charger, PSRAM, and TF card slot (~$15-20).
+- **LilyGO T-Energy-S3:** ESP32-S3 board with a built-in 18650 holder, charger and battery protection. BLE and WiFi only (no BT-SPP).
 - **Li-Ion / LiPo:** Rechargeable lithium battery types. 3.7V nominal, charge to 4.2V, discharge to 3.0V minimum.
 - **JST Connector:** Small 2-pin connector commonly used for batteries.
-- **VCC:** Power supply voltage pin (3.3V for GPS modules).
+- **VCC:** Power supply voltage pin. GPS modules need 3.3V or 5V depending on the model (see [GPS power by module](#gps-power-by-module)).
 - **GND:** Ground / 0V reference voltage pin.
 - **TX (Transmit):** Data output pin. GPS TX connects to ESP32 RX.
 - **RX (Receive):** Data input pin. GPS RX connects to ESP32 TX.
 
 **App-Specific Terms:**
 
-- **Harry's Lap Timer (HLT):** Most feature-rich lap timer app, only iOS app supporting BLE GPS.
-- **RaceChrono:** Lap timer with cleanest UX, requires GP Talker ID.
+- **Harry's Lap Timer (HLT):** Most feature-rich lap timer app, uses BLE on iOS.
+- **RaceChrono:** Lap timer with cleanest UX, requires GP Talker ID for NMEA connections. Over BLE, BonoGPS appears as a RaceChrono DIY device.
 - **TrackAddict:** Android-only lap timer, requires GP Talker ID.
-- **Hz (Hertz):** Updates per second. 10Hz = 10 position updates per second. 25Hz = 25 updates per second (M10 modules only).
+- **Hz (Hertz):** Updates per second. 10Hz = 10 position updates per second. 25Hz = 25 updates per second (M9/M10 modules only).
 
 ## Credits and tools
 

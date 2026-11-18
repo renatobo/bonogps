@@ -37,7 +37,7 @@ This project requires a receiver compatible with inexpensive Beitian M8 (classic
 
 - they are widely available: used in avionics (drones) projects
 - cost-effective
-- allow 10Hz (M8 Classic) to 25Hz (M10 Performance series) refresh rate
+- allow 10Hz (M8 Classic) to 25Hz (M9/M10 performance series) refresh rate
 - granular configuration of NMEA messages
 
 ## FAQ
@@ -68,14 +68,14 @@ A comparison in a static location with clear sky among performance (speed = navi
 
 | Module | Chipset | Antenna | Multi-Constellation Rate | GPS Only Rate | Signal Quality (C/N0) | Precision | Notes |
 | ------ | ------- | ------- | ------------------------ | ------------- | --------------------- | --------- | ----- |
-| BK880 | M10 | Active | 25 Hz | 25 Hz | 35-40 dBHz | Excellent | Best choice for track use |
+| BK880 | M9 | Active | 25 Hz | 25 Hz | 35-40 dBHz | Excellent | Best choice for track use |
 | BK280 | M10 | Passive | 25 Hz | 25 Hz | 30-35 dBHz | Excellent | Best budget option |
 | NEO-M8N | M8N | Active | 5 Hz | 10 Hz | 35-40 dBHz | Very Good | Genuine u-blox, slow refresh |
 | BN880 | M8 | Active | 10 Hz | 18 Hz | 30-35 dBHz | Good | Good balance |
 | BN220 | M8 | Passive | 10 Hz | 18 Hz | ~30 dBHz | Good | Budget, may struggle in poor visibility |
 
 **Key Findings:**
-- **M10 modules (BK series)** offer the best overall performance with 25Hz support
+- **M9/M10 modules (BK series)** offer the best overall performance with 25Hz support
 - **Active antennas** significantly improve signal quality (5-10 dBHz better)
 - **Signal quality (C/N0):** Higher is better; 35+ dBHz is excellent
 - **Galileo** provides better precision than GLONASS in current testing
@@ -159,7 +159,7 @@ Common for NAMER users
 
 ##### GPS, SBAS, Galileo, GLONASS
 
-BK-880, BK-280, M10 and other devices at 25Hz with multiple constellations up to 42 satellites
+BK-880, BK-280, M9/M10 and other devices at 25Hz with multiple constellations up to 42 satellites
 
 ```text
 B5 62 06 3E 34 00 00 00 2A 06 00 08 10 00 01
@@ -420,11 +420,11 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 **Problem:** GPS not responding / No communication with ESP32
 
 **Solution:**
-- Verify power connections: VCC to 3.3V (NOT 5V), GND to GND
+- Verify power connections: VCC to the right supply for the module, GND to GND. BN880 is rated 3.6-5.5V (typical 5V); for BN220, check its datasheet. See [GPS power by module](../../README.md#gps-power-by-module)
 - Check TX/RX are crossed: GPS TX → ESP32 RX, GPS RX → ESP32 TX
 - Confirm baudrate is 115200 after configuration (factory default may be 9600)
 - Try swapping TX/RX if no communication after verifying baudrate
-- Measure voltage at GPS VCC pin - should be 3.0-3.6V
+- Measure voltage at GPS VCC pin - it should match the supply you wired (about 3.3V or 5V) and be inside the module's rated range
 
 **Problem:** GPS has fix (LED blinking) but no data in app
 
@@ -439,7 +439,7 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 **Solution:**
 - BN220 has passive antenna - signal quality will be lower than BN880
 - Ensure clear sky view - even thin materials can significantly degrade signal
-- Consider upgrading to BN880 (active antenna) or BK280/BK880 (M10 chipset)
+- Consider upgrading to BN880 (active antenna) or BK280/BK880 (M9/M10)
 - Passive antennas struggle in marginal conditions (urban canyons, heavy cloud cover)
 - Expected C/N0: ~30 dBHz (compared to 30-35 dBHz for BN880)
 
@@ -452,13 +452,15 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 - After saving, power cycle and verify settings persist
 - If settings don't persist, module may not have flash - consider replacement
 
-#### BK280 / BK880 Series (M10 Chipset)
+#### BK280 / BK880 Series (M9 / M10 Chipset)
+
+BK-880 pinout, dimensions and datasheet: [BK880/](BK880/README.md)
 
 **Problem:** Can't configure to 25Hz refresh rate
 
 **Solution:**
-- Verify your module is genuine M10 chipset (check label)
-- M10 supports 25Hz with multiple constellations enabled
+- Verify the chipset from the label or listing (BK880: M9140, which is M9)
+- M9 and M10 both support 25Hz with multiple constellations enabled
 - In U-Center: View > Messages View > UBX > CFG > RATE
 - Set Measurement Period to 40ms (25Hz = 1000ms/25)
 - Ensure Time Source is set to UTC or GPS Time
@@ -468,7 +470,7 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 
 **Solution:**
 - Try multiple baudrates: 9600, 38400, 115200
-- M10 modules may ship with different default baudrates
+- M9/M10 modules may ship with different default baudrates
 - Use "Auto Bauding" feature in U-Center
 - Check physical connections to FTDI adapter
 - Try different USB ports / cables
@@ -488,7 +490,7 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 **Solution:**
 - This is normal behavior for M8N variant - hardware limitation
 - M8N: 5Hz max with 2+ constellations, 10Hz with GPS only
-- For higher rates with multiple constellations, use M8Q/M8M or M10 series
+- For higher rates with multiple constellations, use M8Q/M8M or M9/M10 series
 - Consider if accuracy improvement from multiple constellations worth lower refresh rate for your use case
 
 **Problem:** Module more expensive but seems identical to BN880
@@ -505,7 +507,7 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 **Problem:** Intermittent GPS fix / Signal drops
 
 **Solution:**
-- Check antenna cable connections (especially BN880 with separate antenna)
+- For modules with an external antenna: check the antenna cable connections. BN880 and BK880 have a built-in patch antenna, so there's no cable to check
 - Ensure antenna has clear sky view - 45° cone from vertical is minimum
 - Verify antenna is mounted horizontally (patch antennas must face sky)
 - Check for interference sources: phone chargers, LED lights, other RF devices
@@ -514,8 +516,8 @@ B5 62 06 09 0D 00 00 00 00 00 FF FF 00 00 00 00 00 00 17 31 BF
 **Problem:** Active antenna not working (BN880, BK880)
 
 **Solution:**
-- Verify GPS module is providing power to antenna (3.3V on antenna connection)
-- Check antenna cable for damage (especially at connectors)
+- BN880 and BK880 have the antenna and LNA built in: check the module's own supply voltage (3.6-5.5V) rather than an antenna connection
+- For modules with an external active antenna: verify the module powers the antenna and check the cable for damage (especially at connectors)
 - Active antennas have internal LNA - requires clean power supply
 - Measure current draw: active antenna should draw 10-30mA additional
 - Try passive antenna temporarily to isolate issue (antenna vs module)
@@ -654,6 +656,7 @@ If problems persist:
 
 ## References
 
+- [Beitian BK-880 reference material](BK880/README.md): pinout, dimensions and datasheet
 - [ublox M8 Receiver description](https://www.u-blox.com/sites/default/files/products/documents/u-blox8-M8_ReceiverDescrProtSpec_%28UBX-13003221%29.pdf)
 - [Assist Now](https://portal.u-blox.com/s/question/0D52p00008eSdzE/how-to-enable-and-flash-assistnow-autonomous-on-zoem8b)
 - [SBAS](https://github.com/cleanflight/cleanflight/blob/master/docs/Gps.md)

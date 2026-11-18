@@ -210,12 +210,11 @@ void bt_callback(esp_spp_cb_event_t event, esp_spp_cb_param_t *param);
   BLE stack (iOS)
 */
 #ifdef BLEENABLED
-#define CONFIG_BT_NIMBLE_ROLE_CENTRAL_DISABLED // No BLE client
-#define CONFIG_BT_NIMBLE_ROLE_OBSERVER_DISABLED // No BLE Scan
-#define CONFIG_BT_NIMBLE_MAX_CONNECTIONS 2
-#define CONFIG_BT_NIMBLE_MAX_BONDS 2
-#define CONFIG_BT_NIMBLE_SVC_GAP_DEVICE_NAME BONOGPS_MDNS
-#define CONFIG_NIMBLE_STACK_USE_MEM_POOLS 1 // Enable the use of memory pools for stack operations. This will use slightly more RAM but may provide more stability.
+// NimBLE stack settings (no BLE client or scan, 2 connections, 2 bonds) are set as
+// build flags in platformio.ini, so they apply to the NimBLE library sources too:
+// a #define here only affects this file and leaves the library on its defaults.
+// Arduino IDE users: set them in NimBLE-Arduino's src/nimconfig.h instead.
+// The BLE device name comes from NimBLEDevice::init(ble_device_id) in setup.
 #include <NimBLEDevice.h>
 #include "racechrono_gps.h"
 // ble runtime

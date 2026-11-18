@@ -8,7 +8,7 @@ Another very popular app, [https://www.hptuners.com/product/trackaddict-app/](ht
 ![Example](trackaddict_lagunaseca.png)
 
 - tested with v4.6.0 on Android
-- BT-SPP is the only option
+- BT-SPP is the only tested option. ESP32-S3 boards (e.g. LilyGO T-Energy-S3) have no BT-SPP; the firmware has a WiFi (TCP-IP) preset for them, but it hasn't been tested with TrackAddict
 - it needs a specific set of NMEA messages configurations
 - NBP was coded, yet not going to matter for TrackAddict as reported in [the forum](https://forum.hptuners.com/showthread.php?78403-GPS-over-NBP&highlight=gps)  
 
