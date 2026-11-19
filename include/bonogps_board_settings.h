@@ -7,6 +7,7 @@
   This file contains pinout definitions for a few tested boards:
   - https://docs.platformio.org/en/latest/boards/espressif32/esp32doit-devkit-v1.html
   - https://docs.platformio.org/en/latest/boards/espressif32/lolin_d32_pro.html
+  - https://github.com/Xinyuan-LilyGO/T-Energy-S3 (built with -DLILYGO_T_ENERGY_S3, see platformio.ini)
 
   If you have an undefined board, you need to
   - identify the LED_BUILTIN pin: this is usually the builtin blue led, used to signal WiFi status
@@ -36,6 +37,30 @@
 #endif
 #define GPIO_BATTERY GPIO_NUM_35 // Read Battery status from PIN 25
 #define SHOWBATTERY // Show the battery charge indicator on the top menu of the web configuration panel
+
+#elif defined(LILYGO_T_ENERGY_S3)
+
+// BK-880 GPS wired to the UART0 pins, which are free for reuse as Serial2
+// because Serial/flashing uses the ESP32-S3's native USB CDC instead
+// (see ARDUINO_USB_CDC_ON_BOOT=1 in platformio.ini)
+#undef RX2
+#undef TX2
+#define RX2 GPIO_NUM_44 // BK-880 TX -> here
+#define TX2 GPIO_NUM_43 // BK-880 RX <- here
+// BOOT-0 button doubles as the WiFi mode switch, same as the other boards
+#define WIFI_MODE_BUTTON GPIO_NUM_0
+// There is no onboard status LED on the T-Energy-S3: this is an unconnected
+// placeholder pin required by the firmware. Wire an external LED (with a
+// resistor) to it, or point this at another free GPIO, for visual WiFi status
+#undef LED_BUILTIN
+#define LED_BUILTIN GPIO_NUM_2
+// Battery voltage divider output, labeled BATTERY_ADC_DATA / IO3 in LilyGo's docs
+#define GPIO_BATTERY GPIO_NUM_3
+// SHOWBATTERY is left off by default: the 7.445 scale factor in
+// ReadBatteryVoltage() (src/bonogps.cpp) was calibrated for the Lolin D32
+// Pro's divider and hasn't been verified against the T-Energy-S3 schematic.
+// Confirm/adjust the scale factor for this board's divider before enabling.
+// #define SHOWBATTERY
 
 #elif defined(ARDUINO_ESP32_DEV)
 #undef RX2

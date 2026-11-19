@@ -6,7 +6,7 @@
 Latest supported app: [https://www.racetimeapp.com/en/](https://www.racetimeapp.com/en/)
 
 - tested with v3.3.8 lite
-- BT-SPP is the only option
+- BT-SPP is the only tested option. ESP32-S3 boards (e.g. LilyGO T-Energy-S3) have no BT-SPP; the firmware has a WiFi (TCP-IP) preset for them, but it hasn't been tested with RaceTime
 - `GPGGA`, `GPRMC`, `GPVTG`, `GPGLL` enabled, with main talker id GP
 
 ## Setup

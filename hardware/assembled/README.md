@@ -67,7 +67,7 @@ Steps - [here a video of how all pieces fit together](959%20under%20tail%20v11.m
 
 - print the base board
 - print the battery slider
-- connect/solder the connector cables between ESP32 and GPS (4 wires): VCC to 3V, RX to pin 0, TX to pin 4, GND to GND
+- connect/solder the connector cables between ESP32 and GPS (4 wires): VCC to 3V, RX to pin 0, TX to pin 4, GND to GND. Note: the BN880 is rated 3.6-5.5V, so 3.3V is below its minimum. It worked in this build, but see [GPS power by module](../../README.md#gps-power-by-module)
 - connect/solder micro on/off switch and momentary button cables (leave cables open on the end towards ESP32) (3 wires). The on/off connects GND to EN pin or it leaves it open, the momentary button connects pin 25 to GND
 - connect/solder the open end of cables for switches to ESP32
 - mount the ESP32 in place with 3 small screws (I suggest M1.7)
@@ -117,10 +117,10 @@ I used double sided tape to attach this on top of a back seat/seat cowl or to se
 **Problem:** ESP32 powers on but GPS doesn't work
 
 **Solution:**
-- Verify GPS power connections: VCC to 3.3V, GND to GND
-- **Critical:** Do NOT connect GPS VCC to 5V - will damage GPS
+- Verify GPS power connections: VCC to the right supply for your module, GND to GND (see [GPS power by module](../../README.md#gps-power-by-module))
+- **Critical:** Do NOT connect 5V to a GPS rated for 3.3V only. BN880 and BK880 are rated 3.6-5.5V and run from 5V
 - Check for loose connections in GPS connector
-- Measure voltage at GPS VCC pin (should be 3.0-3.6V with GPS connected)
+- Measure voltage at GPS VCC pin with the GPS connected: it should be inside the module's rated range
 - If using dupont wires, ensure good mechanical connection (crimp quality)
 - Solder connections preferred for reliability in vibration environment
 
