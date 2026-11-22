@@ -803,7 +803,11 @@ void activeled_blink()
   if (gps_powersave) {
     highvalue=0;
   }
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+  ledcWrite(LED_ACTIVE_EXTERNAL, (active_ledon ? highvalue : 5));
+#else
   ledcWrite(LEDCHANNEL, (active_ledon ? highvalue : 5));
+#endif
   // digitalWrite(LED_ACTIVE_EXTERNAL, (active_ledon ? HIGH : LOW)); // set pin to the opposite state
 }
 // if we need an external led to show status, use a timer
@@ -2753,10 +2757,14 @@ void setup()
   // Use LED_ACTIVE_EXTERNAL to show status of device
   pinMode(LED_ACTIVE_EXTERNAL, OUTPUT);
   #ifdef TASK_SCHEDULER
+#if ESP_ARDUINO_VERSION_MAJOR >= 3
+  ledcAttach(LED_ACTIVE_EXTERNAL, LEDPWMFREQ, LEDPWMRESOLUTION);
+#else
   // configure LED PWM functionalitites
   ledcSetup(LEDCHANNEL, LEDPWMFREQ, LEDPWMRESOLUTION);
   // attach the channel to the GPIO to be controlled
   ledcAttachPin(LED_ACTIVE_EXTERNAL, LEDCHANNEL);
+#endif
   tLedActiveBlink.setInterval(1000);
   tLedActiveBlink.enable();
   #endif
