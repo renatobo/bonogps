@@ -9,7 +9,7 @@
   - [Android BT-SPP Setup](#android-bt-spp-setup)
   - [GPS Configuration for NMEA messages](#gps-configuration-for-nmea-messages)
 
-More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where you can also find a very good [user and developer forum](http://forum.gps-laptimer.de/viewforum.php?f=2). It offers the largest set of customizable options to build your own external device and it is the only supported platform for iOS phones via Bluetooth Low Energy.
+More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where you can also find a very good [user and developer forum](http://forum.gps-laptimer.de/viewforum.php?f=2). It offers the largest set of customizable options to build your own external device.
 
 ![Example](hlt_lagunaseca.png)
 
@@ -22,9 +22,9 @@ More info at [https://www.gps-laptimer.de/](https://www.gps-laptimer.de/), where
 
 Connections
 
-- iOS and Android: TCP/IP port 8118. This is the easier option, yet it prevents connecting other devices to your mobile phone (e.g. an action camera or an ODBII device) so it's not recommended
+- iOS and Android: TCP/IP port 1818. This is the easier option, yet it prevents connecting other devices to your mobile phone (e.g. an action camera or an ODBII device) so it's not recommended
 - iOS: BLE tested on iPhone (tested from 7 to 15). BLE nicely handles up to 20Hz GPS update rates when `GSV`/`GSA` streaming is disabled or polled at low frequencies (e.g. every 5 seconds)
-- Android: BT-SPP tested on Android, 10Hz and  `GSV`/`GSA` at higher polling frequency (streaming saturates the UART connection on the GPS itself)
+- Android: BT-SPP (not available on ESP32-S3 boards such as the LilyGO T-Energy-S3; use TCP/IP there) tested on Android, 10Hz and  `GSV`/`GSA` at higher polling frequency (streaming saturates the UART connection on the GPS itself)
 
 After configuring the connection, your unit shows up in the Sensors List as 'Custom [BTLE/TCP-IP] GNSS' device
 
